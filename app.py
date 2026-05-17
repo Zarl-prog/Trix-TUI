@@ -5,7 +5,7 @@ import sys
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
 from textual.events import Click
-from textual.widgets import DirectoryTree, Input, RichLog, TextArea
+from textual.widgets import Button, DirectoryTree, Input, RichLog, TextArea
 
 
 class TrixApp(App):
@@ -43,6 +43,17 @@ class TrixApp(App):
         height: 1fr;
     }
 
+    #terminal-buttons {
+        height: auto;
+        dock: bottom;
+        padding: 0 1;
+    }
+
+    #terminal-buttons Button {
+        min-width: 12;
+        margin: 0 1;
+    }
+
     #terminal-input {
         height: 3;
         dock: bottom;
@@ -75,6 +86,11 @@ class TrixApp(App):
                     highlight=True,
                     markup=True,
                 )
+                with Horizontal(id="terminal-buttons"):
+                    yield Button("Clear", id="btn-clear")
+                    yield Button("Run File", id="btn-run-file")
+                    yield Button("Git Status", id="btn-git-status")
+                    yield Button("List Files", id="btn-list-files")
                 yield Input(id="terminal-input", placeholder="> ")
 
     async def on_mount(self) -> None:
@@ -118,21 +134,37 @@ class TrixApp(App):
             except Exception:
                 break
 
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
-        command = event.value
-        input_widget = self.query_one("#terminal-input", Input)
-        input_widget.clear()
-
-        if not command:
-            return
-
+    async def _send_to_shell(self, command: str) -> None:
         if self._shell_process is None or self._shell_process.returncode is not None:
             return
-
         output = self.query_one("#terminal-output", RichLog)
         output.write(f"[bold]$ {command}[/bold]")
         self._shell_process.stdin.write((command + "\n").encode())
         await self._shell_process.stdin.drain()
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        command = event.value
+        self.query_one("#terminal-input", Input).clear()
+        if not command:
+            return
+        await self._send_to_shell(command)
+
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
+        button_id = event.button.id
+        output = self.query_one("#terminal-output", RichLog)
+
+        if button_id == "btn-clear":
+            output.clear()
+        elif button_id == "btn-run-file":
+            if self._current_file is None:
+                output.write("[red]No file open[/red]")
+            else:
+                cmd = f"python {self._current_file}"
+                await self._send_to_shell(cmd)
+        elif button_id == "btn-git-status":
+            await self._send_to_shell("git status")
+        elif button_id == "btn-list-files":
+            await self._send_to_shell("dir" if sys.platform == "win32" else "ls")
 
     def on_click(self, event: Click) -> None:
         terminal = self.query_one("#terminal-panel")

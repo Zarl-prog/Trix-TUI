@@ -12,11 +12,17 @@ class TrixApp(App):
     CSS = """
     Screen {
         layout: horizontal;
+        background: #313337;
     }
 
     Container {
-        border: solid $primary;
+        border: solid #3f4043;
         border-title-align: center;
+        background: #1f2127;
+    }
+
+    Container:focus-within {
+        border: solid #5ac1fe;
     }
 
     #files-panel {
@@ -33,14 +39,40 @@ class TrixApp(App):
 
     DirectoryTree {
         height: 100%;
+        background: #1f2127;
+    }
+
+    DirectoryTree > .tree--cursor {
+        background: #3e4043;
+    }
+
+    DirectoryTree > .tree--highlight {
+        background: #3e4043;
     }
 
     TextArea {
         height: 100%;
+        background: #0d1016;
+        color: #bfbdb6;
+    }
+
+    TextArea .text-area--gutter {
+        background: #0d1016;
+        color: #4b4c4e;
+    }
+
+    TextArea .text-area--cursor {
+        background: #5ac1fe;
+    }
+
+    TextArea .text-area--selection {
+        background: #1f2127;
     }
 
     #terminal-output {
         height: 1fr;
+        background: #0d1016;
+        color: #bfbdb6;
     }
 
     #terminal-buttons {
@@ -52,11 +84,32 @@ class TrixApp(App):
     #terminal-buttons Button {
         min-width: 12;
         margin: 0 1;
+        background: #1f2127;
+        color: #bfbdb6;
+        border: solid #3f4043;
+    }
+
+    Button:hover {
+        background: #2d2f34;
+    }
+
+    Button:focus {
+        border: solid #5ac1fe;
     }
 
     #terminal-input {
         height: 3;
         dock: bottom;
+    }
+
+    Input {
+        background: #0d1016;
+        color: #bfbdb6;
+        border: solid #3f4043;
+    }
+
+    Input:focus {
+        border: solid #5ac1fe;
     }
     """
 
@@ -114,13 +167,13 @@ class TrixApp(App):
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.STDOUT,
                 )
-                output.write(f"[green]Shell started: {shell}[/green]")
+                output.write(f"[#aad84c]Shell started: {shell}[/#aad84c]")
                 self._shell_output_task = asyncio.create_task(self._read_shell_output())
                 return
             except FileNotFoundError:
                 continue
 
-        output.write("[red]No shell found (tried bash, zsh, sh)[/red]")
+        output.write("[#ef7177]No shell found (tried bash, zsh, sh)[/#ef7177]")
 
     async def _read_shell_output(self) -> None:
         output = self.query_one("#terminal-output", RichLog)
@@ -157,7 +210,7 @@ class TrixApp(App):
             output.clear()
         elif button_id == "btn-run-file":
             if self._current_file is None:
-                output.write("[red]No file open[/red]")
+                output.write("[#ef7177]No file open[/#ef7177]")
             else:
                 cmd = f"python {self._current_file}"
                 await self._send_to_shell(cmd)
@@ -199,7 +252,7 @@ class TrixApp(App):
 
     def action_save(self) -> None:
         if self._current_file is None:
-            self.query_one("#terminal-output", RichLog).write("[red]No file open[/red]")
+            self.query_one("#terminal-output", RichLog).write("[#ef7177]No file open[/#ef7177]")
             return
         text_area = self.query_one("#editor", TextArea)
         self._current_file.write_text(text_area.text, encoding="utf-8")

@@ -1,8 +1,11 @@
 from pathlib import Path
+import asyncio
+import sys
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
-from textual.widgets import DirectoryTree, Static, TextArea
+from textual.events import Click
+from textual.widgets import DirectoryTree, Input, RichLog, TextArea
 
 
 class TrixApp(App):
@@ -37,7 +40,12 @@ class TrixApp(App):
     }
 
     #terminal-output {
-        height: 100%;
+        height: 1fr;
+    }
+
+    #terminal-input {
+        height: 3;
+        dock: bottom;
     }
     """
 
@@ -51,6 +59,8 @@ class TrixApp(App):
         super().__init__()
         self._current_file: Path | None = None
         self._has_changes = False
+        self._shell_process: asyncio.subprocess.Process | None = None
+        self._shell_output_task: asyncio.Task | None = None
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -59,12 +69,77 @@ class TrixApp(App):
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
             with Container(id="terminal-panel"):
-                yield Static(id="terminal-output")
+                yield RichLog(
+                    id="terminal-output",
+                    auto_scroll=True,
+                    highlight=True,
+                    markup=True,
+                )
+                yield Input(id="terminal-input", placeholder="> ")
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         self.query_one("#files-panel").border_title = " Files "
         self.query_one("#editor-panel").border_title = " Editor "
         self.query_one("#terminal-panel").border_title = " Terminal "
+        await self._start_shell()
+
+    async def _start_shell(self) -> None:
+        shells = ["bash", "zsh", "sh"]
+        if sys.platform == "win32":
+            shells = ["bash", "cmd", "powershell"]
+
+        output = self.query_one("#terminal-output", RichLog)
+
+        for shell in shells:
+            try:
+                self._shell_process = await asyncio.create_subprocess_exec(
+                    shell,
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+                output.write(f"[green]Shell started: {shell}[/green]")
+                self._shell_output_task = asyncio.create_task(self._read_shell_output())
+                return
+            except FileNotFoundError:
+                continue
+
+        output.write("[red]No shell found (tried bash, zsh, sh)[/red]")
+
+    async def _read_shell_output(self) -> None:
+        output = self.query_one("#terminal-output", RichLog)
+        while True:
+            try:
+                line = await self._shell_process.stdout.readline()
+                if not line:
+                    break
+                text = line.decode(errors="replace").rstrip()
+                output.write(text)
+            except Exception:
+                break
+
+    async def on_input_submitted(self, event: Input.Submitted) -> None:
+        command = event.value
+        input_widget = self.query_one("#terminal-input", Input)
+        input_widget.clear()
+
+        if not command:
+            return
+
+        if self._shell_process is None or self._shell_process.returncode is not None:
+            return
+
+        output = self.query_one("#terminal-output", RichLog)
+        output.write(f"[bold]$ {command}[/bold]")
+        self._shell_process.stdin.write((command + "\n").encode())
+        await self._shell_process.stdin.drain()
+
+    def on_click(self, event: Click) -> None:
+        terminal = self.query_one("#terminal-panel")
+        inp = self.query_one("#terminal-input", Input)
+        if terminal.region.contains(event.screen_x, event.screen_y):
+            if self.focused is not inp:
+                inp.focus()
 
     def on_directory_tree_file_selected(
         self, event: DirectoryTree.FileSelected
@@ -92,7 +167,7 @@ class TrixApp(App):
 
     def action_save(self) -> None:
         if self._current_file is None:
-            self.query_one("#terminal-output", Static).update("No file open")
+            self.query_one("#terminal-output", RichLog).write("[red]No file open[/red]")
             return
         text_area = self.query_one("#editor", TextArea)
         self._current_file.write_text(text_area.text, encoding="utf-8")

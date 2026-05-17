@@ -1,5 +1,7 @@
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
+from textual.widgets import DirectoryTree
+import os
 
 
 class TrixApp(App):
@@ -11,19 +13,22 @@ class TrixApp(App):
     Container {
         border: solid $primary;
         border-title-align: center;
-        padding: 1;
     }
 
     #files-panel {
-        width: 25;
+        width: 20%;
     }
 
     #editor-panel {
-        width: 1fr;
+        width: 2fr;
     }
 
     #terminal-panel {
-        width: 30;
+        width: 2fr;
+    }
+
+    DirectoryTree {
+        height: 100%;
     }
     """
 
@@ -34,17 +39,15 @@ class TrixApp(App):
 
     def compose(self) -> ComposeResult:
         with Horizontal():
-            files = Container(id="files-panel")
-            files.border_title = " Files "
-            yield files
+            with Container(id="files-panel"):
+                yield DirectoryTree(os.getcwd())
+            yield Container(id="editor-panel")
+            yield Container(id="terminal-panel")
 
-            editor = Container(id="editor-panel")
-            editor.border_title = " Editor "
-            yield editor
-
-            terminal = Container(id="terminal-panel")
-            terminal.border_title = " Terminal "
-            yield terminal
+    def on_mount(self) -> None:
+        self.query_one("#files-panel").border_title = " Files "
+        self.query_one("#editor-panel").border_title = " Editor "
+        self.query_one("#terminal-panel").border_title = " Terminal "
 
 
 if __name__ == "__main__":

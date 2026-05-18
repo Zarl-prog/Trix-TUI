@@ -158,6 +158,15 @@ class TerminalWidget(Widget, can_focus=True):
         # Only Ctrl+C / Ctrl+Z are sent immediately as process signals
         if key == "ctrl+c":
             event.prevent_default()
+            log = self.query_one("#term-output", RichLog)
+            sel = log.text_selection
+            if sel:
+                result = log.get_selection(sel)
+                text = result[0] + result[1] if result else ""
+                if text:
+                    self.app.copy_to_clipboard(text)
+                    self.app.notify("Copied to clipboard")
+                    return
             self._write_pty(b"\x03")
         elif key == "ctrl+z":
             event.prevent_default()
@@ -201,7 +210,6 @@ class Divider(Widget):
         width: 1;
         height: 100%;
         background: #3f4043;
-        cursor: col-resize;
     }
     Divider:hover { background: #5ac1fe; }
     """
@@ -330,6 +338,14 @@ class TrixApp(App):
         color: #bfbdb6;
     }
 
+    #term-output:focus {
+        border: solid #5ac1fe;
+    }
+
+    #term-output .rich-log--highlight {
+        background: #1f4a6e;
+    }
+
     #term-input {
         height: 3;
         dock: bottom;
@@ -392,11 +408,11 @@ class TrixApp(App):
         terminal_panel = self.query_one("#terminal-panel")
         inp = self.query_one("#term-input", Input)
         log = self.query_one("#term-output", RichLog)
-        # Only redirect to input if click is in terminal panel but NOT on the output log
-        if (terminal_panel.region.contains(event.screen_x, event.screen_y)
-                and not log.region.contains(event.screen_x, event.screen_y)
-                and self.focused is not inp):
-            inp.focus()
+        if terminal_panel.region.contains(event.screen_x, event.screen_y):
+            if log.region.contains(event.screen_x, event.screen_y):
+                log.focus()
+            elif self.focused is not inp:
+                inp.focus()
 
     # ── File tree ─────────────────────────────────────────────────────────────
 
@@ -463,7 +479,9 @@ class TrixApp(App):
         if not path.is_dir():
             self.query_one("#terminal", TerminalWidget).write(f"Invalid path: {path_str}")
             return
-        self.query_one(DirectoryTree).path = path
+        self.query_one(DirectoryTree).call_after_refresh(
+            setattr, self.query_one(DirectoryTree), "path", path
+        )
         self._current_file = None
         self._has_changes = False
         self.query_one("#editor", TextArea).load_text("")

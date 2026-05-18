@@ -5,5 +5,5 @@ Summary: A terminal-native IDE built with Textual
 Author-email: Your Name <your@email.com>
 Requires-Python: >=3.10
 Requires-Dist: textual>=0.80.0
-Requires-Dist: winpty
+Requires-Dist: pywinpty
 Requires-Dist: pyperclip

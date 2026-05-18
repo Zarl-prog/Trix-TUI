@@ -132,13 +132,31 @@ class TerminalWidget(Widget, can_focus=True):
                 await asyncio.sleep(0.05)
 
     def on_key(self, event: Key) -> None:
-        # Only handle keys when this widget (or its children) are focused
         key = event.key
+        inp = self.query_one("#term-input", Input)
+
+        # History navigation
+        if key == "up" and self._history:
+            self._hist_idx = min(self._hist_idx + 1, len(self._history) - 1)
+            inp.value = self._history[-(self._hist_idx + 1)]
+            inp.cursor_position = len(inp.value)
+            event.prevent_default()
+            return
+        if key == "down":
+            if self._hist_idx > 0:
+                self._hist_idx -= 1
+                inp.value = self._history[-(self._hist_idx + 1)]
+            else:
+                self._hist_idx = -1
+                inp.value = ""
+            inp.cursor_position = len(inp.value)
+            event.prevent_default()
+            return
+
+        # Forward special keys to PTY
         if key in _KEY_MAP:
             event.prevent_default()
             self._write_pty(_KEY_MAP[key])
-        # ctrl+c is handled by app binding — let terminal intercept it
-        # printable chars are handled via Input widget
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         cmd = event.value
@@ -148,27 +166,6 @@ class TerminalWidget(Widget, can_focus=True):
             self._history.append(cmd)
         self._hist_idx = -1
         self._write_pty((cmd + "\r").encode())
-
-    def on_input_key(self, event) -> None:
-        pass  # handled below via Input's key events
-
-    def _on_input_key(self, event: Key) -> None:
-        """Intercept up/down inside the Input for history navigation."""
-        inp = self.query_one("#term-input", Input)
-        if event.key == "up" and self._history:
-            self._hist_idx = min(self._hist_idx + 1, len(self._history) - 1)
-            inp.value = self._history[-(self._hist_idx + 1)]
-            inp.cursor_position = len(inp.value)
-            event.prevent_default()
-        elif event.key == "down":
-            if self._hist_idx > 0:
-                self._hist_idx -= 1
-                inp.value = self._history[-(self._hist_idx + 1)]
-            else:
-                self._hist_idx = -1
-                inp.value = ""
-            inp.cursor_position = len(inp.value)
-            event.prevent_default()
 
     def _write_pty(self, data: bytes) -> None:
         if self._pty and self._pty.isalive():

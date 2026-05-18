@@ -236,9 +236,11 @@ class Divider(Widget):
     def on_mouse_move(self, event: MouseMove) -> None:
         if not self._dragging:
             return
+        _MIN = {"files-panel": 0.10, "editor-panel": 0.20, "terminal-panel": 0.20}
+        total = self.app.size.width
         delta = event.screen_x - self._start_x
-        new_left = max(5, self._left_w + delta)
-        new_right = max(5, self._right_w - delta)
+        new_left = max(int(total * _MIN.get(self._left_id, 0.10)), self._left_w + delta)
+        new_right = max(int(total * _MIN.get(self._right_id, 0.20)), self._right_w - delta)
         self.app.query_one(f"#{self._left_id}").styles.width = new_left
         self.app.query_one(f"#{self._right_id}").styles.width = new_right
         event.stop()
@@ -305,9 +307,9 @@ class TrixApp(App):
         border: solid #5ac1fe;
     }
 
-    #files-panel  { width: 20%; min-width: 5; }
-    #editor-panel { width: 2fr; min-width: 5; }
-    #terminal-panel { width: 2fr; min-width: 5; }
+    #files-panel  { width: 20%; min-width: 10%; }
+    #editor-panel { width: 2fr; min-width: 20%; }
+    #terminal-panel { width: 2fr; min-width: 20%; }
 
     DirectoryTree {
         height: 100%;
@@ -375,6 +377,7 @@ class TrixApp(App):
         ("ctrl+o", "open_folder", "Open Folder"),
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
+        ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
     ]
 
     def __init__(self):
@@ -382,12 +385,13 @@ class TrixApp(App):
         self._current_file: Path | None = None
         self._has_changes = False
         self._theme_index = 0
+        self._filetree_visible = True
 
     def compose(self) -> ComposeResult:
         with Horizontal():
             with Container(id="files-panel"):
                 yield DirectoryTree(".")
-            yield Divider("files-panel", "editor-panel")
+            yield Divider("files-panel", "editor-panel", id="divider-files")
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
             yield Divider("editor-panel", "terminal-panel")
@@ -440,6 +444,13 @@ class TrixApp(App):
             self._update_editor_title()
 
     # ── Actions ───────────────────────────────────────────────────────────────
+
+    def action_toggle_filetree(self) -> None:
+        panel = self.query_one("#files-panel")
+        divider = self.query_one("#divider-files")
+        self._filetree_visible = not self._filetree_visible
+        panel.display = self._filetree_visible
+        divider.display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:

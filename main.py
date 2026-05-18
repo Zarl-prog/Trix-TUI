@@ -109,7 +109,7 @@ class TrixApp(App):
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
         ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
-        ("ctrl+shift+z", "zen_mode", "Zen Mode"),
+        ("f11", "zen_mode", "Zen Mode"),
         ("question_mark", "show_help", "Help"),
     ]
 

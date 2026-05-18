@@ -334,10 +334,13 @@ class TrixApp(App):
 
     def on_click(self, event: Click) -> None:
         terminal_panel = self.query_one("#terminal-panel")
-        if terminal_panel.region.contains(event.screen_x, event.screen_y):
-            inp = self.query_one("#term-input", Input)
-            if self.focused is not inp:
-                inp.focus()
+        inp = self.query_one("#term-input", Input)
+        log = self.query_one("#term-output", RichLog)
+        # Only redirect to input if click is in terminal panel but NOT on the output log
+        if (terminal_panel.region.contains(event.screen_x, event.screen_y)
+                and not log.region.contains(event.screen_x, event.screen_y)
+                and self.focused is not inp):
+            inp.focus()
 
     # ── File tree ─────────────────────────────────────────────────────────────
 

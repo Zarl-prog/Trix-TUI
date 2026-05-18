@@ -6,7 +6,8 @@ from textual.theme import Theme
 
 def _load_themes() -> list[dict]:
     try:
-        data = json.loads((Path(__file__).parent.parent / "ayu.json").read_text())
+        # ayu.json lives alongside this file inside the trix/ package directory
+        data = json.loads((Path(__file__).parent / "ayu.json").read_text())
     except Exception:
         return []
     result = []

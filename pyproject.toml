@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "trix-ide"
+version = "0.1.0"
+description = "A terminal-native IDE built with Textual"
+requires-python = ">=3.10"
+authors = [
+    { name = "Your Name", email = "your@email.com" },
+]
+dependencies = [
+    "textual>=0.80.0",
+    "winpty",
+    "pyperclip",
+]
+
+[project.scripts]
+trix = "trix.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trix*"]
+
+[tool.setuptools.package-data]
+trix = ["ayu.json"]

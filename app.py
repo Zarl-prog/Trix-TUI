@@ -86,8 +86,6 @@ class TerminalWidget(Widget, can_focus=True):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._pty: winpty.PtyProcess | None = None
-        self._screen = pyte.Screen(self.COLS, self.ROWS)
-        self._stream = pyte.ByteStream(self._screen)
         self._read_task: asyncio.Task | None = None
         self._history: list[str] = []
         self._hist_idx: int = -1
@@ -167,6 +165,7 @@ class TerminalWidget(Widget, can_focus=True):
         inp.clear()
         if cmd:
             self._history.append(cmd)
+            self.query_one("#term-output", RichLog).write(f"> {cmd}")
         self._hist_idx = -1
         self._write_pty((cmd + "\r").encode())
 
@@ -305,6 +304,7 @@ class TrixApp(App):
         ("ctrl+s", "save", "Save"),
         ("ctrl+o", "open_folder", "Open Folder"),
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
+        ("ctrl+shift+c", "copy_selection", "Copy"),
     ]
 
     def __init__(self):
@@ -378,6 +378,20 @@ class TrixApp(App):
         t = THEMES[self._theme_index]
         self.theme = t["slug"]
         self.query_one("#terminal", TerminalWidget).write(f"Theme: {t['name']}")
+
+    def action_copy_selection(self) -> None:
+        text = ""
+        focused = self.focused
+        if isinstance(focused, TextArea):
+            text = focused.selected_text
+        elif isinstance(focused, RichLog):
+            sel = focused.text_selection
+            if sel:
+                result = focused.get_selection(sel)
+                text = result[0] + result[1] if result else ""
+        if text:
+            self.copy_to_clipboard(text)
+            self.notify("Copied to clipboard")
 
     async def action_open_folder(self) -> None:
         path_str = await self.push_screen_wait(FolderPicker())

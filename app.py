@@ -111,6 +111,7 @@ class TerminalWidget(Widget, can_focus=True):
     async def _read_loop(self) -> None:
         import re
         _ansi = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
+        _clear = re.compile(r"\x1b\[(?:2J|3J|\d*J)")
         log = self.query_one("#term-output", RichLog)
         loop = asyncio.get_event_loop()
         buf = ""
@@ -121,6 +122,9 @@ class TerminalWidget(Widget, can_focus=True):
                     await asyncio.sleep(0.01)
                     continue
                 buf += data if isinstance(data, str) else data.decode("utf-8", errors="replace")
+                if _clear.search(buf):
+                    log.clear()
+                    buf = _clear.sub("", buf)
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
                     line = _ansi.sub("", line).rstrip("\r")

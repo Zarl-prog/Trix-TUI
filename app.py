@@ -111,23 +111,23 @@ class TerminalWidget(Widget, can_focus=True):
             self.query_one("#term-output", RichLog).write(f"Failed to start PowerShell: {e}")
 
     async def _read_loop(self) -> None:
+        import re
+        _ansi = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
         log = self.query_one("#term-output", RichLog)
         loop = asyncio.get_event_loop()
+        buf = ""
         while self._pty and self._pty.isalive():
             try:
                 data = await loop.run_in_executor(None, self._pty.read, 4096)
                 if not data:
                     await asyncio.sleep(0.01)
                     continue
-                raw = data.encode("utf-8", errors="replace") if isinstance(data, str) else data
-                self._stream.feed(raw)
-                # Render dirty lines from pyte screen
-                for line_idx in sorted(self._screen.dirty):
-                    line = self._screen.buffer[line_idx]
-                    text = "".join(c.data for c in (line[col] for col in range(self._screen.columns))).rstrip()
-                    if text:
-                        log.write(text)
-                self._screen.dirty.clear()
+                buf += data if isinstance(data, str) else data.decode("utf-8", errors="replace")
+                while "\n" in buf:
+                    line, buf = buf.split("\n", 1)
+                    line = _ansi.sub("", line).rstrip("\r")
+                    if line.strip():
+                        log.write(line)
             except Exception:
                 await asyncio.sleep(0.05)
 
@@ -135,7 +135,7 @@ class TerminalWidget(Widget, can_focus=True):
         key = event.key
         inp = self.query_one("#term-input", Input)
 
-        # History navigation
+        # History navigation — local only, nothing sent to PTY
         if key == "up" and self._history:
             self._hist_idx = min(self._hist_idx + 1, len(self._history) - 1)
             inp.value = self._history[-(self._hist_idx + 1)]
@@ -153,10 +153,13 @@ class TerminalWidget(Widget, can_focus=True):
             event.prevent_default()
             return
 
-        # Forward special keys to PTY
-        if key in _KEY_MAP:
+        # Only Ctrl+C / Ctrl+Z are sent immediately as process signals
+        if key == "ctrl+c":
             event.prevent_default()
-            self._write_pty(_KEY_MAP[key])
+            self._write_pty(b"\x03")
+        elif key == "ctrl+z":
+            event.prevent_default()
+            self._write_pty(b"\x1a")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         cmd = event.value

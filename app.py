@@ -3,9 +3,50 @@ import asyncio
 import sys
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click
-from textual.widgets import Button, DirectoryTree, Input, RichLog, TextArea
+from textual.screen import Screen
+from textual.widgets import Button, DirectoryTree, Input, Label, RichLog, TextArea
+
+
+class FolderPicker(Screen):
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    CSS = """
+    FolderPicker {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    #dialog {
+        width: 50;
+        height: auto;
+        padding: 2;
+        background: #1f2127;
+        border: solid #5ac1fe;
+    }
+
+    Label {
+        width: 100%;
+        margin-bottom: 1;
+        color: #bfbdb6;
+    }
+
+    #folder-path {
+        width: 100%;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Enter folder path:")
+            yield Input(id="folder-path", placeholder="/path/to/folder")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.dismiss(event.value)
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
 
 
 class TrixApp(App):
@@ -117,6 +158,7 @@ class TrixApp(App):
         ("q", "quit", "Quit"),
         ("ctrl+c", "quit", "Quit"),
         ("ctrl+s", "save", "Save"),
+        ("ctrl+o", "open_folder", "Open Folder"),
     ]
 
     def __init__(self):
@@ -250,9 +292,32 @@ class TrixApp(App):
             self._has_changes = True
             self._update_editor_title()
 
+    async def action_open_folder(self) -> None:
+        path_str = await self.push_screen_wait(FolderPicker())
+        if path_str is None:
+            return
+        path = Path(path_str.strip())
+        if not path.is_dir():
+            self.query_one("#terminal-output", RichLog).write(
+                f"[#ef7177]Invalid path: {path_str}[/#ef7177]"
+            )
+            return
+        # Reload directory tree
+        tree = self.query_one(DirectoryTree)
+        tree.path = path
+        # Clear editor
+        self._current_file = None
+        self._has_changes = False
+        self.query_one("#editor", TextArea).load_text("")
+        self._update_editor_title()
+        # Update files panel title
+        self.query_one("#files-panel").border_title = f" Files — {path.name} "
+
     def action_save(self) -> None:
         if self._current_file is None:
-            self.query_one("#terminal-output", RichLog).write("[#ef7177]No file open[/#ef7177]")
+            self.query_one("#terminal-output", RichLog).write(
+                "[#ef7177]No file open[/#ef7177]"
+            )
             return
         text_area = self.query_one("#editor", TextArea)
         self._current_file.write_text(text_area.text, encoding="utf-8")

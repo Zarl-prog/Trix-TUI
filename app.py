@@ -11,7 +11,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click, Key, MouseDown, MouseMove, MouseUp
 from textual.screen import Screen
 from textual.widget import Widget
-from textual.widgets import DirectoryTree, Input, Label, RichLog, TextArea
+from textual.widgets import DirectoryTree, Input, Label, RichLog, Static, TextArea
 from textual.theme import Theme
 
 
@@ -202,7 +202,7 @@ class TerminalWidget(Widget, can_focus=True):
 
 # ── Resizable divider ─────────────────────────────────────────────────────────
 
-class Divider(Widget):
+class Divider(Static):
     """Draggable 1-cell divider between two panels."""
 
     DEFAULT_CSS = """
@@ -215,7 +215,7 @@ class Divider(Widget):
     """
 
     def __init__(self, left_id: str, right_id: str, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__("", **kwargs)
         self._left_id = left_id
         self._right_id = right_id
         self._dragging = False

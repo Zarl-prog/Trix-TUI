@@ -3,16 +3,21 @@ import asyncio
 import json
 import sys
 
+import pyte
+import winpty
+
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.events import Click
+from textual.events import Click, Key
 from textual.screen import Screen
-from textual.widgets import Button, DirectoryTree, Input, Label, RichLog, TextArea
+from textual.widget import Widget
+from textual.widgets import DirectoryTree, Input, Label, RichLog, TextArea
 from textual.theme import Theme
 
 
+# ── Theme loading ─────────────────────────────────────────────────────────────
+
 def _load_themes() -> list[dict]:
-    """Load themes from ayu.json and build Textual Theme objects."""
     try:
         data = json.loads((Path(__file__).parent / "ayu.json").read_text())
     except Exception:
@@ -41,10 +46,149 @@ def _load_themes() -> list[dict]:
     return result
 
 
-THEMES = _load_themes() or [
-    {"name": "Ayu Dark", "slug": "textual-dark", "theme": None}
-]
+THEMES = _load_themes() or [{"name": "Ayu Dark", "slug": "textual-dark", "theme": None}]
 
+# Key name → bytes to send to PTY
+_KEY_MAP: dict[str, bytes] = {
+    "enter":      b"\r",
+    "backspace":  b"\x7f",
+    "delete":     b"\x1b[3~",
+    "tab":        b"\t",
+    "escape":     b"\x1b",
+    "up":         b"\x1b[A",
+    "down":       b"\x1b[B",
+    "right":      b"\x1b[C",
+    "left":       b"\x1b[D",
+    "home":       b"\x1b[H",
+    "end":        b"\x1b[F",
+    "pageup":     b"\x1b[5~",
+    "pagedown":   b"\x1b[6~",
+    "ctrl+c":     b"\x03",
+    "ctrl+d":     b"\x04",
+    "ctrl+l":     b"\x0c",
+    "ctrl+a":     b"\x01",
+    "ctrl+e":     b"\x05",
+    "ctrl+u":     b"\x15",
+    "ctrl+k":     b"\x0b",
+    "ctrl+w":     b"\x17",
+    "ctrl+z":     b"\x1a",
+}
+
+
+# ── Embedded terminal widget ──────────────────────────────────────────────────
+
+class TerminalWidget(Widget, can_focus=True):
+    """Embedded PowerShell terminal using winpty PTY + pyte screen emulator."""
+
+    COLS = 200
+    ROWS = 50
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._pty: winpty.PtyProcess | None = None
+        self._screen = pyte.Screen(self.COLS, self.ROWS)
+        self._stream = pyte.ByteStream(self._screen)
+        self._read_task: asyncio.Task | None = None
+        self._history: list[str] = []
+        self._hist_idx: int = -1
+
+    def compose(self) -> ComposeResult:
+        yield RichLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
+        yield Input(id="term-input", placeholder="PowerShell>")
+
+    def on_mount(self) -> None:
+        self._start_pty()
+        self.query_one("#term-input", Input).focus()
+
+    def _start_pty(self) -> None:
+        try:
+            self._pty = winpty.PtyProcess.spawn(
+                "powershell.exe",
+                dimensions=(self.ROWS, self.COLS),
+            )
+            self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
+        except Exception as e:
+            self.query_one("#term-output", RichLog).write(f"Failed to start PowerShell: {e}")
+
+    async def _read_loop(self) -> None:
+        log = self.query_one("#term-output", RichLog)
+        loop = asyncio.get_event_loop()
+        while self._pty and self._pty.isalive():
+            try:
+                data = await loop.run_in_executor(None, self._pty.read, 4096)
+                if not data:
+                    await asyncio.sleep(0.01)
+                    continue
+                raw = data.encode("utf-8", errors="replace") if isinstance(data, str) else data
+                self._stream.feed(raw)
+                # Render dirty lines from pyte screen
+                for line_idx in sorted(self._screen.dirty):
+                    line = self._screen.buffer[line_idx]
+                    text = "".join(c.data for c in (line[col] for col in range(self._screen.columns))).rstrip()
+                    if text:
+                        log.write(text)
+                self._screen.dirty.clear()
+            except Exception:
+                await asyncio.sleep(0.05)
+
+    def on_key(self, event: Key) -> None:
+        # Only handle keys when this widget (or its children) are focused
+        key = event.key
+        if key in _KEY_MAP:
+            event.prevent_default()
+            self._write_pty(_KEY_MAP[key])
+        # ctrl+c is handled by app binding — let terminal intercept it
+        # printable chars are handled via Input widget
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        cmd = event.value
+        inp = self.query_one("#term-input", Input)
+        inp.clear()
+        if cmd:
+            self._history.append(cmd)
+        self._hist_idx = -1
+        self._write_pty((cmd + "\r").encode())
+
+    def on_input_key(self, event) -> None:
+        pass  # handled below via Input's key events
+
+    def _on_input_key(self, event: Key) -> None:
+        """Intercept up/down inside the Input for history navigation."""
+        inp = self.query_one("#term-input", Input)
+        if event.key == "up" and self._history:
+            self._hist_idx = min(self._hist_idx + 1, len(self._history) - 1)
+            inp.value = self._history[-(self._hist_idx + 1)]
+            inp.cursor_position = len(inp.value)
+            event.prevent_default()
+        elif event.key == "down":
+            if self._hist_idx > 0:
+                self._hist_idx -= 1
+                inp.value = self._history[-(self._hist_idx + 1)]
+            else:
+                self._hist_idx = -1
+                inp.value = ""
+            inp.cursor_position = len(inp.value)
+            event.prevent_default()
+
+    def _write_pty(self, data: bytes) -> None:
+        if self._pty and self._pty.isalive():
+            try:
+                self._pty.write(data.decode("utf-8", errors="replace"))
+            except Exception:
+                pass
+
+    def write(self, text: str) -> None:
+        """Allow external code to write a message into the terminal log."""
+        self.query_one("#term-output", RichLog).write(text)
+
+    async def on_unmount(self) -> None:
+        if self._read_task:
+            self._read_task.cancel()
+        if self._pty and self._pty.isalive():
+            self._pty.terminate()
+
+
+# ── Folder picker modal ───────────────────────────────────────────────────────
 
 class FolderPicker(Screen):
     BINDINGS = [("escape", "cancel", "Cancel")]
@@ -54,7 +198,6 @@ class FolderPicker(Screen):
         align: center middle;
         background: rgba(0, 0, 0, 0.7);
     }
-
     #dialog {
         width: 50;
         height: auto;
@@ -62,16 +205,12 @@ class FolderPicker(Screen):
         background: #1f2127;
         border: solid #5ac1fe;
     }
-
     Label {
         width: 100%;
         margin-bottom: 1;
         color: #bfbdb6;
     }
-
-    #folder-path {
-        width: 100%;
-    }
+    #folder-path { width: 100%; }
     """
 
     def compose(self) -> ComposeResult:
@@ -85,6 +224,8 @@ class FolderPicker(Screen):
     def action_cancel(self) -> None:
         self.dismiss(None)
 
+
+# ── Main app ──────────────────────────────────────────────────────────────────
 
 class TrixApp(App):
     CSS = """
@@ -103,30 +244,17 @@ class TrixApp(App):
         border: solid #5ac1fe;
     }
 
-    #files-panel {
-        width: 20%;
-    }
-
-    #editor-panel {
-        width: 2fr;
-    }
-
-    #terminal-panel {
-        width: 2fr;
-    }
+    #files-panel  { width: 20%; }
+    #editor-panel { width: 2fr; }
+    #terminal-panel { width: 2fr; }
 
     DirectoryTree {
         height: 100%;
         background: #1f2127;
     }
 
-    DirectoryTree > .tree--cursor {
-        background: #3e4043;
-    }
-
-    DirectoryTree > .tree--highlight {
-        background: #3e4043;
-    }
+    DirectoryTree > .tree--cursor    { background: #3e4043; }
+    DirectoryTree > .tree--highlight { background: #3e4043; }
 
     TextArea {
         height: 100%;
@@ -134,50 +262,31 @@ class TrixApp(App):
         color: #bfbdb6;
     }
 
-    TextArea .text-area--gutter {
-        background: #0d1016;
-        color: #4b4c4e;
+    TextArea .text-area--gutter    { background: #0d1016; color: #4b4c4e; }
+    TextArea .text-area--cursor    { background: #5ac1fe; }
+    TextArea .text-area--selection { background: #1f2127; }
+
+    TerminalWidget {
+        height: 1fr;
+        layout: vertical;
     }
 
-    TextArea .text-area--cursor {
-        background: #5ac1fe;
-    }
-
-    TextArea .text-area--selection {
-        background: #1f2127;
-    }
-
-    #terminal-output {
+    #term-output {
         height: 1fr;
         background: #0d1016;
         color: #bfbdb6;
     }
 
-    #terminal-buttons {
-        height: auto;
+    #term-input {
+        height: 3;
         dock: bottom;
-        padding: 0 1;
-    }
-
-    #terminal-buttons Button {
-        min-width: 12;
-        margin: 0 1;
-        background: #1f2127;
+        background: #0d1016;
         color: #bfbdb6;
         border: solid #3f4043;
     }
 
-    Button:hover {
-        background: #2d2f34;
-    }
-
-    Button:focus {
+    #term-input:focus {
         border: solid #5ac1fe;
-    }
-
-    #terminal-input {
-        height: 3;
-        dock: bottom;
     }
 
     Input {
@@ -193,7 +302,6 @@ class TrixApp(App):
 
     BINDINGS = [
         ("q", "quit", "Quit"),
-        ("ctrl+c", "quit", "Quit"),
         ("ctrl+s", "save", "Save"),
         ("ctrl+o", "open_folder", "Open Folder"),
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
@@ -203,8 +311,6 @@ class TrixApp(App):
         super().__init__()
         self._current_file: Path | None = None
         self._has_changes = False
-        self._shell_process: asyncio.subprocess.Process | None = None
-        self._shell_output_task: asyncio.Task | None = None
         self._theme_index = 0
 
     def compose(self) -> ComposeResult:
@@ -214,18 +320,7 @@ class TrixApp(App):
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
             with Container(id="terminal-panel"):
-                yield RichLog(
-                    id="terminal-output",
-                    auto_scroll=True,
-                    highlight=True,
-                    markup=True,
-                )
-                with Horizontal(id="terminal-buttons"):
-                    yield Button("Clear", id="btn-clear")
-                    yield Button("Run File", id="btn-run-file")
-                    yield Button("Git Status", id="btn-git-status")
-                    yield Button("List Files", id="btn-list-files")
-                yield Input(id="terminal-input", placeholder="> ")
+                yield TerminalWidget(id="terminal")
 
     async def on_mount(self) -> None:
         for t in THEMES:
@@ -234,85 +329,19 @@ class TrixApp(App):
         self.query_one("#files-panel").border_title = " Files "
         self.query_one("#editor-panel").border_title = " Editor "
         self.query_one("#terminal-panel").border_title = " Terminal "
-        await self._start_shell()
 
-    async def _start_shell(self) -> None:
-        shells = ["bash", "zsh", "sh"]
-        if sys.platform == "win32":
-            shells = ["bash", "cmd", "powershell"]
-
-        output = self.query_one("#terminal-output", RichLog)
-
-        for shell in shells:
-            try:
-                self._shell_process = await asyncio.create_subprocess_exec(
-                    shell,
-                    stdin=asyncio.subprocess.PIPE,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.STDOUT,
-                )
-                output.write(f"[#aad84c]Shell started: {shell}[/#aad84c]")
-                self._shell_output_task = asyncio.create_task(self._read_shell_output())
-                return
-            except FileNotFoundError:
-                continue
-
-        output.write("[#ef7177]No shell found (tried bash, zsh, sh)[/#ef7177]")
-
-    async def _read_shell_output(self) -> None:
-        output = self.query_one("#terminal-output", RichLog)
-        while True:
-            try:
-                line = await self._shell_process.stdout.readline()
-                if not line:
-                    break
-                text = line.decode(errors="replace").rstrip()
-                output.write(text)
-            except Exception:
-                break
-
-    async def _send_to_shell(self, command: str) -> None:
-        if self._shell_process is None or self._shell_process.returncode is not None:
-            return
-        output = self.query_one("#terminal-output", RichLog)
-        output.write(f"[bold]$ {command}[/bold]")
-        self._shell_process.stdin.write((command + "\n").encode())
-        await self._shell_process.stdin.drain()
-
-    async def on_input_submitted(self, event: Input.Submitted) -> None:
-        command = event.value
-        self.query_one("#terminal-input", Input).clear()
-        if not command:
-            return
-        await self._send_to_shell(command)
-
-    async def on_button_pressed(self, event: Button.Pressed) -> None:
-        button_id = event.button.id
-        output = self.query_one("#terminal-output", RichLog)
-
-        if button_id == "btn-clear":
-            output.clear()
-        elif button_id == "btn-run-file":
-            if self._current_file is None:
-                output.write("[#ef7177]No file open[/#ef7177]")
-            else:
-                cmd = f"python {self._current_file}"
-                await self._send_to_shell(cmd)
-        elif button_id == "btn-git-status":
-            await self._send_to_shell("git status")
-        elif button_id == "btn-list-files":
-            await self._send_to_shell("dir" if sys.platform == "win32" else "ls")
+    # ── Click: focus terminal input when clicking terminal panel ──────────────
 
     def on_click(self, event: Click) -> None:
-        terminal = self.query_one("#terminal-panel")
-        inp = self.query_one("#terminal-input", Input)
-        if terminal.region.contains(event.screen_x, event.screen_y):
+        terminal_panel = self.query_one("#terminal-panel")
+        if terminal_panel.region.contains(event.screen_x, event.screen_y):
+            inp = self.query_one("#term-input", Input)
             if self.focused is not inp:
                 inp.focus()
 
-    def on_directory_tree_file_selected(
-        self, event: DirectoryTree.FileSelected
-    ) -> None:
+    # ── File tree ─────────────────────────────────────────────────────────────
+
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
         if not path.is_file():
             return
@@ -328,19 +357,27 @@ class TrixApp(App):
         self._update_editor_title()
 
     def on_text_area_changed(self) -> None:
-        if self._current_file is None:
-            return
-        if not self._has_changes:
+        if self._current_file and not self._has_changes:
             self._has_changes = True
             self._update_editor_title()
+
+    # ── Actions ───────────────────────────────────────────────────────────────
+
+    def action_save(self) -> None:
+        if self._current_file is None:
+            self.query_one("#terminal", TerminalWidget).write("[No file open]")
+            return
+        self._current_file.write_text(
+            self.query_one("#editor", TextArea).text, encoding="utf-8"
+        )
+        self._has_changes = False
+        self._update_editor_title()
 
     def action_cycle_theme(self) -> None:
         self._theme_index = (self._theme_index + 1) % len(THEMES)
         t = THEMES[self._theme_index]
-        self.theme = t["name"].lower().replace(" ", "-")
-        self.query_one("#terminal-output", RichLog).write(
-            f"Theme: [bold]{t['name']}[/bold]"
-        )
+        self.theme = t["slug"]
+        self.query_one("#terminal", TerminalWidget).write(f"Theme: {t['name']}")
 
     async def action_open_folder(self) -> None:
         path_str = await self.push_screen_wait(FolderPicker())
@@ -348,75 +385,37 @@ class TrixApp(App):
             return
         path = Path(path_str.strip())
         if not path.is_dir():
-            self.query_one("#terminal-output", RichLog).write(
-                f"[#ef7177]Invalid path: {path_str}[/#ef7177]"
-            )
+            self.query_one("#terminal", TerminalWidget).write(f"Invalid path: {path_str}")
             return
-        # Reload directory tree
-        tree = self.query_one(DirectoryTree)
-        tree.path = path
-        # Clear editor
+        self.query_one(DirectoryTree).path = path
         self._current_file = None
         self._has_changes = False
         self.query_one("#editor", TextArea).load_text("")
         self._update_editor_title()
-        # Update files panel title
         self.query_one("#files-panel").border_title = f" Files — {path.name} "
 
-    def action_save(self) -> None:
-        if self._current_file is None:
-            self.query_one("#terminal-output", RichLog).write(
-                "[#ef7177]No file open[/#ef7177]"
-            )
-            return
-        text_area = self.query_one("#editor", TextArea)
-        self._current_file.write_text(text_area.text, encoding="utf-8")
-        self._has_changes = False
-        self._update_editor_title()
+    # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _update_editor_title(self) -> None:
         panel = self.query_one("#editor-panel")
         if self._current_file is None:
             panel.border_title = " Editor "
         else:
-            name = self._current_file.name
             suffix = " *" if self._has_changes else ""
-            panel.border_title = f" Editor — {name}{suffix} "
+            panel.border_title = f" Editor — {self._current_file.name}{suffix} "
 
-    def _detect_language(self, path) -> str | None:
-        ext = path.suffix.lower()
-        mapping = {
-            ".py": "python",
-            ".js": "javascript",
-            ".jsx": "javascript",
-            ".ts": "typescript",
-            ".tsx": "typescript",
-            ".json": "json",
-            ".html": "html",
-            ".htm": "html",
-            ".css": "css",
-            ".md": "markdown",
-            ".yaml": "yaml",
-            ".yml": "yaml",
-            ".toml": "toml",
-            ".sql": "sql",
-            ".rs": "rust",
-            ".go": "go",
-            ".c": "c",
-            ".cpp": "cpp",
-            ".h": "c",
-            ".hpp": "cpp",
-            ".java": "java",
-            ".sh": "bash",
-            ".bash": "bash",
-            ".rb": "ruby",
-            ".php": "php",
-            ".xml": "xml",
-            ".svg": "xml",
-        }
-        return mapping.get(ext)
+    def _detect_language(self, path: Path) -> str | None:
+        return {
+            ".py": "python", ".js": "javascript", ".jsx": "javascript",
+            ".ts": "typescript", ".tsx": "typescript", ".json": "json",
+            ".html": "html", ".htm": "html", ".css": "css", ".md": "markdown",
+            ".yaml": "yaml", ".yml": "yaml", ".toml": "toml", ".sql": "sql",
+            ".rs": "rust", ".go": "go", ".c": "c", ".cpp": "cpp",
+            ".h": "c", ".hpp": "cpp", ".java": "java", ".sh": "bash",
+            ".bash": "bash", ".rb": "ruby", ".php": "php",
+            ".xml": "xml", ".svg": "xml",
+        }.get(path.suffix.lower())
 
 
 if __name__ == "__main__":
-    app = TrixApp()
-    app.run()
+    TrixApp().run()

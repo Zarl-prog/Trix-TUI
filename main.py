@@ -8,7 +8,7 @@ from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
-from screens import FolderPicker, HelpScreen
+from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen
 
 
 class TrixApp(App):
@@ -103,13 +103,26 @@ class TrixApp(App):
     """
 
     BINDINGS = [
+        ("ctrl+q", "quit_app", "Quit"),
         ("q", "quit", "Quit"),
         ("ctrl+s", "save", "Save"),
+        ("ctrl+n", "new_file", "New File"),
+        ("ctrl+w", "close_file", "Close File"),
         ("ctrl+o", "open_folder", "Open Folder"),
+        ("ctrl+r", "reload_tree", "Reload Tree"),
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
         ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash", "zen_mode", "Zen Mode"),
+        ("ctrl+1", "focus_files", "Focus Files"),
+        ("ctrl+2", "focus_editor", "Focus Editor"),
+        ("ctrl+3", "focus_terminal", "Focus Terminal"),
+        ("ctrl+right_square_bracket", "cycle_panels", "Cycle Panels"),
+        ("ctrl+z", "editor_undo", "Undo"),
+        ("ctrl+y", "editor_redo", "Redo"),
+        ("ctrl+a", "editor_select_all", "Select All"),
+        ("ctrl+underscore", "editor_comment", "Toggle Comment"),
+        ("ctrl+d", "editor_duplicate", "Duplicate Line"),
         ("question_mark", "show_help", "Help"),
     ]
 
@@ -242,6 +255,99 @@ class TrixApp(App):
         self.query_one("#editor", TextArea).load_text("")
         self._update_editor_title()
         self.query_one("#files-panel").border_title = f" Files — {path.name} "
+
+    # ── Navigation ────────────────────────────────────────────────────────────
+
+    def action_focus_files(self) -> None:
+        self.query_one(DirectoryTree).focus()
+
+    def action_focus_editor(self) -> None:
+        self.query_one("#editor", TextArea).focus()
+
+    def action_focus_terminal(self) -> None:
+        self.query_one("#term-input", Input).focus()
+
+    def action_cycle_panels(self) -> None:
+        panels = [self.query_one(DirectoryTree), self.query_one("#editor", TextArea),
+                  self.query_one("#term-input", Input)]
+        focused = self.focused
+        for i, w in enumerate(panels):
+            if w is focused or (hasattr(focused, 'id') and focused is w):
+                panels[(i + 1) % len(panels)].focus()
+                return
+        panels[0].focus()
+
+    # ── File operations ───────────────────────────────────────────────────────
+
+    async def action_new_file(self) -> None:
+        name = await self.push_screen_wait(NewFileScreen())
+        if not name:
+            return
+        tree = self.query_one(DirectoryTree)
+        root = Path(str(tree.path))
+        new_path = root / name.strip()
+        try:
+            new_path.touch()
+        except Exception as e:
+            self.query_one("#terminal", TerminalWidget).write(f"Error: {e}")
+            return
+        tree.reload()
+        self.query_one("#editor", TextArea).load_text("")
+        self._current_file = new_path
+        self._has_changes = False
+        self._update_editor_title()
+
+    def action_close_file(self) -> None:
+        self.query_one("#editor", TextArea).load_text("")
+        self._current_file = None
+        self._has_changes = False
+        self._update_editor_title()
+
+    async def action_quit_app(self) -> None:
+        if self._has_changes:
+            confirmed = await self.push_screen_wait(
+                ConfirmScreen("Unsaved changes. Quit anyway?")
+            )
+            if not confirmed:
+                return
+        self.exit()
+
+    def action_reload_tree(self) -> None:
+        self.query_one(DirectoryTree).reload()
+
+    # ── Editor actions ────────────────────────────────────────────────────────
+
+    def action_editor_undo(self) -> None:
+        ta = self.query_one("#editor", TextArea)
+        ta.action_undo()
+
+    def action_editor_redo(self) -> None:
+        ta = self.query_one("#editor", TextArea)
+        ta.action_redo()
+
+    def action_editor_select_all(self) -> None:
+        ta = self.query_one("#editor", TextArea)
+        ta.action_select_all()
+
+    def action_editor_comment(self) -> None:
+        ta = self.query_one("#editor", TextArea)
+        row, _ = ta.cursor_location
+        line = ta.document.get_line(row)
+        stripped = line.lstrip()
+        indent = line[: len(line) - len(stripped)]
+        if stripped.startswith("# "):
+            new_line = indent + stripped[2:]
+        elif stripped.startswith("#"):
+            new_line = indent + stripped[1:]
+        else:
+            new_line = indent + "# " + stripped
+        ta.replace(new_line, (row, 0), (row, len(line)))
+
+    def action_editor_duplicate(self) -> None:
+        ta = self.query_one("#editor", TextArea)
+        row, _ = ta.cursor_location
+        line = ta.document.get_line(row)
+        ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
     def _update_editor_title(self) -> None:
         panel = self.query_one("#editor-panel")

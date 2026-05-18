@@ -109,6 +109,7 @@ class TrixApp(App):
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
         ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
+        ("ctrl+shift+z", "zen_mode", "Zen Mode"),
         ("question_mark", "show_help", "Help"),
     ]
 
@@ -118,6 +119,7 @@ class TrixApp(App):
         self._has_changes = False
         self._theme_index = 0
         self._filetree_visible = True
+        self._zen_mode = False
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -171,6 +173,18 @@ class TrixApp(App):
         if self._current_file and not self._has_changes:
             self._has_changes = True
             self._update_editor_title()
+
+    def action_zen_mode(self) -> None:
+        self._zen_mode = not self._zen_mode
+        show = not self._zen_mode
+        self.query_one("#files-panel").display = show and self._filetree_visible
+        self.query_one("#divider-files").display = show and self._filetree_visible
+        self.query_one("#terminal-panel").display = show
+        # second divider has no id — query by type, skip first
+        dividers = list(self.query(Divider))
+        if len(dividers) > 1:
+            dividers[1].display = show
+        self.query_one("#help-hint").display = show
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())

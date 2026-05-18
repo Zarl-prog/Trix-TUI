@@ -1,5 +1,6 @@
 from pathlib import Path
 import asyncio
+import json
 import sys
 
 from textual.app import App, ComposeResult
@@ -7,6 +8,40 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click
 from textual.screen import Screen
 from textual.widgets import Button, DirectoryTree, Input, Label, RichLog, TextArea
+
+
+def _load_themes() -> list[dict]:
+    """Load themes from ayu.json, mapping Zed style keys to CSS variables."""
+    try:
+        data = json.loads((Path(__file__).parent / "ayu.json").read_text())
+    except Exception:
+        return []
+    result = []
+    for t in data["themes"]:
+        s = t["style"]
+        result.append({
+            "name": t["name"],
+            "bg": s.get("background", "#313337")[:7],
+            "surface": s.get("surface.background", "#1f2127")[:7],
+            "editor_bg": s.get("toolbar.background", "#0d1016")[:7],
+            "text": s.get("text", "#bfbdb6")[:7],
+            "text_muted": s.get("text.muted", "#8a8986")[:7],
+            "accent": s.get("text.accent", "#5ac1fe")[:7],
+            "border": s.get("border", "#3f4043")[:7],
+            "border_focused": s.get("text.accent", "#5ac1fe")[:7],
+            "selection": s.get("element.active", "#3e4043")[:7],
+        })
+    return result
+
+
+THEMES = _load_themes() or [
+    {
+        "name": "Ayu Dark",
+        "bg": "#313337", "surface": "#1f2127", "editor_bg": "#0d1016",
+        "text": "#bfbdb6", "text_muted": "#8a8986", "accent": "#5ac1fe",
+        "border": "#3f4043", "border_focused": "#5ac1fe", "selection": "#3e4043",
+    }
+]
 
 
 class FolderPicker(Screen):
@@ -159,6 +194,7 @@ class TrixApp(App):
         ("ctrl+c", "quit", "Quit"),
         ("ctrl+s", "save", "Save"),
         ("ctrl+o", "open_folder", "Open Folder"),
+        ("ctrl+t", "cycle_theme", "Cycle Theme"),
     ]
 
     def __init__(self):
@@ -167,6 +203,7 @@ class TrixApp(App):
         self._has_changes = False
         self._shell_process: asyncio.subprocess.Process | None = None
         self._shell_output_task: asyncio.Task | None = None
+        self._theme_index = 0
 
     def compose(self) -> ComposeResult:
         with Horizontal():
@@ -291,6 +328,14 @@ class TrixApp(App):
         if not self._has_changes:
             self._has_changes = True
             self._update_editor_title()
+
+    def action_cycle_theme(self) -> None:
+        self._theme_index = (self._theme_index + 1) % len(THEMES)
+        t = THEMES[self._theme_index]
+        self.theme = t["name"].lower().replace(" ", "-")
+        self.query_one("#terminal-output", RichLog).write(
+            f"Theme: [bold]{t['name']}[/bold]"
+        )
 
     async def action_open_folder(self) -> None:
         path_str = await self.push_screen_wait(FolderPicker())

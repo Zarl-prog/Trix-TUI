@@ -351,7 +351,10 @@ class TrixApp(App):
             return
         text_area = self.query_one("#editor", TextArea)
         text_area.load_text(content)
-        text_area.language = self._detect_language(path)
+        try:
+            text_area.language = self._detect_language(path)
+        except Exception:
+            text_area.language = None
         self._current_file = path
         self._has_changes = False
         self._update_editor_title()

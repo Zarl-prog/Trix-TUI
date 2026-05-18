@@ -109,7 +109,7 @@ class TrixApp(App):
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
         ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
-        ("f11", "zen_mode", "Zen Mode"),
+        ("ctrl+backslash", "zen_mode", "Zen Mode"),
         ("question_mark", "show_help", "Help"),
     ]
 
@@ -177,14 +177,15 @@ class TrixApp(App):
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode
         show = not self._zen_mode
+        editor = self.query_one("#editor-panel")
         self.query_one("#files-panel").display = show and self._filetree_visible
         self.query_one("#divider-files").display = show and self._filetree_visible
         self.query_one("#terminal-panel").display = show
-        # second divider has no id — query by type, skip first
         dividers = list(self.query(Divider))
         if len(dividers) > 1:
             dividers[1].display = show
         self.query_one("#help-hint").display = show
+        editor.styles.width = "1fr" if show else "100%"
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())

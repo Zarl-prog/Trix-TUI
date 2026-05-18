@@ -6,7 +6,7 @@ from textual.widgets import Input, Label, Static
 _HELP = """\
  [bold #5ac1fe]Layout[/bold #5ac1fe]
    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
-   [#bfbdb6]F11[/#bfbdb6]              Zen Mode (Editor only)
+   [#bfbdb6]Ctrl+\[/#bfbdb6]           Zen Mode (Editor only)
    [#bfbdb6]Ctrl+O[/#bfbdb6]           Open Folder
 
  [bold #5ac1fe]Editor[/bold #5ac1fe]

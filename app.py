@@ -8,7 +8,7 @@ import winpty
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.events import Click, Key
+from textual.events import Click, Key, MouseDown, MouseMove, MouseUp
 from textual.screen import Screen
 from textual.widget import Widget
 from textual.widgets import DirectoryTree, Input, Label, RichLog, TextArea
@@ -191,6 +191,56 @@ class TerminalWidget(Widget, can_focus=True):
             self._pty.terminate()
 
 
+# ── Resizable divider ─────────────────────────────────────────────────────────
+
+class Divider(Widget):
+    """Draggable 1-cell divider between two panels."""
+
+    DEFAULT_CSS = """
+    Divider {
+        width: 1;
+        height: 100%;
+        background: #3f4043;
+        cursor: col-resize;
+    }
+    Divider:hover { background: #5ac1fe; }
+    """
+
+    def __init__(self, left_id: str, right_id: str, **kwargs):
+        super().__init__(**kwargs)
+        self._left_id = left_id
+        self._right_id = right_id
+        self._dragging = False
+        self._start_x = 0
+        self._left_w = 0
+        self._right_w = 0
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        self._dragging = True
+        self._start_x = event.screen_x
+        left = self.app.query_one(f"#{self._left_id}")
+        right = self.app.query_one(f"#{self._right_id}")
+        self._left_w = left.size.width
+        self._right_w = right.size.width
+        self.capture_mouse()
+        event.stop()
+
+    def on_mouse_move(self, event: MouseMove) -> None:
+        if not self._dragging:
+            return
+        delta = event.screen_x - self._start_x
+        new_left = max(5, self._left_w + delta)
+        new_right = max(5, self._right_w - delta)
+        self.app.query_one(f"#{self._left_id}").styles.width = new_left
+        self.app.query_one(f"#{self._right_id}").styles.width = new_right
+        event.stop()
+
+    def on_mouse_up(self, event: MouseUp) -> None:
+        self._dragging = False
+        self.release_mouse()
+        event.stop()
+
+
 # ── Folder picker modal ───────────────────────────────────────────────────────
 
 class FolderPicker(Screen):
@@ -247,9 +297,9 @@ class TrixApp(App):
         border: solid #5ac1fe;
     }
 
-    #files-panel  { width: 20%; }
-    #editor-panel { width: 2fr; }
-    #terminal-panel { width: 2fr; }
+    #files-panel  { width: 20%; min-width: 5; }
+    #editor-panel { width: 2fr; min-width: 5; }
+    #terminal-panel { width: 2fr; min-width: 5; }
 
     DirectoryTree {
         height: 100%;
@@ -321,8 +371,10 @@ class TrixApp(App):
         with Horizontal():
             with Container(id="files-panel"):
                 yield DirectoryTree(".")
+            yield Divider("files-panel", "editor-panel")
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
+            yield Divider("editor-panel", "terminal-panel")
             with Container(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
 

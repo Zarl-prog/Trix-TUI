@@ -14,6 +14,72 @@ from textual.widget import Widget
 from textual.widgets import DirectoryTree, Input, Label, RichLog, Static, TextArea
 from textual.theme import Theme
 
+_HELP = """\
+ [bold #5ac1fe]Layout[/bold #5ac1fe]
+   [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
+   [#bfbdb6]Ctrl+O[/#bfbdb6]           Open Folder
+
+ [bold #5ac1fe]Editor[/bold #5ac1fe]
+   [#bfbdb6]Ctrl+S[/#bfbdb6]           Save File
+   [#bfbdb6]Ctrl+T[/#bfbdb6]           Cycle Theme
+
+ [bold #5ac1fe]Terminal[/bold #5ac1fe]
+   [#bfbdb6]Ctrl+C[/#bfbdb6]           Copy selection / Interrupt
+   [#bfbdb6]Ctrl+Shift+C[/#bfbdb6]     Copy Selected Text
+   [#bfbdb6]↑ ↓[/#bfbdb6]              Command History
+   [#bfbdb6]cls[/#bfbdb6]              Clear Terminal
+
+ [bold #5ac1fe]General[/bold #5ac1fe]
+   [#bfbdb6]?[/#bfbdb6]                Show This Help
+   [#bfbdb6]Q[/#bfbdb6]                Quit App\
+"""
+
+
+# ── Help modal ────────────────────────────────────────────────────────────────
+
+class HelpScreen(Screen):
+    BINDINGS = [("escape", "dismiss", "Close"), ("question_mark", "dismiss", "Close")]
+
+    CSS = """
+    HelpScreen {
+        align: center middle;
+        background: rgba(0,0,0,0.75);
+    }
+    #help-dialog {
+        width: 52;
+        height: auto;
+        padding: 1 2;
+        background: #1f2127;
+        border: solid #5ac1fe;
+    }
+    #help-title {
+        width: 100%;
+        text-align: center;
+        color: #5ac1fe;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #help-body {
+        width: 100%;
+        color: #bfbdb6;
+    }
+    #help-close {
+        width: 100%;
+        text-align: center;
+        color: #8a8986;
+        margin-top: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="help-dialog"):
+            yield Label("⌨  Keyboard Shortcuts", id="help-title")
+            yield Static(_HELP, id="help-body", markup=True)
+            yield Label("Press [bold]Escape[/bold] or [bold]?[/bold] to close", id="help-close", markup=True)
+
+    def action_dismiss(self) -> None:
+        self.dismiss()
+
 
 # ── Theme loading ─────────────────────────────────────────────────────────────
 
@@ -369,6 +435,16 @@ class TrixApp(App):
     Input:focus {
         border: solid #5ac1fe;
     }
+
+    #help-hint {
+        dock: bottom;
+        align-horizontal: right;
+        width: auto;
+        background: #1f2127;
+        color: #5ac1fe;
+        text-style: bold;
+        height: 1;
+    }
     """
 
     BINDINGS = [
@@ -378,6 +454,7 @@ class TrixApp(App):
         ("ctrl+t", "cycle_theme", "Cycle Theme"),
         ("ctrl+shift+c", "copy_selection", "Copy"),
         ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
+        ("question_mark", "show_help", "Help"),
     ]
 
     def __init__(self):
@@ -397,6 +474,7 @@ class TrixApp(App):
             yield Divider("editor-panel", "terminal-panel")
             with Container(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
+        yield Static("  ? Help ", id="help-hint", markup=False)
 
     async def on_mount(self) -> None:
         for t in THEMES:
@@ -444,6 +522,9 @@ class TrixApp(App):
             self._update_editor_title()
 
     # ── Actions ───────────────────────────────────────────────────────────────
+
+    def action_show_help(self) -> None:
+        self.push_screen(HelpScreen())
 
     def action_toggle_filetree(self) -> None:
         panel = self.query_one("#files-panel")

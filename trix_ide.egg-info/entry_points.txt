@@ -1,0 +1,2 @@
+[console_scripts]
+trix = trix.main:main

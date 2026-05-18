@@ -8,10 +8,11 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click
 from textual.screen import Screen
 from textual.widgets import Button, DirectoryTree, Input, Label, RichLog, TextArea
+from textual.theme import Theme
 
 
 def _load_themes() -> list[dict]:
-    """Load themes from ayu.json, mapping Zed style keys to CSS variables."""
+    """Load themes from ayu.json and build Textual Theme objects."""
     try:
         data = json.loads((Path(__file__).parent / "ayu.json").read_text())
     except Exception:
@@ -19,28 +20,29 @@ def _load_themes() -> list[dict]:
     result = []
     for t in data["themes"]:
         s = t["style"]
-        result.append({
-            "name": t["name"],
-            "bg": s.get("background", "#313337")[:7],
-            "surface": s.get("surface.background", "#1f2127")[:7],
-            "editor_bg": s.get("toolbar.background", "#0d1016")[:7],
-            "text": s.get("text", "#bfbdb6")[:7],
-            "text_muted": s.get("text.muted", "#8a8986")[:7],
-            "accent": s.get("text.accent", "#5ac1fe")[:7],
-            "border": s.get("border", "#3f4043")[:7],
-            "border_focused": s.get("text.accent", "#5ac1fe")[:7],
-            "selection": s.get("element.active", "#3e4043")[:7],
-        })
+        name = t["name"]
+        slug = name.lower().replace(" ", "-")
+        dark = t.get("appearance", "dark") == "dark"
+        theme = Theme(
+            name=slug,
+            primary=s.get("text.accent", "#5ac1fe")[:7],
+            secondary=s.get("text.muted", "#8a8986")[:7],
+            accent=s.get("text.accent", "#5ac1fe")[:7],
+            background=s.get("background", "#313337")[:7],
+            surface=s.get("surface.background", "#1f2127")[:7],
+            panel=s.get("elevated_surface.background", "#1f2127")[:7],
+            foreground=s.get("text", "#bfbdb6")[:7],
+            error=s.get("error", "#ef7177")[:7],
+            success=s.get("success", "#aad84c")[:7],
+            warning=s.get("warning", "#e6b450")[:7],
+            dark=dark,
+        )
+        result.append({"name": name, "slug": slug, "theme": theme})
     return result
 
 
 THEMES = _load_themes() or [
-    {
-        "name": "Ayu Dark",
-        "bg": "#313337", "surface": "#1f2127", "editor_bg": "#0d1016",
-        "text": "#bfbdb6", "text_muted": "#8a8986", "accent": "#5ac1fe",
-        "border": "#3f4043", "border_focused": "#5ac1fe", "selection": "#3e4043",
-    }
+    {"name": "Ayu Dark", "slug": "textual-dark", "theme": None}
 ]
 
 
@@ -226,6 +228,9 @@ class TrixApp(App):
                 yield Input(id="terminal-input", placeholder="> ")
 
     async def on_mount(self) -> None:
+        for t in THEMES:
+            if t["theme"] is not None:
+                self.register_theme(t["theme"])
         self.query_one("#files-panel").border_title = " Files "
         self.query_one("#editor-panel").border_title = " Editor "
         self.query_one("#terminal-panel").border_title = " Terminal "

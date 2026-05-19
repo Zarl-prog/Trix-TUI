@@ -8,12 +8,11 @@ from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import Input, RichLog
 
+_ANSI  = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
 _CLEAR = re.compile(r"\x1b\[(?:2J|3J|\d*J)")
 
 
 class TerminalOutputLog(RichLog):
-    """Custom log output for terminal widget that propagates click to focus the input bar."""
-
     def on_click(self, event: Click) -> None:
         parent = self.parent
         if parent and hasattr(parent, "input_bar"):
@@ -50,20 +49,22 @@ class TerminalWidget(Widget, can_focus=True):
 
     def compose(self) -> ComposeResult:
         yield TerminalOutputLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
-        yield Input(id="term-input", placeholder="❯")
+        yield Input(id="term-input", placeholder=">")
 
     def on_mount(self) -> None:
         self._start_pty()
 
     def _start_pty(self) -> None:
+        log = self.query_one("#term-output", RichLog)
         try:
             self._pty = winpty.PtyProcess.spawn(
                 "powershell.exe",
                 dimensions=(self.ROWS, self.COLS),
             )
             self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
+            log.write("PowerShell ready.")
         except Exception as e:
-            self.query_one("#term-output", RichLog).write(f"Failed to start PowerShell: {e}")
+            log.write(f"[ERROR] Failed to start PowerShell: {e}")
 
     async def _read_loop(self) -> None:
         log = self.query_one("#term-output", RichLog)
@@ -81,11 +82,12 @@ class TerminalWidget(Widget, can_focus=True):
                     buf = _CLEAR.sub("", buf)
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
-                    line = line.rstrip("\r")
-                    if line.strip():
-                        log.write(line, markup=False, highlight=True)
-            except Exception:
-                await asyncio.sleep(0.05)
+                    line = _ANSI.sub("", line).rstrip("\r")
+                    if line != "":
+                        log.write(line)
+            except Exception as e:
+                log.write(f"[READ ERROR] {e}")
+                await asyncio.sleep(0.1)
 
     def on_key(self, event: Key) -> None:
         key = event.key
@@ -119,26 +121,26 @@ class TerminalWidget(Widget, can_focus=True):
                     self.app.copy_to_clipboard(text)
                     self.app.notify("Copied to clipboard")
                     return
-            self._write_pty(b"\x03")
+            self._write_pty("\x03")
         elif key == "ctrl+z":
             event.prevent_default()
-            self._write_pty(b"\x1a")
+            self._write_pty("\x1a")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         cmd = event.value
         self.query_one("#term-input", Input).clear()
         if cmd:
             self._history.append(cmd)
-            self.query_one("#term-output", RichLog).write(f"❯ {cmd}")
+            self.query_one("#term-output", RichLog).write(f"> {cmd}")
         self._hist_idx = -1
-        self._write_pty((cmd + "\r").encode())
+        self._write_pty(cmd + "\r\n")
 
-    def _write_pty(self, data: bytes) -> None:
+    def _write_pty(self, data: str) -> None:
         if self._pty and self._pty.isalive():
             try:
-                self._pty.write(data.decode("utf-8", errors="replace"))
-            except Exception:
-                pass
+                self._pty.write(data)
+            except Exception as e:
+                self.query_one("#term-output", RichLog).write(f"[WRITE ERROR] {e}")
 
     def write(self, text: str) -> None:
         self.query_one("#term-output", RichLog).write(text)

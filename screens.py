@@ -236,6 +236,11 @@ class SplashScreen(Screen):
         align: center middle;
         background: #0d1016;
     }
+    #splash-container {
+        align: center middle;
+        width: 100%;
+        height: 100%;
+    }
     #splash-logo {
         text-align: center;
         color: #5ac1fe;
@@ -296,7 +301,7 @@ class SplashScreen(Screen):
             "   ██║   ██║  ██║██║██╔╝ ██╗\n"
             "   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
         )
-        with Vertical(align_horizontal="center"):
+        with Vertical(id="splash-container"):
             yield Static(logo, id="splash-logo")
             yield Label("Your Terminal. Reimagined.", id="splash-tagline")
             yield Label(self.version, id="splash-version")

@@ -51,7 +51,17 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 - Open, edit, and save files with `Ctrl+S`
 - Inline search with `Ctrl+F` — highlights matches, jump with `Enter`
 - Global search across all files with `Ctrl+Shift+F`
-- Create new files directly from the file tree with `N`
+- Create new files with `Ctrl+N`
+- Rename files with `F2`
+- Delete files with `Delete` (focus file tree first)
+- Undo / Redo with `Ctrl+Z` / `Ctrl+Y`
+- Duplicate line with `Ctrl+D`
+- Toggle comment with `Ctrl+_`
+
+**Git**
+- Git History popup with `Ctrl+G` — floating modal overlay
+- Two-column view: commit list on the left, commit details + files changed on the right
+- Copy commit hash with `C`, navigate with `↑↓`, preview with `Enter`
 
 **Terminal**
 - Fully embedded native PowerShell via winpty
@@ -62,16 +72,23 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 **Layout**
 - Resizable panels — drag the dividers to resize
 - Toggle file tree with `Ctrl+B`
-- Zen mode — fullscreen editor focus with `Ctrl+Shift+Z`
-- Horizontal/vertical layout toggle with `Ctrl+Shift+H`
+- Zen mode — fullscreen editor focus with `Ctrl+\`
+- Cycle panels with `Ctrl+]`
 
 **Themes**
 - Built-in Ayu Dark, Ayu Light, and Ayu Mirage themes
 - Cycle themes with `Ctrl+T`
+- Theme picker with `Ctrl+Shift+T`
+
+**Status Bar**
+- Live line and column indicator
+- Current git branch
+- Active theme name
+- File language detection
 
 **Keyboard First**
 - Full keyboard shortcut system
-- Press `?` anytime to see all shortcuts
+- Press `F1` anytime to see all shortcuts
 - Global shortcuts work from any panel
 
 ---
@@ -130,18 +147,21 @@ python main.py
 | `Ctrl+F` | Search in file |
 | `Ctrl+Shift+F` | Search across all files |
 | `Ctrl+B` | Toggle file tree |
-| `Ctrl+Shift+Z` | Zen mode |
-| `Ctrl+Shift+H` | Toggle layout direction |
+| `Ctrl+\` | Zen mode |
+| `Ctrl+]` | Cycle panels |
 | `Ctrl+T` | Cycle themes |
-| `Ctrl+1` | Focus file tree |
-| `Ctrl+2` | Focus editor |
-| `Ctrl+3` | Focus terminal |
+| `Ctrl+Shift+T` | Theme picker |
+| `Ctrl+G` | Git History |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y` | Redo |
-| `Ctrl+/` | Toggle comment |
+| `Ctrl+A` | Select all |
+| `Ctrl+_` | Toggle comment |
 | `Ctrl+D` | Duplicate line |
+| `Ctrl+R` | Reload file tree |
+| `F2` | Rename file |
+| `Delete` | Delete file (focus file tree first) |
 | `Ctrl+Q` | Quit |
-| `?` | Show all shortcuts |
+| `F1` | Show all shortcuts |
 
 ---
 
@@ -156,9 +176,11 @@ python main.py
 
 ## Roadmap
 
-- [ ] Status bar (line, column, git branch, file type)
-- [ ] TRIX splash screen + branding
-- [ ] File rename and delete operations
+- [x] Status bar (line, column, git branch, file type)
+- [x] TRIX splash screen + branding
+- [x] File rename and delete operations
+- [x] Git History popup (commit list, diff preview, copy hash)
+- [x] Theme picker with live preview
 - [ ] Multi-file tabs
 - [ ] Git integration (status indicators, commit, push, pull)
 - [ ] Claude AI integration

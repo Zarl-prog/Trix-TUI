@@ -15,26 +15,26 @@ EDITOR_SEARCH_CSS = """
 EditorSearch {
     height: auto;
     dock: top;
-    background: var(--panel);
-    border-bottom: solid var(--border);
+    background: #1f2127;
+    border-bottom: solid #3f4043;
     padding: 0 1;
     layout: horizontal;
 }
 EditorSearch Input {
     width: 1fr;
     height: 3;
-    border: solid var(--border);
-    background: var(--background);
-    color: var(--text);
+    border: solid #3f4043;
+    background: #0d1016;
+    color: #bfbdb6;
 }
 EditorSearch Input:focus {
-    border: solid var(--border-focused);
+    border: solid #5ac1fe;
 }
 #search-count {
     width: auto;
     height: 3;
     content-align: center middle;
-    color: var(--text-muted);
+    color: #4b4c4e;
     padding: 0 1;
 }
 """
@@ -133,36 +133,36 @@ GLOBAL_SEARCH_CSS = """
 GlobalSearch {
     height: auto;
     dock: top;
-    background: var(--panel);
-    border-bottom: solid var(--border);
+    background: #1f2127;
+    border-bottom: solid #3f4043;
     padding: 0 1;
     layout: vertical;
 }
 GlobalSearch Input {
     width: 1fr;
     height: 3;
-    border: solid var(--border);
-    background: var(--background);
-    color: var(--text);
+    border: solid #3f4043;
+    background: #0d1016;
+    color: #bfbdb6;
 }
 GlobalSearch Input:focus {
-    border: solid var(--border-focused);
+    border: solid #5ac1fe;
 }
 #global-results {
     height: 10;
-    background: var(--background);
-    border: solid var(--border);
+    background: #0d1016;
+    border: solid #3f4043;
 }
 GlobalSearch ListItem {
     padding: 0 1;
-    color: var(--text);
-    background: var(--background);
+    color: #bfbdb6;
+    background: #0d1016;
 }
 GlobalSearch ListItem:hover {
-    background: var(--border);
+    background: #3f4043;
 }
 GlobalSearch ListView:focus > ListItem.--highlight {
-    background: var(--accent);
+    background: #5ac1fe;
 }
 """
 register_css_template("global_search", GLOBAL_SEARCH_CSS)

@@ -99,10 +99,10 @@ ConfirmScreen {
     width: 44;
     height: auto;
     padding: 2;
-    background: var(--panel);
-    border: solid var(--error);
+    background: #1f2127;
+    border: solid #ef7177;
 }
-#cf-msg { width: 100%; color: var(--text); margin-bottom: 1; }
+#cf-msg { width: 100%; color: #bfbdb6; margin-bottom: 1; }
 #cf-buttons { height: auto; layout: horizontal; }
 ConfirmScreen Button { margin: 0 1; }
 """
@@ -141,10 +141,10 @@ NewFileScreen {
     width: 50;
     height: auto;
     padding: 2;
-    background: var(--panel);
-    border: solid var(--border-focused);
+    background: #1f2127;
+    border: solid #5ac1fe;
 }
-NewFileScreen Label { width: 100%; margin-bottom: 1; color: var(--text); }
+NewFileScreen Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
 #nf-input { width: 100%; }
 """
 register_css_template("new_file_screen", NEW_FILE_SCREEN_CSS)
@@ -175,10 +175,10 @@ RenameScreen {
     width: 50;
     height: auto;
     padding: 2;
-    background: var(--panel);
-    border: solid var(--border-focused);
+    background: #1f2127;
+    border: solid #5ac1fe;
 }
-RenameScreen Label { width: 100%; margin-bottom: 1; color: var(--text); }
+RenameScreen Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
 #rn-input { width: 100%; }
 """
 register_css_template("rename_screen", RENAME_SCREEN_CSS)
@@ -218,13 +218,13 @@ FolderPicker {
     width: 50;
     height: auto;
     padding: 2;
-    background: var(--panel);
-    border: solid var(--border-focused);
+    background: #1f2127;
+    border: solid #5ac1fe;
 }
 FolderPicker Label {
     width: 100%;
     margin-bottom: 1;
-    color: var(--text);
+    color: #bfbdb6;
 }
 #folder-path { width: 100%; }
 """
@@ -370,25 +370,25 @@ ThemePickerScreen {
     width: 36;
     height: 18;
     padding: 1 2;
-    background: var(--panel);
-    border: solid var(--border-focused);
+    background: #1f2127;
+    border: solid #5ac1fe;
 }
 #tp-title {
     width: 100%;
     text-align: center;
-    color: var(--accent);
+    color: #5ac1fe;
     text-style: bold;
     margin-bottom: 1;
 }
 #tp-list {
-    background: var(--background);
+    background: #0d1016;
     border: none;
     height: 1fr;
 }
 #tp-hint {
     width: 100%;
     text-align: center;
-    color: var(--text-muted);
+    color: #4b4c4e;
     margin-top: 1;
 }
 """

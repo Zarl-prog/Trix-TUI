@@ -620,44 +620,61 @@ class TrixApp(App):
         self._has_changes = False
         self._refresh_ui()
 
+    def _get_target_path(self) -> "Path | None":
+        """Return the file to operate on: open file first, then tree selection."""
+        if self._current_file is not None:
+            return self._current_file
+        try:
+            tree = self.screen.query_one(DirectoryTree)
+            node = tree.cursor_node
+            if node and node.data and node.data.path.is_file():
+                return node.data.path
+        except Exception:
+            pass
+        return None
+
     @work
     async def action_rename_file(self) -> None:
-        if self._current_file is None:
-            self.notify("No file open to rename", severity="warning")
+        target = self._get_target_path()
+        if target is None:
+            self.notify("Select a file to rename", severity="warning")
             return
-        new_name = await self.push_screen_wait(RenameScreen(self._current_file.name))
-        if not new_name or new_name.strip() == self._current_file.name:
+        new_name = await self.push_screen_wait(RenameScreen(target.name))
+        if not new_name or new_name.strip() == target.name:
             return
-        new_path = self._current_file.parent / new_name.strip()
+        new_path = target.parent / new_name.strip()
         try:
-            self._current_file.rename(new_path)
+            target.rename(new_path)
         except Exception as e:
             self.notify(f"Rename failed: {e}", severity="error")
             return
-        self._current_file = new_path
+        if self._current_file == target:
+            self._current_file = new_path
         self._has_changes = False
         self._refresh_ui()
         await self.screen.query_one(DirectoryTree).reload()
 
     @work
     async def action_delete_file(self) -> None:
-        if self._current_file is None:
-            self.notify("No file open to delete", severity="warning")
+        target = self._get_target_path()
+        if target is None:
+            self.notify("Select a file to delete", severity="warning")
             return
         confirmed = await self.push_screen_wait(
-            ConfirmScreen(f"Delete {self._current_file.name}?")
+            ConfirmScreen(f"Delete {target.name}?")
         )
         if not confirmed:
             return
         try:
-            self._current_file.unlink()
+            target.unlink()
         except Exception as e:
             self.notify(f"Delete failed: {e}", severity="error")
             return
-        self.screen.query_one("#editor", TextArea).load_text("")
-        self._current_file = None
-        self._has_changes = False
-        self._refresh_ui()
+        if self._current_file == target:
+            self.screen.query_one("#editor", TextArea).load_text("")
+            self._current_file = None
+            self._has_changes = False
+            self._refresh_ui()
         await self.screen.query_one(DirectoryTree).reload()
 
     @work

@@ -80,13 +80,6 @@ class TrixApp(App):
     TextArea .text-area--cursor-line   { background: #1a1e26; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
-        height: 100%;
-        background: #0d1016;
-        color: #4b4c4e;
-        content-align: center middle;
-        text-align: center;
-    }
-
     /* Terminal */
     TerminalWidget { height: 1fr; layout: vertical; }
     #term-output   { height: 1fr; background: #0d1016; color: #bfbdb6; }

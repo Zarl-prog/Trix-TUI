@@ -80,8 +80,6 @@ class TrixApp(App):
     TextArea .text-area--cursor-line   { background: #1a1e26; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
-    /* Editor placeholder */
-    #editor-placeholder {
         height: 100%;
         background: #0d1016;
         color: #4b4c4e;
@@ -168,10 +166,6 @@ class TrixApp(App):
                 yield DirectoryTree(".")
             yield Divider("files-panel", "editor-panel", id="divider-files")
             with Container(id="editor-panel"):
-                yield Static(
-                    "No file open\n\nSelect a file from the Files panel\nor press Ctrl+O to open a folder",
-                    id="editor-placeholder",
-                )
                 yield TextArea(id="editor", show_line_numbers=True)
             yield Divider("editor-panel", "terminal-panel")
             with Container(id="terminal-panel"):
@@ -191,8 +185,6 @@ class TrixApp(App):
         self.query_one("#files-panel").border_title = " Files"
         self.query_one("#editor-panel").border_title = " Editor"
         self.query_one("#terminal-panel").border_title = " Terminal"
-        # Show placeholder, hide editor until file opened
-        self.query_one("#editor", TextArea).display = False
         # Set folder name in header
         folder = Path(".").resolve().name
         self.query_one("#hdr-folder", Static).update(folder)
@@ -229,8 +221,6 @@ class TrixApp(App):
             ta.language = None
         self._current_file = path
         self._has_changes = False
-        self.query_one("#editor-placeholder").display = False
-        ta.display = True
         ta.focus()
         self._refresh_ui()
 
@@ -242,9 +232,8 @@ class TrixApp(App):
     def on_text_area_selection_changed(self) -> None:
         try:
             ta = self.query_one("#editor", TextArea)
-            if ta.display:
-                row, col = ta.cursor_location
-                self.query_one("#st-cursor", Static).update(f"Ln {row+1}, Col {col+1}")
+            row, col = ta.cursor_location
+            self.query_one("#st-cursor", Static).update(f"Ln {row+1}, Col {col+1}")
         except Exception:
             pass
 
@@ -329,8 +318,6 @@ class TrixApp(App):
         self._has_changes = False
         ta = self.query_one("#editor", TextArea)
         ta.load_text("")
-        ta.display = False
-        self.query_one("#editor-placeholder").display = True
         self.query_one("#hdr-folder", Static).update(path.name)
         self.query_one("#files-panel").border_title = f" Files - {path.name}"
         self._refresh_ui()
@@ -373,8 +360,6 @@ class TrixApp(App):
         await tree.reload()
         ta = self.query_one("#editor", TextArea)
         ta.load_text("")
-        ta.display = True
-        self.query_one("#editor-placeholder").display = False
         self._current_file = new_path
         self._has_changes = False
         self._refresh_ui()
@@ -382,8 +367,6 @@ class TrixApp(App):
     def action_close_file(self) -> None:
         ta = self.query_one("#editor", TextArea)
         ta.load_text("")
-        ta.display = False
-        self.query_one("#editor-placeholder").display = True
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()
@@ -424,8 +407,6 @@ class TrixApp(App):
             return
         ta = self.query_one("#editor", TextArea)
         ta.load_text("")
-        ta.display = False
-        self.query_one("#editor-placeholder").display = True
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()

@@ -224,6 +224,8 @@ class TrixApp(App):
         Handle mouse clicks to focus the appropriate widget in each panel.
         This enables mouse interaction across all panels.
         """
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         widget = event.widget
         if widget:
             # 1. Widget hierarchy/ancestor check (100% reliable for direct clicks)
@@ -495,6 +497,8 @@ class TrixApp(App):
 
     def _cycle_panels(self) -> None:
         """Ctrl+] cycles: Files → Editor → Terminal → Files"""
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         focused = self.focused
         editor = self.screen.query_one("#editor", TextArea)
         term_input = self.screen.query_one("#term-input", Input)
@@ -508,6 +512,8 @@ class TrixApp(App):
             file_tree.focus()
 
     def _editor_comment(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         ta = self.screen.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
@@ -522,12 +528,16 @@ class TrixApp(App):
         ta.replace(new_line, (row, 0), (row, len(line)))
 
     def _editor_duplicate(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         ta = self.screen.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
         ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
     def _refresh_ui(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         if self._current_file is None:
             self.screen.query_one("#editor-panel").border_title = " Editor"
             self.screen.query_one("#st-file", Static).update("")

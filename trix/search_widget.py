@@ -229,7 +229,7 @@ class GlobalSearch(Widget):
         ta = self.app.query_one("#editor", TextArea)
         ta.load_text(content)
         try:
-            from main import TrixApp
+            from trix.main import TrixApp
             app: TrixApp = self.app  # type: ignore
             app._current_file = fpath
             app._has_changes = False

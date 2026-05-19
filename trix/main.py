@@ -5,10 +5,10 @@ from textual.containers import Container, Horizontal
 from textual.events import Click
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 
-from themes import THEMES
-from terminal_widget import TerminalWidget
-from divider_widget import Divider
-from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
+from trix.themes import THEMES
+from trix.terminal_widget import TerminalWidget
+from trix.divider_widget import Divider
+from trix.screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
 
 
 class TrixApp(App):
@@ -408,3 +408,7 @@ class TrixApp(App):
             ".bash": "bash", ".rb": "ruby", ".php": "php",
             ".xml": "xml", ".svg": "xml",
         }.get(path.suffix.lower())
+
+
+def run():
+    TrixApp().run()

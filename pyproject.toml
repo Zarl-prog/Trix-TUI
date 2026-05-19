@@ -17,10 +17,11 @@ dependencies = [
 ]
 
 [project.scripts]
-trix = "app:run"
+trix = "trix.main:run"
 
-[tool.setuptools.py-modules]
-modules = ["main", "app", "screens", "themes", "terminal_widget", "divider_widget", "search_widget"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trix*"]
 
 [tool.setuptools.package-data]
-"" = ["ayu.json"]
+trix = ["ayu.json"]

@@ -1,2 +1,2 @@
 [console_scripts]
-trix = trix.main:main
+trix = trix.main:run

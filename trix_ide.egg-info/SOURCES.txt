@@ -1,3 +1,5 @@
+README.md
+app.py
 pyproject.toml
 trix/__init__.py
 trix/ayu.json
@@ -7,8 +9,6 @@ trix/screens.py
 trix/search_widget.py
 trix/terminal_widget.py
 trix/themes.py
-trix/widgets/divider.py
-trix/widgets/terminal.py
 trix_ide.egg-info/PKG-INFO
 trix_ide.egg-info/SOURCES.txt
 trix_ide.egg-info/dependency_links.txt

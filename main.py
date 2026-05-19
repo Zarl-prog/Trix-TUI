@@ -27,7 +27,7 @@ def _git_branch() -> str:
             capture_output=True, text=True, timeout=1,
         )
         b = r.stdout.strip()
-        return f" {b}" if b else ""
+        return f" 🌿 {b}" if b else ""
     except Exception:
         return ""
 
@@ -69,14 +69,44 @@ class ClickableDirectoryTree(DirectoryTree):
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
 
+    def render_label(self, node, base_style, style):
+        from rich.text import Text
+        node_label = node._label.copy()
+        node_label.stylize(style)
+        if not node.data:
+            return node_label
+        path = node.data.path
+        if node.data.is_dir:
+            if path.name == ".git":
+                icon = "🌿 "
+            else:
+                icon = "📁 "
+        else:
+            suffix = path.suffix.lower()
+            if suffix == ".py":
+                icon = "🐍 "
+            elif suffix in (".js", ".jsx"):
+                icon = "🟨 "
+            elif suffix == ".json":
+                icon = "📦 "
+            elif suffix == ".md":
+                icon = "📝 "
+            elif suffix in (".toml", ".yaml", ".yml"):
+                icon = "⚙️ "
+            elif suffix in (".txt", ".log"):
+                icon = "📄 "
+            else:
+                icon = "📄 "
+        return Text(icon) + node_label
+
 
 class MainScreen(Screen):
     """Main application screen that routes its click events to the app click handler."""
 
     def compose(self) -> ComposeResult:
         with LayoutHorizontal(id="header"):
-            yield Static("T R I X", id="hdr-title")
-            yield Static("", id="hdr-folder")
+            yield Static("T  R  I  X", id="hdr-title")
+            yield Static("Trix TUI", id="hdr-title-center")
             yield Static(THEMES[0]["name"], id="hdr-theme")
         with LayoutHorizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
@@ -84,6 +114,10 @@ class MainScreen(Screen):
             yield Divider("files-panel", "editor-panel", id="divider-1")
             with LayoutContainer(id="editor-panel"):
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
+                yield Static(
+                    "Welcome to TRIX\n\nOpen a file from the Files panel\nor press Ctrl+O to open a folder",
+                    id="editor-welcome"
+                )
             yield Divider("editor-panel", "terminal-panel", id="divider-2")
             with LayoutContainer(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
@@ -102,11 +136,10 @@ class MainScreen(Screen):
         self.app.on_click(event)
 
     def on_mount(self) -> None:
-        self.query_one("#files-panel").border_title = " Files"
-        self.query_one("#editor-panel").border_title = " Editor"
-        self.query_one("#terminal-panel").border_title = " Terminal"
-        folder = Path(".").resolve().name
-        self.query_one("#hdr-folder", Static).update(folder)
+        self.query_one("#files-panel").border_title = " 📁 Files"
+        self.query_one("#editor-panel").border_title = " 📝 Editor"
+        self.query_one("#terminal-panel").border_title = " 💻 Terminal"
+        self.app._refresh_ui()
         # Focus the terminal input so all three panels are immediately usable
         self.query_one("#term-input", Input).focus()
 
@@ -119,14 +152,15 @@ class TrixApp(App):
     }
 
     #header {
-        height: 1;
+        height: 2;
         background: #1a1e26;
         layout: horizontal;
         padding: 0 1;
+        border-bottom: solid #3f4043;
     }
     #hdr-title  { width: auto; color: #5ac1fe; text-style: bold; }
-    #hdr-folder { width: 1fr;  color: #bfbdb6; text-align: center; content-align: center middle; }
-    #hdr-theme  { width: auto; color: #4b4c4e; }
+    #hdr-title-center { width: 1fr; color: #4b4c4e; text-style: bold; text-align: center; }
+    #hdr-theme  { width: auto; color: #feb454; text-style: bold; }
 
     #main-area {
         height: 1fr;
@@ -134,12 +168,13 @@ class TrixApp(App):
     }
 
     LayoutContainer, Container, #files-panel, #editor-panel, #terminal-panel {
-        border: solid #3f4043;
+        border: solid #2d2f34;
         border-title-align: left;
         background: #1f2127;
+        padding: 0 1;
     }
     LayoutContainer:focus-within, Container:focus-within, #files-panel:focus-within, #editor-panel:focus-within, #terminal-panel:focus-within {
-        border: solid #5ac1fe;
+        border: double #5ac1fe;
     }
 
     #files-panel    { width: 20%; min-width: 10%; }
@@ -147,45 +182,71 @@ class TrixApp(App):
     #terminal-panel { width: 2fr; min-width: 20%; }
 
     DirectoryTree { height: 100%; background: #1f2127; }
-    DirectoryTree > .tree--cursor    { background: #3e4043; color: #5ac1fe; }
-    DirectoryTree > .tree--highlight { background: #3e4043; }
+    DirectoryTree > .tree--cursor    { background: #1f232c; color: #5ac1fe; text-style: bold; }
+    DirectoryTree > .tree--highlight { background: #1f232c; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
+    DirectoryTree:hover > .tree--cursor { background: #252830; }
 
     TextArea { height: 100%; background: #0d1016; color: #bfbdb6; }
     TextArea .text-area--gutter        { background: #0d1016; color: #4b4c4e; }
-    TextArea .text-area--gutter-active { color: #5ac1fe; }
+    TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--cursor        { background: #5ac1fe; }
-    TextArea .text-area--cursor-line   { background: #1a1e26; }
+    TextArea .text-area--cursor-line   { background: #1f2127; }
     TextArea .text-area--selection     { background: #1f4a6e; }
+
+    #editor-welcome {
+        width: 100%;
+        height: 100%;
+        content-align: center middle;
+        text-align: center;
+        color: #4b4c4e;
+        background: #0d1016;
+        text-style: bold;
+    }
 
     TerminalWidget { height: 1fr; layout: vertical; }
     #term-output   { height: 1fr; background: #0d1016; color: #bfbdb6; }
-    #term-output:focus { border: solid #5ac1fe; }
+    #term-output:focus { border: none; }
     #term-output .rich-log--highlight { background: #1f4a6e; }
     #term-input {
         height: 3;
         dock: bottom;
         background: #1f2127;
         color: #bfbdb6;
-        border: solid #3f4043;
+        border-left: solid #5ac1fe;
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
     }
-    #term-input:focus { border: solid #5ac1fe; }
+    #term-input:focus {
+        border-left: solid #5ac1fe;
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
+    }
 
-    Input { background: #1f2127; color: #bfbdb6; border: solid #3f4043; }
-    Input:focus { border: solid #5ac1fe; }
+    Input { background: #1f2127; color: #bfbdb6; border: none; }
+    Input:focus { border: none; }
 
     #statusbar {
-        height: 1;
+        height: 2;
         background: #161a1f;
         layout: horizontal;
         padding: 0 1;
+        border-top: solid #3f4043;
     }
     #st-brand  { width: auto; color: #5ac1fe; text-style: bold; }
     #st-file   { width: auto; color: #bfbdb6; padding: 0 2; }
-    #st-cursor { width: 1fr;  color: #8a8986; text-align: center; content-align: center middle; }
-    #st-git    { width: auto; color: #8a8986; padding: 0 2; }
-    #st-lang   { width: auto; color: #bfbdb6; padding: 0 1; }
+    #st-cursor { width: 1fr;  color: #4b4c4e; text-align: center; content-align: center middle; }
+    #st-git    { width: auto; color: #aad84c; padding: 0 2; }
+    #st-lang   { width: auto; color: #feb454; padding: 0 1; }
     #st-help   { width: auto; color: #4b4c4e; }
+
+    DirectoryTree, TextArea, RichLog {
+        scrollbar-size: 1;
+        scrollbar-color: #5ac1fe;
+        scrollbar-background: #3f4043;
+    }
     """
 
     BINDINGS = [
@@ -539,13 +600,31 @@ class TrixApp(App):
         if self.screen.__class__.__name__ != "MainScreen":
             return
         if self._current_file is None:
-            self.screen.query_one("#editor-panel").border_title = " Editor"
+            self.screen.query_one("#editor-panel").border_title = " 📝 Editor"
+            self.screen.query_one("#editor").display = False
+            self.screen.query_one("#editor-welcome").display = True
             self.screen.query_one("#st-file", Static).update("")
             self.screen.query_one("#st-lang", Static).update("")
         else:
             suffix = " *" if self._has_changes else ""
             name = self._current_file.name
-            self.screen.query_one("#editor-panel").border_title = f" Editor - {name}{suffix}"
+            ext = self._current_file.suffix.lower()
+            icon = "📄"
+            if ext == ".py":
+                icon = "🐍"
+            elif ext in (".js", ".jsx"):
+                icon = "🟨"
+            elif ext == ".json":
+                icon = "📦"
+            elif ext == ".md":
+                icon = "📝"
+            elif ext in (".toml", ".yaml", ".yml"):
+                icon = "⚙️"
+            elif ext in (".txt", ".log"):
+                icon = "📄"
+            self.screen.query_one("#editor-panel").border_title = f" {icon} {name}{suffix}"
+            self.screen.query_one("#editor").display = True
+            self.screen.query_one("#editor-welcome").display = False
             self.screen.query_one("#st-file", Static).update(f"{name}{suffix}")
             self.screen.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
 

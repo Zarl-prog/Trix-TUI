@@ -51,7 +51,7 @@ class TerminalWidget(Widget, can_focus=True):
 
     def compose(self) -> ComposeResult:
         yield TerminalOutputLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
-        yield Input(id="term-input", placeholder=">")
+        yield Input(id="term-input", placeholder="❯")
 
     def on_mount(self) -> None:
         self._start_pty()
@@ -83,6 +83,7 @@ class TerminalWidget(Widget, can_focus=True):
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
                     line = _ANSI.sub("", line).rstrip("\r")
+                    line = re.sub(r'[\x00-\x08\x0b-\x1f\x7f-\xff]', '', line)
                     if line.strip():
                         log.write(line)
             except Exception:
@@ -130,7 +131,7 @@ class TerminalWidget(Widget, can_focus=True):
         self.query_one("#term-input", Input).clear()
         if cmd:
             self._history.append(cmd)
-            self.query_one("#term-output", RichLog).write(f"> {cmd}")
+            self.query_one("#term-output", RichLog).write(f"❯ {cmd}")
         self._hist_idx = -1
         self._write_pty((cmd + "\r").encode())
 

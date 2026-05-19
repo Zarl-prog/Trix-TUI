@@ -1,4 +1,9 @@
 from main import TrixApp
 
-if __name__ == "__main__":
+
+def run():
     TrixApp().run()
+
+
+if __name__ == "__main__":
+    run()

@@ -226,3 +226,108 @@ class FolderPicker(Screen):
 
     def action_cancel(self) -> None:
         self.dismiss(None)
+
+
+class SplashScreen(Screen):
+    """Splash screen shown for 2 seconds upon app startup."""
+
+    CSS = """
+    SplashScreen {
+        align: center middle;
+        background: #0d1016;
+    }
+    #splash-logo {
+        text-align: center;
+        color: #5ac1fe;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #splash-tagline {
+        text-align: center;
+        color: #4b4c4e;
+        text-style: bold;
+        margin-bottom: 0;
+    }
+    #splash-version {
+        text-align: center;
+        color: #3f4043;
+        margin-bottom: 2;
+    }
+    #splash-bar {
+        text-align: center;
+        color: #5ac1fe;
+        width: 32;
+        margin-bottom: 0;
+    }
+    #splash-status {
+        text-align: center;
+        color: #4b4c4e;
+        width: 32;
+    }
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.progress = 0.0
+        self.duration = 2.0
+        self.steps = 40
+        self.step_time = self.duration / self.steps
+        self.timer = None
+        self.version = self._get_version()
+
+    def _get_version(self) -> str:
+        try:
+            import os
+            if os.path.exists("pyproject.toml"):
+                with open("pyproject.toml", "r") as f:
+                    for line in f:
+                        if line.strip().startswith("version"):
+                            return "v" + line.split("=")[1].strip().strip('"').strip("'")
+        except Exception:
+            pass
+        return "v0.1.0"
+
+    def compose(self) -> ComposeResult:
+        logo = (
+            "████████╗██████╗ ██╗██╗  ██╗\n"
+            "╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
+            "   ██║   ██████╔╝██║ ╚███╔╝ \n"
+            "   ██║   ██╔══██╗██║ ██╔██╗ \n"
+            "   ██║   ██║  ██║██║██╔╝ ██╗\n"
+            "   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+        )
+        with Vertical(align_horizontal="center"):
+            yield Static(logo, id="splash-logo")
+            yield Label("Your Terminal. Reimagined.", id="splash-tagline")
+            yield Label(self.version, id="splash-version")
+            yield Static("░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░", id="splash-bar")
+            yield Static("Initializing...", id="splash-status")
+
+    def on_mount(self) -> None:
+        self.timer = self.set_interval(self.step_time, self.tick)
+
+    def tick(self) -> None:
+        self.progress += 1.0 / self.steps
+        if self.progress >= 1.0:
+            self.progress = 1.0
+            if self.timer:
+                self.timer.stop()
+            from main import MainScreen
+            self.app.push_screen(MainScreen())
+            return
+
+        # Update bar
+        bar_width = 30
+        filled = int(self.progress * bar_width)
+        bar_str = "█" * filled + "░" * (bar_width - filled)
+        self.query_one("#splash-bar", Static).update(bar_str)
+
+        # Update status text
+        statuses = [
+            "Initializing...",
+            "Loading themes...",
+            "Starting terminal...",
+            "Ready."
+        ]
+        status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)
+        self.query_one("#splash-status", Static).update(statuses[status_idx])

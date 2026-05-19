@@ -17,7 +17,7 @@ from textual._work_decorator import work
 from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
-from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
+from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen
 
 
 def _git_branch() -> str:
@@ -273,7 +273,7 @@ class TrixApp(App):
         self._zen_mode = False
 
     async def on_mount(self) -> None:
-        await self.push_screen(MainScreen())
+        await self.push_screen(SplashScreen())
         for t in THEMES:
             if t["theme"] is not None:
                 self.register_theme(t["theme"])

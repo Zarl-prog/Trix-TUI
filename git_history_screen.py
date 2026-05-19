@@ -362,8 +362,12 @@ class GitHistoryScreen(ModalScreen):
         list_view = self.query_one("#gh-commits", ListView)
         if list_view.index is None or list_view.index >= len(self.commits):
             return
-        commit = self.commits[list_view.index]
-        self._show_commit_detail(commit)
+        self._show_commit_detail(self.commits[list_view.index])
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        list_view = self.query_one("#gh-commits", ListView)
+        if list_view.index is not None and list_view.index < len(self.commits):
+            self._show_commit_detail(self.commits[list_view.index])
 
     def _show_commit_detail(self, commit: CommitDetail) -> None:
         self.query_one("#gh-detail-hash", Label).update(commit.full_hash)

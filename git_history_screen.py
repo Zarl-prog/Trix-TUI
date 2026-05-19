@@ -1,14 +1,14 @@
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
-from textual.widgets import Button, Label, ListItem, ListView, Static
+from textual.widgets import Label, ListItem, ListView, Static
 
 
 GIT_HISTORY_CSS = """
 GitHistoryScreen {
-    align: center right;
+    align: right middle;
 }
 #git-history-panel {
     width: 60;
@@ -33,29 +33,23 @@ GitHistoryScreen {
     layout: vertical;
 }
 
-#gh-commit-list {
+#gh-commits {
     height: 1fr;
     background: #1f2127;
 }
-#gh-commit-list ListItem {
+#gh-commits ListItem {
     height: auto;
     padding: 0 1;
 }
 #gh-commit-item {
-    layout: vertical;
     height: auto;
     padding: 1 0;
 }
-#gh-hash { color: #5ac1fe; text-style: bold; }
-#gh-message { color: #bfbdb6; }
-#gh-author { color: #aad84c; }
-#gh-time { color: #4b4c4e; }
 
 #gh-detail {
     height: 1fr;
     display: none;
 }
-#gh-detail.visible { display: block; }
 
 #gh-detail-header {
     height: auto;
@@ -73,14 +67,6 @@ GitHistoryScreen {
     height: 1fr;
     padding: 1;
 }
-#gh-file-item {
-    layout: horizontal;
-    height: auto;
-    padding: 0 1;
-}
-#gh-file-name { width: 1fr; color: #bfbdb6; }
-#gh-file-add { color: #aad84c; }
-#gh-file-del { color: #ef7177; }
 
 #gh-actions {
     height: 3;
@@ -113,15 +99,42 @@ GitHistoryScreen {
 
 class CommitDetail:
     """Represents a single commit with all its details."""
-    def __init__(self, hash7: str, full_hash: str, message: str, author: str, 
-                 author_email: str, date: str, files: list):
+    def __init__(self, hash7: str, full_hash: str, message: str, author: str,
+                 author_email: str, date: str):
         self.hash7 = hash7
         self.full_hash = full_hash
         self.message = message.strip()
         self.author = author
         self.author_email = author_email
         self.date = date
-        self.files = files  # list of (filename, additions, deletions)
+        self._files: list | None = None  # lazy-loaded
+
+    def get_files(self, repo_path: str) -> list:
+        """Lazily fetch files changed in this commit."""
+        if self._files is not None:
+            return self._files
+        try:
+            result = subprocess.run(
+                ["git", "show", "--numstat", "--format=", self.full_hash],
+                cwd=repo_path,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            files = []
+            for line in result.stdout.strip().split("\n"):
+                parts = line.split("\t")
+                if len(parts) == 3:
+                    try:
+                        adds = int(parts[0]) if parts[0] != "-" else 0
+                        dels = int(parts[1]) if parts[1] != "-" else 0
+                    except ValueError:
+                        adds, dels = 0, 0
+                    files.append((parts[2].strip(), adds, dels))
+            self._files = files
+        except Exception:
+            self._files = []
+        return self._files
 
 
 class GitHistoryScreen(ModalScreen):
@@ -149,8 +162,7 @@ class GitHistoryScreen(ModalScreen):
                 yield Label("", id="gh-branch")
                 yield Label("", id="gh-commit-count")
             with Vertical(id="gh-content"):
-                with ScrollableContainer(id="gh-commit-list"):
-                    yield ListView(id="gh-commits")
+                yield ListView(id="gh-commits")
                 with Vertical(id="gh-detail"):
                     with Vertical(id="gh-detail-header"):
                         yield Label("", id="gh-detail-hash")
@@ -161,58 +173,46 @@ class GitHistoryScreen(ModalScreen):
                         pass
             with Horizontal(id="gh-actions"):
                 yield Label("Enter: View  C: Copy  O: Open Files  Esc: Close", id="gh-action-hint")
-            with Horizontal(id="gh-back-hint", display="none"):
+            with Horizontal(id="gh-back-hint"):
                 yield Label("Esc: Back to list", id="gh-back-hint-label")
 
     def on_mount(self) -> None:
+        self.query_one("#gh-back-hint").display = False
         self._load_git_data()
 
     def _is_git_repo(self) -> bool:
-        """Check if the current path is a git repository."""
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--is-inside-work-tree"],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                timeout=2
+                cwd=self.repo_path, capture_output=True, text=True, timeout=2
             )
             return result.stdout.strip() == "true"
         except Exception:
             return False
 
     def _get_current_branch(self) -> str:
-        """Get the current git branch name."""
         try:
             result = subprocess.run(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                timeout=2
+                cwd=self.repo_path, capture_output=True, text=True, timeout=2
             )
             return result.stdout.strip()
         except Exception:
             return "unknown"
 
     def _get_commit_count(self) -> int:
-        """Get total number of commits."""
         try:
             result = subprocess.run(
                 ["git", "rev-list", "--count", "HEAD"],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                timeout=2
+                cwd=self.repo_path, capture_output=True, text=True, timeout=2
             )
             return int(result.stdout.strip())
         except Exception:
             return 0
 
     def _load_git_data(self) -> None:
-        """Load git commit history."""
         if not self._is_git_repo():
-            self.query_one("#gh-commit-list", ListView).display = False
+            self.query_one("#gh-commits", ListView).display = False
             self.query_one("#gh-content", Vertical).mount(
                 Static("Not a git repository", id="gh-empty")
             )
@@ -220,171 +220,109 @@ class GitHistoryScreen(ModalScreen):
             self.query_one("#gh-commit-count", Label).update("")
             return
 
-        # Get branch and count
         branch = self._get_current_branch()
         count = self._get_commit_count()
         self.query_one("#gh-branch", Label).update(f"🌿 {branch}")
         self.query_one("#gh-commit-count", Label).update(f"{count} commits")
 
-        # Get commit log
         try:
             result = subprocess.run(
                 ["git", "log", "--format=%H|%h|%s|%an|%ae|%ai", "-n", "50"],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                timeout=5
+                cwd=self.repo_path, capture_output=True, text=True, timeout=5
             )
-            
+
             self.commits = []
             list_view = self.query_one("#gh-commits", ListView)
             list_view.clear()
-            
+
             for line in result.stdout.strip().split("\n"):
                 if not line.strip():
                     continue
                 parts = line.split("|")
                 if len(parts) >= 6:
                     full_hash, hash7, message, author, email, date = parts[:6]
-                    
-                    # Get files changed for this commit
-                    files = self._get_commit_files(full_hash)
-                    
-                    commit = CommitDetail(hash7, full_hash, message, author, email, date, files)
+                    commit = CommitDetail(hash7, full_hash, message, author, email, date)
                     self.commits.append(commit)
-                    
-                    # Format: hash7  message  author  time_ago
+
                     time_ago = self._format_time_ago(date)
                     item_text = f"{hash7}  {message[:40]:<40}  {author:<10}  {time_ago}"
-                    list_view.add(ListItem(
-                        Static(item_text, id="gh-commit-item")
-                    ))
-                    
+                    list_view.append(ListItem(Static(item_text, classes="gh-commit-item")))
+
         except Exception as e:
             self.notify(f"Error loading git history: {e}", severity="error")
 
-    def _get_commit_files(self, full_hash: str) -> list:
-        """Get list of files changed in a commit."""
-        try:
-            result = subprocess.run(
-                ["git", "show", "--stat", "--format=", full_hash],
-                cwd=self.repo_path,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            files = []
-            for line in result.stdout.strip().split("\n"):
-                if not line.strip() or "|" not in line:
-                    continue
-                parts = line.split("|")
-                if len(parts) >= 2:
-                    filename = parts[0].strip()
-                    stats = parts[1].strip()
-                    # Parse additions and deletions
-                    add = 0
-                    del_count = 0
-                    if "+" in stats:
-                        add_parts = stats.split("+")
-                        try:
-                            add = int(add_parts[-1].strip().split()[0])
-                        except (IndexError, ValueError):
-                            pass
-                    if "-" in stats:
-                        del_parts = stats.split("-")
-                        try:
-                            del_count = int(del_parts[-1].strip().split()[0])
-                        except (IndexError, ValueError):
-                            pass
-                    files.append((filename, add, del_count))
-            return files
-        except Exception:
-            return []
-
     def _format_time_ago(self, date_str: str) -> str:
-        """Format the date as relative time (e.g., '2 hours ago')."""
         try:
-            # Parse ISO format date
-            dt = datetime.fromisoformat(date_str.replace(" +0000", "").replace(" -0000", ""))
-            now = datetime.now()
+            dt = datetime.fromisoformat(date_str)
+            now = datetime.now(timezone.utc)
+            # Make dt timezone-aware if it isn't
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
             diff = now - dt
-            
+
             minutes = diff.total_seconds() / 60
             hours = minutes / 60
             days = hours / 24
-            
+
             if minutes < 60:
-                return f"{int(minutes)} minutes ago"
+                return f"{int(minutes)}m ago"
             elif hours < 24:
-                return f"{int(hours)} hours ago"
+                return f"{int(hours)}h ago"
             elif days < 7:
-                return f"{int(days)} days ago"
+                return f"{int(days)}d ago"
             elif days < 30:
-                weeks = int(days / 7)
-                return f"{weeks} weeks ago"
+                return f"{int(days / 7)}w ago"
             elif days < 365:
-                months = int(days / 30)
-                return f"{months} months ago"
+                return f"{int(days / 30)}mo ago"
             else:
-                years = int(days / 365)
-                return f"{years} years ago"
+                return f"{int(days / 365)}y ago"
         except Exception:
             return date_str
 
     def action_close(self) -> None:
-        """Close the git history panel."""
         self.dismiss()
 
     def action_show_detail(self) -> None:
-        """Show detailed commit info."""
         if self.showing_detail:
             return
-            
         list_view = self.query_one("#gh-commits", ListView)
         if list_view.index is None:
             return
-            
         self.current_commit = self.commits[list_view.index]
         self._show_commit_detail()
         self.showing_detail = True
 
     def _show_commit_detail(self) -> None:
-        """Display the commit detail view."""
         if not self.current_commit:
             return
-            
         commit = self.current_commit
-        
-        # Update detail view
+
         self.query_one("#gh-detail-hash", Label).update(f"Commit: {commit.full_hash}")
         self.query_one("#gh-detail-author", Label).update(f"{commit.author} <{commit.author_email}>")
         self.query_one("#gh-detail-date", Label).update(commit.date)
         self.query_one("#gh-detail-message", Label).update(commit.message)
-        
-        # Show files
+
         files_container = self.query_one("#gh-files", ScrollableContainer)
         files_container.remove_children()
-        
-        if commit.files:
-            for filename, adds, dels in commit.files:
-                file_item = Horizontal(
-                    Static(filename, id="gh-file-name"),
-                    Static(f"+{adds}" if adds else "", id="gh-file-add") if adds else Static("", id="gh-file-add"),
-                    Static(f"-{dels}" if dels else "", id="gh-file-del") if dels else Static("", id="gh-file-del"),
-                    id="gh-file-item"
-                )
-                files_container.mount(file_item)
+
+        files = commit.get_files(self.repo_path)
+        if files:
+            for i, (filename, adds, dels) in enumerate(files):
+                files_container.mount(Horizontal(
+                    Static(filename, classes="gh-file-name"),
+                    Static(f"+{adds}" if adds else "", classes="gh-file-add"),
+                    Static(f"-{dels}" if dels else "", classes="gh-file-del"),
+                    id=f"gh-file-item-{i}"
+                ))
         else:
             files_container.mount(Static("No files changed", id="gh-empty-files"))
-        
-        # Toggle views
-        self.query_one("#gh-commit-list", ListView).display = False
+
+        self.query_one("#gh-commits", ListView).display = False
         self.query_one("#gh-detail").display = True
         self.query_one("#gh-actions").display = False
         self.query_one("#gh-back-hint").display = True
 
     def action_copy_hash(self) -> None:
-        """Copy the selected commit hash to clipboard."""
         list_view = self.query_one("#gh-commits", ListView)
         if list_view.index is not None and list_view.index < len(self.commits):
             commit = self.commits[list_view.index]
@@ -392,29 +330,25 @@ class GitHistoryScreen(ModalScreen):
             self.notify(f"Copied: {commit.full_hash}")
 
     def action_open_files(self) -> None:
-        """Open the changed files from selected commit."""
         list_view = self.query_one("#gh-commits", ListView)
         if list_view.index is not None and list_view.index < len(self.commits):
             commit = self.commits[list_view.index]
-            if commit.files:
-                # Show notification for now - file opening can be enhanced later
-                files_list = ", ".join([f[0] for f in commit.files[:5]])
-                if len(commit.files) > 5:
-                    files_list += f" +{len(commit.files) - 5} more"
+            files = commit.get_files(self.repo_path)
+            if files:
+                files_list = ", ".join([f[0] for f in files[:5]])
+                if len(files) > 5:
+                    files_list += f" +{len(files) - 5} more"
                 self.notify(f"Files changed: {files_list}")
 
     def on_key(self, event) -> None:
-        """Handle key events."""
         if event.key == "escape":
             if self.showing_detail:
-                # Go back to list
-                self.query_one("#gh-commit-list", ListView).display = True
+                self.query_one("#gh-commits", ListView).display = True
                 self.query_one("#gh-detail").display = False
                 self.query_one("#gh-actions").display = True
                 self.query_one("#gh-back-hint").display = False
                 self.showing_detail = False
+                event.prevent_default()
             else:
                 self.action_close()
-            event.prevent_default()
-        else:
-            super().on_key(event)
+                event.prevent_default()

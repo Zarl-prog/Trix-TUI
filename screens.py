@@ -35,6 +35,7 @@ _HELP = """\
    [#bfbdb6]cls[/#bfbdb6]              Clear Terminal
 
  [bold #5ac1fe]General[/bold #5ac1fe]
+   [#bfbdb6]Ctrl+G[/#bfbdb6]           Git History
    [#bfbdb6]Ctrl+Q[/#bfbdb6]           Quit (confirms if unsaved)
    [#bfbdb6]F1[/#bfbdb6]               Show This Help\
 """

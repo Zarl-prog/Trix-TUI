@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trix-ide"
-version = "0.1.0"
+version = "0.2.0"
 description = "A terminal-native IDE built with Textual"
 requires-python = ">=3.10"
 authors = [
@@ -20,7 +20,7 @@ dependencies = [
 trix = "app:run"
 
 [tool.setuptools]
-py-modules = ["main", "app", "screens", "themes", "terminal_widget", "divider_widget", "search_widget"]
+py-modules = ["main", "app", "screens", "themes", "terminal_widget", "divider_widget", "search_widget", "git_history_screen"]
 
 [tool.setuptools.package-data]
 "*" = ["ayu.json"]

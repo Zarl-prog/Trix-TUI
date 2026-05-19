@@ -1,7 +1,8 @@
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label, Static, OptionList
 
 _HELP = """\
  [bold #5ac1fe]File[/bold #5ac1fe]
@@ -336,3 +337,88 @@ class SplashScreen(Screen):
         ]
         status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)
         self.query_one("#splash-status", Static).update(statuses[status_idx])
+
+
+class ThemePickerScreen(Screen):
+    BINDINGS = [
+        ("escape", "cancel", "Cancel"),
+        ("enter", "confirm", "Confirm")
+    ]
+
+    CSS = """
+    ThemePickerScreen {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.75);
+    }
+    #tp-dialog {
+        width: 36;
+        height: 18;
+        padding: 1 2;
+        background: $panel;
+        border: solid $primary;
+    }
+    #tp-title {
+        width: 100%;
+        text-align: center;
+        color: $primary;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #tp-list {
+        background: $background;
+        border: none;
+        height: 1fr;
+    }
+    #tp-hint {
+        width: 100%;
+        text-align: center;
+        color: $secondary;
+        margin-top: 1;
+    }
+    """
+
+    def __init__(self, themes: list[dict], initial_theme: dict, **kwargs):
+        super().__init__(**kwargs)
+        self._themes = themes
+        self._initial_theme = initial_theme
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="tp-dialog"):
+            yield Label("🎨 Choose Theme", id="tp-title")
+            yield OptionList(id="tp-list")
+            yield Label("Enter Select • Esc Cancel", id="tp-hint")
+
+    def on_mount(self) -> None:
+        opt_list = self.query_one("#tp-list", OptionList)
+        active_idx = 0
+        for i, theme in enumerate(self._themes):
+            prefix = "✓ " if theme["name"] == self._initial_theme["name"] else "  "
+            opt_list.add_option(f"{prefix}{theme['name']}")
+            if theme["name"] == self._initial_theme["name"]:
+                active_idx = i
+        opt_list.highlighted = active_idx
+        opt_list.focus()
+
+    @on(OptionList.OptionHighlighted)
+    def on_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
+        if event.option_index is not None and event.option_index < len(self._themes):
+            theme = self._themes[event.option_index]
+            self.app.apply_theme(theme)
+
+    @on(OptionList.OptionSelected)
+    def on_option_selected(self, event: OptionList.OptionSelected) -> None:
+        if event.option_index is not None and event.option_index < len(self._themes):
+            theme = self._themes[event.option_index]
+            self.dismiss(theme)
+
+    def action_confirm(self) -> None:
+        opt_list = self.query_one("#tp-list", OptionList)
+        idx = opt_list.highlighted
+        if idx is not None and idx < len(self._themes):
+            self.dismiss(self._themes[idx])
+        else:
+            self.dismiss(None)
+
+    def action_cancel(self) -> None:
+        self.app.apply_theme(self._initial_theme)
+        self.dismiss(None)

@@ -14,10 +14,11 @@ from textual.events import Click, Key, MouseDown
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from textual._work_decorator import work
 
+import json
 from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
-from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen
+from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
 
 
 def _git_branch() -> str:
@@ -30,6 +31,31 @@ def _git_branch() -> str:
         return f" 🌿 {b}" if b else ""
     except Exception:
         return ""
+
+
+def _init_config_dir() -> Path:
+    p = Path.home() / ".trix"
+    p.mkdir(parents=True, exist_ok=True)
+    return p / "config.json"
+
+
+def _load_theme_persistence() -> str:
+    path = _init_config_dir()
+    if path.exists():
+        try:
+            config = json.loads(path.read_text())
+            return config.get("theme", "Ayu Dark")
+        except Exception:
+            pass
+    return "Ayu Dark"
+
+
+def _save_theme_persistence(theme_name: str) -> None:
+    path = _init_config_dir()
+    try:
+        path.write_text(json.dumps({"theme": theme_name}, indent=4))
+    except Exception:
+        pass
 
 
 class LayoutHorizontal(Horizontal):
@@ -107,7 +133,7 @@ class MainScreen(Screen):
         with LayoutHorizontal(id="header"):
             yield Static("T  R  I  X", id="hdr-title")
             yield Static("Trix TUI", id="hdr-title-center")
-            yield Static(THEMES[0]["name"], id="hdr-theme")
+            yield Static(self.app._current_theme_dict["name"], id="hdr-theme")
         with LayoutHorizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
                 yield ClickableDirectoryTree(".", id="file-tree")
@@ -126,6 +152,7 @@ class MainScreen(Screen):
             yield Static("", id="st-file")
             yield Static("Ln 1, Col 1", id="st-cursor")
             yield Static(_git_branch(), id="st-git")
+            yield Static(self.app._current_theme_dict["name"], id="st-theme")
             yield Static("", id="st-lang")
             yield Static("F1 Help", id="st-help")
 
@@ -239,7 +266,8 @@ class TrixApp(App):
     #st-file   { width: auto; color: #bfbdb6; padding: 0 2; }
     #st-cursor { width: 1fr;  color: #4b4c4e; text-align: center; content-align: center middle; }
     #st-git    { width: auto; color: #aad84c; padding: 0 2; }
-    #st-lang   { width: auto; color: #feb454; padding: 0 1; }
+    #st-theme  { width: auto; color: #feb454; padding: 0 1; }
+    #st-lang   { width: auto; color: #5ac1fe; padding: 0 1; }
     #st-help   { width: auto; color: #4b4c4e; }
 
     DirectoryTree, TextArea, RichLog {
@@ -257,6 +285,7 @@ class TrixApp(App):
         ("ctrl+o",           "open_folder",     "Open Folder"),
         ("ctrl+r",           "reload_tree",     "Reload Tree"),
         ("ctrl+t",           "cycle_theme",     "Cycle Theme"),
+        ("ctrl+shift+t",     "pick_theme",      "Theme Picker"),
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
         ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
@@ -268,15 +297,85 @@ class TrixApp(App):
         super().__init__()
         self._current_file: Path | None = None
         self._has_changes = False
+        self._themes = THEMES
+        persisted_theme_name = _load_theme_persistence()
         self._theme_index = 0
+        for i, t in enumerate(self._themes):
+            if t["name"] == persisted_theme_name:
+                self._theme_index = i
+                break
+        self._current_theme_dict = self._themes[self._theme_index]
         self._filetree_visible = True
         self._zen_mode = False
 
     async def on_mount(self) -> None:
         await self.push_screen(SplashScreen())
-        for t in THEMES:
-            if t["theme"] is not None:
-                self.register_theme(t["theme"])
+        self._register_all_themes()
+        self.apply_theme(self._current_theme_dict)
+
+    def _register_all_themes(self) -> None:
+        from textual.theme import Theme
+        for theme in self._themes:
+            slug = theme["name"].lower().replace(" ", "-")
+            try:
+                t = Theme(
+                    name=slug,
+                    primary=theme["accent"],
+                    secondary=theme["border"],
+                    accent=theme["accent_alt"],
+                    background=theme["background"],
+                    surface=theme["surface"],
+                    panel=theme["panel"],
+                    foreground=theme["text"],
+                    error=theme["error"],
+                    success=theme["success"],
+                    warning=theme["warning"],
+                    dark=True
+                )
+                self.register_theme(t)
+            except Exception:
+                pass
+
+    def apply_theme(self, theme: dict) -> None:
+        self._current_theme_dict = theme
+        slug = theme["name"].lower().replace(" ", "-")
+        from textual.theme import Theme
+        try:
+            t = Theme(
+                name=slug,
+                primary=theme["accent"],
+                secondary=theme["border"],
+                accent=theme["accent_alt"],
+                background=theme["background"],
+                surface=theme["surface"],
+                panel=theme["panel"],
+                foreground=theme["text"],
+                error=theme["error"],
+                success=theme["success"],
+                warning=theme["warning"],
+                dark=True
+            )
+            self.register_theme(t)
+        except Exception:
+            pass
+
+        self.theme = slug
+        _save_theme_persistence(theme["name"])
+        
+        for i, tm in enumerate(self._themes):
+            if tm["name"] == theme["name"]:
+                self._theme_index = i
+                break
+                
+        if self.screen.__class__.__name__ == "MainScreen":
+            try:
+                self.screen.query_one("#hdr-theme", Static).update(theme["name"])
+            except Exception:
+                pass
+            try:
+                self.screen.query_one("#st-theme", Static).update(theme["name"])
+            except Exception:
+                pass
 
     # ── Mouse click handling ─────────────────────────────────────────────────
 
@@ -439,10 +538,18 @@ class TrixApp(App):
         self._refresh_ui()
 
     def action_cycle_theme(self) -> None:
-        self._theme_index = (self._theme_index + 1) % len(THEMES)
-        t = THEMES[self._theme_index]
-        self.theme = t["slug"]
-        self.screen.query_one("#hdr-theme", Static).update(t["name"])
+        self._theme_index = (self._theme_index + 1) % len(self._themes)
+        t = self._themes[self._theme_index]
+        self.apply_theme(t)
+
+    @work
+    async def action_pick_theme(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        theme_picker = ThemePickerScreen(self._themes, self._current_theme_dict)
+        chosen_theme = await self.push_screen_wait(theme_picker)
+        if chosen_theme:
+            self.apply_theme(chosen_theme)
 
     def action_copy_selection(self) -> None:
         focused = self.focused
@@ -599,6 +706,10 @@ class TrixApp(App):
     def _refresh_ui(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
             return
+        try:
+            self.screen.query_one("#st-theme", Static).update(self._current_theme_dict["name"])
+        except Exception:
+            pass
         if self._current_file is None:
             self.screen.query_one("#editor-panel").border_title = " 📝 Editor"
             self.screen.query_one("#editor").display = False

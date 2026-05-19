@@ -52,24 +52,24 @@ HelpScreen {
     width: 52;
     height: auto;
     padding: 1 2;
-    background: var(--panel);
-    border: solid var(--border-focused);
+    background: #1f2127;
+    border: solid #5ac1fe;
 }
 #help-title {
     width: 100%;
     text-align: center;
-    color: var(--accent);
+    color: #5ac1fe;
     text-style: bold;
     margin-bottom: 1;
 }
 #help-body {
     width: 100%;
-    color: var(--text);
+    color: #bfbdb6;
 }
 #help-close {
     width: 100%;
     text-align: center;
-    color: var(--text-muted);
+    color: #4b4c4e;
     margin-top: 1;
 }
 """

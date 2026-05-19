@@ -194,6 +194,8 @@ class TrixApp(App):
         self.query_one("#hdr-folder", Static).update(folder)
         # Focus the terminal input so all three panels are immediately usable
         self.query_one("#term-input", Input).focus()
+        # Bind screen click events to route through the app click handler
+        self.screen.on_click = self.on_click
 
     # ── Mouse click handling ─────────────────────────────────────────────────
 

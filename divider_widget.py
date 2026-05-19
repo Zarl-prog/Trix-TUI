@@ -26,8 +26,8 @@ class Divider(Static):
     def on_mouse_down(self, event: MouseDown) -> None:
         self._dragging = True
         self._start_x = event.screen_x
-        self._left_w = self.app.query_one(f"#{self._left_id}").size.width
-        self._right_w = self.app.query_one(f"#{self._right_id}").size.width
+        self._left_w = self.screen.query_one(f"#{self._left_id}").size.width
+        self._right_w = self.screen.query_one(f"#{self._right_id}").size.width
         self.capture_mouse()
         event.stop()
 
@@ -39,8 +39,8 @@ class Divider(Static):
         delta = event.screen_x - self._start_x
         new_left = max(int(total * _MIN.get(self._left_id, 0.10)), self._left_w + delta)
         new_right = max(int(total * _MIN.get(self._right_id, 0.20)), self._right_w - delta)
-        self.app.query_one(f"#{self._left_id}").styles.width = new_left
-        self.app.query_one(f"#{self._right_id}").styles.width = new_right
+        self.screen.query_one(f"#{self._left_id}").styles.width = new_left
+        self.screen.query_one(f"#{self._right_id}").styles.width = new_right
         event.stop()
 
     def on_mouse_up(self, event: MouseUp) -> None:

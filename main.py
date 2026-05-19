@@ -8,6 +8,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from textual.app import App, ComposeResult
+from textual.screen import Screen
 from textual.containers import Container, Horizontal
 from textual.events import Click, Key, MouseDown
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
@@ -55,12 +56,59 @@ class ClickableTextArea(TextArea):
     def on_click(self, event: Click) -> None:
         self.focus()
 
+    def on_mouse_down(self, event: MouseDown) -> None:
+        self.focus()
+
 
 class ClickableDirectoryTree(DirectoryTree):
     """DirectoryTree subclass that explicitly focuses itself when clicked."""
 
     def on_click(self, event: Click) -> None:
         self.focus()
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        self.focus()
+
+
+class MainScreen(Screen):
+    """Main application screen that routes its click events to the app click handler."""
+
+    def compose(self) -> ComposeResult:
+        with LayoutHorizontal(id="header"):
+            yield Static("T R I X", id="hdr-title")
+            yield Static("", id="hdr-folder")
+            yield Static(THEMES[0]["name"], id="hdr-theme")
+        with LayoutHorizontal(id="main-area"):
+            with LayoutContainer(id="files-panel"):
+                yield ClickableDirectoryTree(".", id="file-tree")
+            yield Divider("files-panel", "editor-panel", id="divider-1")
+            with LayoutContainer(id="editor-panel"):
+                yield ClickableTextArea(id="editor", show_line_numbers=True)
+            yield Divider("editor-panel", "terminal-panel", id="divider-2")
+            with LayoutContainer(id="terminal-panel"):
+                yield TerminalWidget(id="terminal")
+        with LayoutHorizontal(id="statusbar"):
+            yield Static("TRIX", id="st-brand")
+            yield Static("", id="st-file")
+            yield Static("Ln 1, Col 1", id="st-cursor")
+            yield Static(_git_branch(), id="st-git")
+            yield Static("", id="st-lang")
+            yield Static("F1 Help", id="st-help")
+
+    def on_click(self, event: Click) -> None:
+        self.app.on_click(event)
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        self.app.on_click(event)
+
+    def on_mount(self) -> None:
+        self.query_one("#files-panel").border_title = " Files"
+        self.query_one("#editor-panel").border_title = " Editor"
+        self.query_one("#terminal-panel").border_title = " Terminal"
+        folder = Path(".").resolve().name
+        self.query_one("#hdr-folder", Static).update(folder)
+        # Focus the terminal input so all three panels are immediately usable
+        self.query_one("#term-input", Input).focus()
 
 
 class TrixApp(App):
@@ -85,12 +133,14 @@ class TrixApp(App):
         layout: horizontal;
     }
 
-    Container {
+    LayoutContainer, Container, #files-panel, #editor-panel, #terminal-panel {
         border: solid #3f4043;
         border-title-align: left;
         background: #1f2127;
     }
-    Container:focus-within { border: solid #5ac1fe; }
+    LayoutContainer:focus-within, Container:focus-within, #files-panel:focus-within, #editor-panel:focus-within, #terminal-panel:focus-within {
+        border: solid #5ac1fe;
+    }
 
     #files-panel    { width: 20%; min-width: 10%; }
     #editor-panel   { width: 2fr; min-width: 20%; }
@@ -161,49 +211,50 @@ class TrixApp(App):
         self._filetree_visible = True
         self._zen_mode = False
 
-    def compose(self) -> ComposeResult:
-        with LayoutHorizontal(id="header"):
-            yield Static("T R I X", id="hdr-title")
-            yield Static("", id="hdr-folder")
-            yield Static(THEMES[0]["name"], id="hdr-theme")
-        with LayoutHorizontal(id="main-area"):
-            with LayoutContainer(id="files-panel"):
-                yield ClickableDirectoryTree(".", id="file-tree")
-            yield Divider("files-panel", "editor-panel", id="divider-1")
-            with LayoutContainer(id="editor-panel"):
-                yield ClickableTextArea(id="editor", show_line_numbers=True)
-            yield Divider("editor-panel", "terminal-panel", id="divider-2")
-            with LayoutContainer(id="terminal-panel"):
-                yield TerminalWidget(id="terminal")
-        with LayoutHorizontal(id="statusbar"):
-            yield Static("TRIX", id="st-brand")
-            yield Static("", id="st-file")
-            yield Static("Ln 1, Col 1", id="st-cursor")
-            yield Static(_git_branch(), id="st-git")
-            yield Static("", id="st-lang")
-            yield Static("F1 Help", id="st-help")
-
     async def on_mount(self) -> None:
+        await self.push_screen(MainScreen())
         for t in THEMES:
             if t["theme"] is not None:
                 self.register_theme(t["theme"])
-        self.query_one("#files-panel").border_title = " Files"
-        self.query_one("#editor-panel").border_title = " Editor"
-        self.query_one("#terminal-panel").border_title = " Terminal"
-        folder = Path(".").resolve().name
-        self.query_one("#hdr-folder", Static).update(folder)
-        # Focus the terminal input so all three panels are immediately usable
-        self.query_one("#term-input", Input).focus()
-        # Bind screen click events to route through the app click handler
-        self.screen.on_click = self.on_click
 
     # ── Mouse click handling ─────────────────────────────────────────────────
 
-    def on_click(self, event: Click) -> None:
+    def on_click(self, event: Click | MouseDown) -> None:
         """
         Handle mouse clicks to focus the appropriate widget in each panel.
         This enables mouse interaction across all panels.
         """
+        widget = event.widget
+        if widget:
+            # 1. Widget hierarchy/ancestor check (100% reliable for direct clicks)
+            ancestors = list(widget.ancestors)
+            
+            # Check Files Panel
+            if isinstance(widget, DirectoryTree) or any(isinstance(a, DirectoryTree) for a in ancestors):
+                self.query_one(DirectoryTree).focus()
+                return
+                
+            # Check Editor Panel
+            if isinstance(widget, TextArea) or any(isinstance(a, TextArea) for a in ancestors):
+                self.query_one("#editor", TextArea).focus()
+                return
+                
+            # Check Terminal Panel
+            if (
+                isinstance(widget, TerminalWidget) 
+                or any(isinstance(a, TerminalWidget) for a in ancestors)
+                or (widget.id and widget.id in ("term-output", "term-input"))
+                or any(a.id and a.id in ("term-output", "term-input") for a in ancestors)
+            ):
+                term_output = self.query_one("#term-output", RichLog)
+                term_input = self.query_one("#term-input", Input)
+                if widget == term_output or any(a == term_output for a in ancestors):
+                    term_output.focus()
+                else:
+                    term_input.focus()
+                return
+
+        # 2. Coordinate boundary check fallback (for clicks on empty padding, borders, headers)
         x, y = event.screen_x, event.screen_y
         files_panel = self.query_one("#files-panel")
         editor_panel = self.query_one("#editor-panel")
@@ -513,4 +564,17 @@ class TrixApp(App):
 
 
 def run():
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            h_stdin = kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+            if h_stdin != -1:
+                mode = ctypes.c_uint()
+                if kernel32.GetConsoleMode(h_stdin, ctypes.byref(mode)):
+                    # Clear ENABLE_QUICK_EDIT_MODE (0x0040) and set ENABLE_EXTENDED_FLAGS (0x0080)
+                    new_mode = (mode.value & ~0x0040) | 0x0080
+                    kernel32.SetConsoleMode(h_stdin, new_mode)
+        except Exception:
+            pass
     TrixApp().run()

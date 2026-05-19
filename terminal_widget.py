@@ -4,7 +4,7 @@ import re
 import winpty
 
 from textual.app import ComposeResult
-from textual.events import Click, Key
+from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import Input, RichLog
 
@@ -16,6 +16,11 @@ class TerminalOutputLog(RichLog):
     """Custom log output for terminal widget that propagates click to focus the input bar."""
 
     def on_click(self, event: Click) -> None:
+        parent = self.parent
+        if parent and hasattr(parent, "input_bar"):
+            parent.input_bar.focus()
+
+    def on_mouse_down(self, event: MouseDown) -> None:
         parent = self.parent
         if parent and hasattr(parent, "input_bar"):
             parent.input_bar.focus()
@@ -39,6 +44,9 @@ class TerminalWidget(Widget, can_focus=True):
         return self.query_one("#term-input", Input)
 
     def on_click(self, event: Click) -> None:
+        self.input_bar.focus()
+
+    def on_mouse_down(self, event: MouseDown) -> None:
         self.input_bar.focus()
 
     def compose(self) -> ComposeResult:

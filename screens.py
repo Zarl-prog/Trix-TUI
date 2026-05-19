@@ -10,15 +10,13 @@ _HELP = """\
    [#bfbdb6]Ctrl+W[/#bfbdb6]           Close File
    [#bfbdb6]Ctrl+O[/#bfbdb6]           Open Folder
    [#bfbdb6]F2[/#bfbdb6]               Rename File
-   [#bfbdb6]Delete[/#bfbdb6]           Delete File
+   [#bfbdb6]Delete[/#bfbdb6]           Delete File (focus file tree first)
 
  [bold #5ac1fe]Layout[/bold #5ac1fe]
+   [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels (Files→Editor→Terminal)
+   [#bfbdb6]Click[/#bfbdb6]            Focus any panel by clicking it
    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
    [#bfbdb6]Ctrl+\[/#bfbdb6]           Zen Mode (Editor only)
-   [#bfbdb6]Ctrl+1[/#bfbdb6]           Focus File Tree
-   [#bfbdb6]Ctrl+2[/#bfbdb6]           Focus Editor
-   [#bfbdb6]Ctrl+3[/#bfbdb6]           Focus Terminal
-   [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels
 
  [bold #5ac1fe]Editor[/bold #5ac1fe]
    [#bfbdb6]Ctrl+Z[/#bfbdb6]           Undo
@@ -37,12 +35,12 @@ _HELP = """\
 
  [bold #5ac1fe]General[/bold #5ac1fe]
    [#bfbdb6]Ctrl+Q[/#bfbdb6]           Quit (confirms if unsaved)
-   [#bfbdb6]?[/#bfbdb6]                Show This Help\
+   [#bfbdb6]F1[/#bfbdb6]               Show This Help\
 """
 
 
 class HelpScreen(Screen):
-    BINDINGS = [("escape", "dismiss", "Close"), ("question_mark", "dismiss", "Close")]
+    BINDINGS = [("escape", "dismiss", "Close"), ("f1", "dismiss", "Close")]
 
     CSS = """
     HelpScreen {
@@ -79,7 +77,7 @@ class HelpScreen(Screen):
         with Vertical(id="help-dialog"):
             yield Label("⌨  Keyboard Shortcuts", id="help-title")
             yield Static(_HELP, id="help-body", markup=True)
-            yield Label("Press [bold]Escape[/bold] or [bold]?[/bold] to close", id="help-close", markup=True)
+            yield Label("Press [bold]Escape[/bold] or [bold]F1[/bold] to close", id="help-close", markup=True)
 
     def action_dismiss(self) -> None:
         self.dismiss()

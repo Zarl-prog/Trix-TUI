@@ -9,13 +9,12 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
-from textual.events import Click
+from textual.events import Click, Key
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from textual._work_decorator import work
 
 from themes import THEMES
 from terminal_widget import TerminalWidget
-from divider_widget import Divider
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
 
 
@@ -38,18 +37,16 @@ class TrixApp(App):
         background: #0d1016;
     }
 
-    /* Header */
     #header {
         height: 1;
         background: #1a1e26;
         layout: horizontal;
         padding: 0 1;
     }
-    #hdr-title  { width: auto;  color: #5ac1fe; text-style: bold; }
-    #hdr-folder { width: 1fr;   color: #bfbdb6; text-align: center; content-align: center middle; }
-    #hdr-theme  { width: auto;  color: #4b4c4e; }
+    #hdr-title  { width: auto; color: #5ac1fe; text-style: bold; }
+    #hdr-folder { width: 1fr;  color: #bfbdb6; text-align: center; content-align: center middle; }
+    #hdr-theme  { width: auto; color: #4b4c4e; }
 
-    /* Main area */
     #main-area {
         height: 1fr;
         layout: horizontal;
@@ -66,13 +63,11 @@ class TrixApp(App):
     #editor-panel   { width: 2fr; min-width: 20%; }
     #terminal-panel { width: 2fr; min-width: 20%; }
 
-    /* File tree */
     DirectoryTree { height: 100%; background: #1f2127; }
     DirectoryTree > .tree--cursor    { background: #3e4043; color: #5ac1fe; }
     DirectoryTree > .tree--highlight { background: #3e4043; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
 
-    /* Editor */
     TextArea { height: 100%; background: #0d1016; color: #bfbdb6; }
     TextArea .text-area--gutter        { background: #0d1016; color: #4b4c4e; }
     TextArea .text-area--gutter-active { color: #5ac1fe; }
@@ -80,7 +75,6 @@ class TrixApp(App):
     TextArea .text-area--cursor-line   { background: #1a1e26; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
-    /* Terminal */
     TerminalWidget { height: 1fr; layout: vertical; }
     #term-output   { height: 1fr; background: #0d1016; color: #bfbdb6; }
     #term-output:focus { border: solid #5ac1fe; }
@@ -90,18 +84,13 @@ class TrixApp(App):
         dock: bottom;
         background: #1f2127;
         color: #bfbdb6;
-        border-left: solid #5ac1fe;
-        border-top: solid #3f4043;
-        border-right: solid #3f4043;
-        border-bottom: solid #3f4043;
+        border: solid #3f4043;
     }
-    #term-input:focus {
-        border: solid #5ac1fe;
-    }
+    #term-input:focus { border: solid #5ac1fe; }
+
     Input { background: #1f2127; color: #bfbdb6; border: solid #3f4043; }
     Input:focus { border: solid #5ac1fe; }
 
-    /* Status bar */
     #statusbar {
         height: 1;
         background: #161a1f;
@@ -116,29 +105,21 @@ class TrixApp(App):
     #st-help   { width: auto; color: #4b4c4e; }
     """
 
+    # Only global shortcuts that don't conflict with any widget's own key handling.
+    # NO tab, NO delete, NO ctrl+z/y/a/d — those are handled contextually in on_key.
     BINDINGS = [
-        ("ctrl+q", "quit_app", "Quit"),
-        ("ctrl+s", "save", "Save"),
-        ("ctrl+n", "new_file", "New File"),
-        ("ctrl+w", "close_file", "Close File"),
-        ("ctrl+o", "open_folder", "Open Folder"),
-        ("ctrl+r", "reload_tree", "Reload Tree"),
-        ("ctrl+t", "cycle_theme", "Cycle Theme"),
-        ("ctrl+shift+c", "copy_selection", "Copy"),
-        ("ctrl+b", "toggle_filetree", "Toggle File Tree"),
-        ("ctrl+backslash", "zen_mode", "Zen Mode"),
-        ("ctrl+1", "focus_files", "Focus Files"),
-        ("ctrl+2", "focus_editor", "Focus Editor"),
-        ("ctrl+3", "focus_terminal", "Focus Terminal"),
-        ("ctrl+right_square_bracket", "cycle_panels", "Cycle Panels"),
-        ("ctrl+z", "editor_undo", "Undo"),
-        ("ctrl+y", "editor_redo", "Redo"),
-        ("ctrl+a", "editor_select_all", "Select All"),
-        ("ctrl+underscore", "editor_comment", "Toggle Comment"),
-        ("ctrl+d", "editor_duplicate", "Duplicate Line"),
-        ("f2", "rename_file", "Rename"),
-        ("delete", "delete_file", "Delete"),
-        ("question_mark", "show_help", "Help"),
+        ("ctrl+q",           "quit_app",        "Quit"),
+        ("ctrl+s",           "save",            "Save"),
+        ("ctrl+n",           "new_file",        "New File"),
+        ("ctrl+w",           "close_file",      "Close File"),
+        ("ctrl+o",           "open_folder",     "Open Folder"),
+        ("ctrl+r",           "reload_tree",     "Reload Tree"),
+        ("ctrl+t",           "cycle_theme",     "Cycle Theme"),
+        ("ctrl+shift+c",     "copy_selection",  "Copy"),
+        ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
+        ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
+        ("f2",               "rename_file",     "Rename"),
+        ("f1",               "show_help",       "Help"),
     ]
 
     def __init__(self):
@@ -157,10 +138,8 @@ class TrixApp(App):
         with Horizontal(id="main-area"):
             with Container(id="files-panel"):
                 yield DirectoryTree(".")
-            yield Divider("files-panel", "editor-panel", id="divider-files")
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
-            yield Divider("editor-panel", "terminal-panel")
             with Container(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
         with Horizontal(id="statusbar"):
@@ -169,7 +148,7 @@ class TrixApp(App):
             yield Static("Ln 1, Col 1", id="st-cursor")
             yield Static(_git_branch(), id="st-git")
             yield Static("", id="st-lang")
-            yield Static("? Help", id="st-help")
+            yield Static("F1 Help", id="st-help")
 
     async def on_mount(self) -> None:
         for t in THEMES:
@@ -178,25 +157,52 @@ class TrixApp(App):
         self.query_one("#files-panel").border_title = " Files"
         self.query_one("#editor-panel").border_title = " Editor"
         self.query_one("#terminal-panel").border_title = " Terminal"
-        # Set folder name in header
         folder = Path(".").resolve().name
         self.query_one("#hdr-folder", Static).update(folder)
-        self.query_one(DirectoryTree).focus()
+        # Focus the terminal input so all three panels are immediately usable
+        self.query_one("#term-input", Input).focus()
 
-    def on_click(self, event: Click) -> None:
-        ep = self.query_one("#editor-panel")
-        fp = self.query_one("#files-panel")
-        tp = self.query_one("#terminal-panel")
-        if ep.region.contains(event.screen_x, event.screen_y):
-            self.query_one("#editor", TextArea).focus()
-        elif fp.region.contains(event.screen_x, event.screen_y):
-            self.query_one(DirectoryTree).focus()
-        elif tp.region.contains(event.screen_x, event.screen_y):
-            log = self.query_one("#term-output", RichLog)
-            if log.region.contains(event.screen_x, event.screen_y):
-                log.focus()
-            else:
-                self.query_one("#term-input", Input).focus()
+    # ── Key routing ───────────────────────────────────────────────────────────
+
+    def on_key(self, event: Key) -> None:
+        """
+        Handle keys that must be scoped to a specific focused widget.
+        Global shortcuts are in BINDINGS above; this handles the rest.
+        """
+        focused = self.focused
+        key = event.key
+
+        # Ctrl+] cycles panels without stealing Tab from widgets
+        if key == "ctrl+right_square_bracket":
+            self._cycle_panels()
+            event.prevent_default()
+            return
+
+        # Delete only deletes a file when the file tree is focused
+        if key == "delete" and isinstance(focused, DirectoryTree):
+            self.call_later(self.action_delete_file)
+            event.prevent_default()
+            return
+
+        # Editor-only shortcuts — only when TextArea has focus
+        if isinstance(focused, TextArea):
+            if key == "ctrl+z":
+                focused.action_undo()
+                event.prevent_default()
+            elif key == "ctrl+y":
+                focused.action_redo()
+                event.prevent_default()
+            elif key == "ctrl+a":
+                focused.action_select_all()
+                event.prevent_default()
+            elif key == "ctrl+underscore":
+                self._editor_comment()
+                event.prevent_default()
+            elif key == "ctrl+d":
+                self._editor_duplicate()
+                event.prevent_default()
+
+    # ── Event handlers ────────────────────────────────────────────────────────
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
@@ -230,41 +236,23 @@ class TrixApp(App):
         except Exception:
             pass
 
-    def _refresh_ui(self) -> None:
-        # Editor panel title
-        if self._current_file is None:
-            self.query_one("#editor-panel").border_title = " Editor"
-            self.query_one("#st-file", Static).update("")
-            self.query_one("#st-lang", Static).update("")
-        else:
-            suffix = " *" if self._has_changes else ""
-            name = self._current_file.name
-            self.query_one("#editor-panel").border_title = f" Editor - {name}{suffix}"
-            self.query_one("#st-file", Static).update(f"{name}{suffix}")
-            self.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
-
     # ── Actions ───────────────────────────────────────────────────────────────
+
+    def action_show_help(self) -> None:
+        self.push_screen(HelpScreen())
 
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode
         show = not self._zen_mode
         self.query_one("#files-panel").display = show and self._filetree_visible
-        self.query_one("#divider-files").display = show and self._filetree_visible
         self.query_one("#terminal-panel").display = show
-        dividers = list(self.query(Divider))
-        if len(dividers) > 1:
-            dividers[1].display = show
         self.query_one("#statusbar").display = show
         self.query_one("#header").display = show
         self.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
 
-    def action_show_help(self) -> None:
-        self.push_screen(HelpScreen())
-
     def action_toggle_filetree(self) -> None:
         self._filetree_visible = not self._filetree_visible
         self.query_one("#files-panel").display = self._filetree_visible
-        self.query_one("#divider-files").display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:
@@ -309,33 +297,13 @@ class TrixApp(App):
         tree.path = path
         self._current_file = None
         self._has_changes = False
-        ta = self.query_one("#editor", TextArea)
-        ta.load_text("")
+        self.query_one("#editor", TextArea).load_text("")
         self.query_one("#hdr-folder", Static).update(path.name)
         self.query_one("#files-panel").border_title = f" Files - {path.name}"
         self._refresh_ui()
 
-    def action_focus_files(self) -> None:
-        self.query_one(DirectoryTree).focus()
-
-    def action_focus_editor(self) -> None:
-        self.query_one("#editor", TextArea).focus()
-
-    def action_focus_terminal(self) -> None:
-        self.query_one("#term-input", Input).focus()
-
-    def action_cycle_panels(self) -> None:
-        panels = [
-            self.query_one(DirectoryTree),
-            self.query_one("#editor", TextArea),
-            self.query_one("#term-input", Input),
-        ]
-        focused = self.focused
-        for i, w in enumerate(panels):
-            if w is focused:
-                panels[(i + 1) % len(panels)].focus()
-                return
-        panels[0].focus()
+    def action_reload_tree(self) -> None:
+        self.query_one(DirectoryTree).reload()
 
     @work
     async def action_new_file(self) -> None:
@@ -351,15 +319,13 @@ class TrixApp(App):
             self.notify(f"Error: {e}", severity="error")
             return
         await tree.reload()
-        ta = self.query_one("#editor", TextArea)
-        ta.load_text("")
+        self.query_one("#editor", TextArea).load_text("")
         self._current_file = new_path
         self._has_changes = False
         self._refresh_ui()
 
     def action_close_file(self) -> None:
-        ta = self.query_one("#editor", TextArea)
-        ta.load_text("")
+        self.query_one("#editor", TextArea).load_text("")
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()
@@ -398,8 +364,7 @@ class TrixApp(App):
         except Exception as e:
             self.notify(f"Delete failed: {e}", severity="error")
             return
-        ta = self.query_one("#editor", TextArea)
-        ta.load_text("")
+        self.query_one("#editor", TextArea).load_text("")
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()
@@ -415,19 +380,24 @@ class TrixApp(App):
                 return
         self.exit()
 
-    def action_reload_tree(self) -> None:
-        self.query_one(DirectoryTree).reload()
+    # ── Private helpers ───────────────────────────────────────────────────────
 
-    def action_editor_undo(self) -> None:
-        self.query_one("#editor", TextArea).action_undo()
+    def _cycle_panels(self) -> None:
+        """Ctrl+] cycles: Files → Editor → Terminal → Files ..."""
+        focused = self.focused
+        editor = self.query_one("#editor", TextArea)
+        term_input = self.query_one("#term-input", Input)
+        file_tree = self.query_one(DirectoryTree)
 
-    def action_editor_redo(self) -> None:
-        self.query_one("#editor", TextArea).action_redo()
+        if focused is file_tree:
+            editor.focus()
+        elif focused is editor:
+            term_input.focus()
+        else:
+            # terminal input, term-output, or anything else → files
+            file_tree.focus()
 
-    def action_editor_select_all(self) -> None:
-        self.query_one("#editor", TextArea).action_select_all()
-
-    def action_editor_comment(self) -> None:
+    def _editor_comment(self) -> None:
         ta = self.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
@@ -441,13 +411,23 @@ class TrixApp(App):
             new_line = indent + "# " + stripped
         ta.replace(new_line, (row, 0), (row, len(line)))
 
-    def action_editor_duplicate(self) -> None:
+    def _editor_duplicate(self) -> None:
         ta = self.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
         ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
+    def _refresh_ui(self) -> None:
+        if self._current_file is None:
+            self.query_one("#editor-panel").border_title = " Editor"
+            self.query_one("#st-file", Static).update("")
+            self.query_one("#st-lang", Static).update("")
+        else:
+            suffix = " *" if self._has_changes else ""
+            name = self._current_file.name
+            self.query_one("#editor-panel").border_title = f" Editor - {name}{suffix}"
+            self.query_one("#st-file", Static).update(f"{name}{suffix}")
+            self.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
 
     def _lang_label(self, path: Path) -> str:
         return {

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A terminal-native IDE built with Textual"
 requires-python = ">=3.10"
 authors = [
-    { name = "Asim Junaidi", email = "your@email.com" },
+    { name = "Asim Junaidi" },
 ]
 dependencies = [
     "textual>=0.80.0",

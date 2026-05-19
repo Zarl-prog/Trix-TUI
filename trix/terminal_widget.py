@@ -31,7 +31,6 @@ class TerminalWidget(Widget, can_focus=True):
 
     def on_mount(self) -> None:
         self._start_pty()
-        self.query_one("#term-input", Input).focus()
 
     def _start_pty(self) -> None:
         try:

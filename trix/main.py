@@ -155,6 +155,7 @@ class TrixApp(App):
         self.query_one("#files-panel").border_title = " Files "
         self.query_one("#editor-panel").border_title = " Editor "
         self.query_one("#terminal-panel").border_title = " Terminal "
+        self.query_one(DirectoryTree).focus()
 
     def on_click(self, event: Click) -> None:
         editor_panel = self.query_one("#editor-panel")

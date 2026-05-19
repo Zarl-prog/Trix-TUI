@@ -8,7 +8,6 @@ from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import Input, RichLog
 
-_ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
 _CLEAR = re.compile(r"\x1b\[(?:2J|3J|\d*J)")
 
 
@@ -82,10 +81,9 @@ class TerminalWidget(Widget, can_focus=True):
                     buf = _CLEAR.sub("", buf)
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
-                    line = _ANSI.sub("", line).rstrip("\r")
-                    line = re.sub(r'[\x00-\x08\x0b-\x1f\x7f-\xff]', '', line)
+                    line = line.rstrip("\r")
                     if line.strip():
-                        log.write(line)
+                        log.write(line, markup=False, highlight=True)
             except Exception:
                 await asyncio.sleep(0.05)
 

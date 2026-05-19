@@ -157,13 +157,20 @@ class TrixApp(App):
         self.query_one("#terminal-panel").border_title = " Terminal "
 
     def on_click(self, event: Click) -> None:
+        editor_panel = self.query_one("#editor-panel")
+        files_panel = self.query_one("#files-panel")
         terminal_panel = self.query_one("#terminal-panel")
         inp = self.query_one("#term-input", Input)
         log = self.query_one("#term-output", RichLog)
-        if terminal_panel.region.contains(event.screen_x, event.screen_y):
+
+        if editor_panel.region.contains(event.screen_x, event.screen_y):
+            self.query_one("#editor", TextArea).focus()
+        elif files_panel.region.contains(event.screen_x, event.screen_y):
+            self.query_one(DirectoryTree).focus()
+        elif terminal_panel.region.contains(event.screen_x, event.screen_y):
             if log.region.contains(event.screen_x, event.screen_y):
                 log.focus()
-            elif self.focused is not inp:
+            else:
                 inp.focus()
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:

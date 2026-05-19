@@ -196,8 +196,6 @@ Built by **Asim** — [GitHub](https://github.com/Zarl-prog)
 <div align="center">
   <sub>If you find TRIX useful, leave a ⭐ on GitHub — it helps a lot!</sub>
 </div>
-# TRIX
 
-[![PyPI version](https://badge.fury.io/py/trix-ide.svg)](https://pypi.org/project/trix-ide/)
 
 A terminal-native IDE built with Textual.

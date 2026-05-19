@@ -76,7 +76,7 @@ class ClickableDirectoryTree(DirectoryTree):
         if not node.data:
             return node_label
         path = node.data.path
-        if node.data.is_dir:
+        if path.is_dir():
             if path.name == ".git":
                 icon = "🌿 "
             else:

@@ -243,7 +243,7 @@ class TrixApp(App):
     #st-help   { width: auto; color: #4b4c4e; }
 
     DirectoryTree, TextArea, RichLog {
-        scrollbar-size: 1;
+        scrollbar-size: 1 1;
         scrollbar-color: #5ac1fe;
         scrollbar-background: #3f4043;
     }

@@ -1,4 +1,4 @@
-from trix.main import TrixApp
+from main import TrixApp
 
 
 def run():

@@ -13,10 +13,10 @@ from textual.events import Click
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from textual._work_decorator import work
 
-from trix.themes import THEMES
-from trix.terminal_widget import TerminalWidget
-from trix.divider_widget import Divider
-from trix.screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
+from themes import THEMES
+from terminal_widget import TerminalWidget
+from divider_widget import Divider
+from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
 
 
 def _git_branch() -> str:

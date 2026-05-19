@@ -11,6 +11,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
 from textual.events import Click
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
+from textual.worker import work
 
 from trix.themes import THEMES
 from trix.terminal_widget import TerminalWidget
@@ -313,6 +314,7 @@ class TrixApp(App):
             self.copy_to_clipboard(text)
             self.notify("Copied to clipboard")
 
+    @work
     async def action_open_folder(self) -> None:
         path_str = await self.push_screen_wait(FolderPicker())
         if not path_str:
@@ -355,6 +357,7 @@ class TrixApp(App):
                 return
         panels[0].focus()
 
+    @work
     async def action_new_file(self) -> None:
         name = await self.push_screen_wait(NewFileScreen())
         if not name:
@@ -385,6 +388,7 @@ class TrixApp(App):
         self._has_changes = False
         self._refresh_ui()
 
+    @work
     async def action_rename_file(self) -> None:
         if self._current_file is None:
             self.notify("No file open to rename", severity="warning")
@@ -403,6 +407,7 @@ class TrixApp(App):
         self._refresh_ui()
         await self.query_one(DirectoryTree).reload()
 
+    @work
     async def action_delete_file(self) -> None:
         if self._current_file is None:
             self.notify("No file open to delete", severity="warning")
@@ -426,6 +431,7 @@ class TrixApp(App):
         self._refresh_ui()
         await self.query_one(DirectoryTree).reload()
 
+    @work
     async def action_quit_app(self) -> None:
         if self._has_changes:
             confirmed = await self.push_screen_wait(

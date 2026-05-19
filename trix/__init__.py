@@ -1,1 +1,0 @@
-# trix — terminal-native IDE

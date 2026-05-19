@@ -8,7 +8,7 @@ from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import Input, RichLog
 
-_ANSI  = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
+_ANSI  = re.compile(r"\x1b[\[\]()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><~]|\x1b[^\x1b]|\x07|\x08")
 _CLEAR = re.compile(r"\x1b\[(?:2J|3J|\d*J)")
 
 
@@ -83,6 +83,7 @@ class TerminalWidget(Widget, can_focus=True):
                 while "\n" in buf:
                     line, buf = buf.split("\n", 1)
                     line = _ANSI.sub("", line).rstrip("\r")
+                    line = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", line)
                     if line != "":
                         log.write(line)
             except Exception as e:

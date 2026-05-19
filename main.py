@@ -31,6 +31,38 @@ def _git_branch() -> str:
         return ""
 
 
+class LayoutHorizontal(Horizontal):
+    """Horizontal container that doesn't steal focus and bubbles mouse events."""
+    can_focus = False
+    COMPONENT_CLASSES = set()
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        event.bubble = True
+
+
+class LayoutContainer(Container):
+    """Container layout wrapper that doesn't steal focus and bubbles mouse events."""
+    can_focus = False
+    COMPONENT_CLASSES = set()
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        event.bubble = True
+
+
+class ClickableTextArea(TextArea):
+    """TextArea subclass that explicitly focuses itself when clicked."""
+
+    def on_click(self, event: Click) -> None:
+        self.focus()
+
+
+class ClickableDirectoryTree(DirectoryTree):
+    """DirectoryTree subclass that explicitly focuses itself when clicked."""
+
+    def on_click(self, event: Click) -> None:
+        self.focus()
+
+
 class TrixApp(App):
     CSS = """
     Screen {
@@ -130,20 +162,20 @@ class TrixApp(App):
         self._zen_mode = False
 
     def compose(self) -> ComposeResult:
-        with Horizontal(id="header"):
+        with LayoutHorizontal(id="header"):
             yield Static("T R I X", id="hdr-title")
             yield Static("", id="hdr-folder")
             yield Static(THEMES[0]["name"], id="hdr-theme")
-        with Horizontal(id="main-area"):
-            with Container(id="files-panel"):
-                yield DirectoryTree(".", id="file-tree")
+        with LayoutHorizontal(id="main-area"):
+            with LayoutContainer(id="files-panel"):
+                yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
-            with Container(id="editor-panel"):
-                yield TextArea(id="editor", show_line_numbers=True)
+            with LayoutContainer(id="editor-panel"):
+                yield ClickableTextArea(id="editor", show_line_numbers=True)
             yield Divider("editor-panel", "terminal-panel", id="divider-2")
-            with Container(id="terminal-panel"):
+            with LayoutContainer(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
-        with Horizontal(id="statusbar"):
+        with LayoutHorizontal(id="statusbar"):
             yield Static("TRIX", id="st-brand")
             yield Static("", id="st-file")
             yield Static("Ln 1, Col 1", id="st-cursor")

@@ -4,12 +4,21 @@ import re
 import winpty
 
 from textual.app import ComposeResult
-from textual.events import Key
+from textual.events import Click, Key
 from textual.widget import Widget
 from textual.widgets import Input, RichLog
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]|\x1b\][^\x07]*\x07|\x1b.")
 _CLEAR = re.compile(r"\x1b\[(?:2J|3J|\d*J)")
+
+
+class TerminalOutputLog(RichLog):
+    """Custom log output for terminal widget that propagates click to focus the input bar."""
+
+    def on_click(self, event: Click) -> None:
+        parent = self.parent
+        if parent and hasattr(parent, "input_bar"):
+            parent.input_bar.focus()
 
 
 class TerminalWidget(Widget, can_focus=True):
@@ -25,8 +34,15 @@ class TerminalWidget(Widget, can_focus=True):
         self._history: list[str] = []
         self._hist_idx: int = -1
 
+    @property
+    def input_bar(self) -> Input:
+        return self.query_one("#term-input", Input)
+
+    def on_click(self, event: Click) -> None:
+        self.input_bar.focus()
+
     def compose(self) -> ComposeResult:
-        yield RichLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
+        yield TerminalOutputLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
         yield Input(id="term-input", placeholder=">")
 
     def on_mount(self) -> None:

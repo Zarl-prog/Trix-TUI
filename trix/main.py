@@ -11,7 +11,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
 from textual.events import Click
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
-from textual.worker import work
+from textual._work_decorator import work
 
 from trix.themes import THEMES
 from trix.terminal_widget import TerminalWidget

@@ -40,39 +40,44 @@ _HELP = """\
 """
 
 
+from themes import register_css_template
+
+HELP_SCREEN_CSS = """
+HelpScreen {
+    align: center middle;
+    background: rgba(0,0,0,0.75);
+}
+#help-dialog {
+    width: 52;
+    height: auto;
+    padding: 1 2;
+    background: var(--panel);
+    border: solid var(--border-focused);
+}
+#help-title {
+    width: 100%;
+    text-align: center;
+    color: var(--accent);
+    text-style: bold;
+    margin-bottom: 1;
+}
+#help-body {
+    width: 100%;
+    color: var(--text);
+}
+#help-close {
+    width: 100%;
+    text-align: center;
+    color: var(--text-muted);
+    margin-top: 1;
+}
+"""
+register_css_template("help_screen", HELP_SCREEN_CSS)
+
+
 class HelpScreen(Screen):
     BINDINGS = [("escape", "dismiss", "Close"), ("f1", "dismiss", "Close")]
-
-    CSS = """
-    HelpScreen {
-        align: center middle;
-        background: rgba(0,0,0,0.75);
-    }
-    #help-dialog {
-        width: 52;
-        height: auto;
-        padding: 1 2;
-        background: #1f2127;
-        border: solid #5ac1fe;
-    }
-    #help-title {
-        width: 100%;
-        text-align: center;
-        color: #5ac1fe;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-    #help-body {
-        width: 100%;
-        color: #bfbdb6;
-    }
-    #help-close {
-        width: 100%;
-        text-align: center;
-        color: #8a8986;
-        margin-top: 1;
-    }
-    """
+    CSS = HELP_SCREEN_CSS
 
     def compose(self) -> ComposeResult:
         with Vertical(id="help-dialog"):
@@ -84,25 +89,28 @@ class HelpScreen(Screen):
         self.dismiss()
 
 
+CONFIRM_SCREEN_CSS = """
+ConfirmScreen {
+    align: center middle;
+    background: rgba(0,0,0,0.7);
+}
+#cf-dialog {
+    width: 44;
+    height: auto;
+    padding: 2;
+    background: var(--panel);
+    border: solid var(--error);
+}
+#cf-msg { width: 100%; color: var(--text); margin-bottom: 1; }
+#cf-buttons { height: auto; layout: horizontal; }
+ConfirmScreen Button { margin: 0 1; }
+"""
+register_css_template("confirm_screen", CONFIRM_SCREEN_CSS)
+
+
 class ConfirmScreen(Screen):
     BINDINGS = [("escape", "cancel", "Cancel")]
-
-    CSS = """
-    ConfirmScreen {
-        align: center middle;
-        background: rgba(0,0,0,0.7);
-    }
-    #cf-dialog {
-        width: 44;
-        height: auto;
-        padding: 2;
-        background: #1f2127;
-        border: solid #ef7177;
-    }
-    #cf-msg { width: 100%; color: #bfbdb6; margin-bottom: 1; }
-    #cf-buttons { height: auto; layout: horizontal; }
-    Button { margin: 0 1; }
-    """
+    CSS = CONFIRM_SCREEN_CSS
 
     def __init__(self, message: str, **kwargs):
         super().__init__(**kwargs)
@@ -123,24 +131,27 @@ class ConfirmScreen(Screen):
         self.dismiss(False)
 
 
+NEW_FILE_SCREEN_CSS = """
+NewFileScreen {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.7);
+}
+#nf-dialog {
+    width: 50;
+    height: auto;
+    padding: 2;
+    background: var(--panel);
+    border: solid var(--border-focused);
+}
+NewFileScreen Label { width: 100%; margin-bottom: 1; color: var(--text); }
+#nf-input { width: 100%; }
+"""
+register_css_template("new_file_screen", NEW_FILE_SCREEN_CSS)
+
+
 class NewFileScreen(Screen):
     BINDINGS = [("escape", "cancel", "Cancel")]
-
-    CSS = """
-    NewFileScreen {
-        align: center middle;
-        background: rgba(0, 0, 0, 0.7);
-    }
-    #nf-dialog {
-        width: 50;
-        height: auto;
-        padding: 2;
-        background: #1f2127;
-        border: solid #5ac1fe;
-    }
-    Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
-    #nf-input { width: 100%; }
-    """
+    CSS = NEW_FILE_SCREEN_CSS
 
     def compose(self) -> ComposeResult:
         with Vertical(id="nf-dialog"):
@@ -154,24 +165,27 @@ class NewFileScreen(Screen):
         self.dismiss(None)
 
 
+RENAME_SCREEN_CSS = """
+RenameScreen {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.7);
+}
+#rn-dialog {
+    width: 50;
+    height: auto;
+    padding: 2;
+    background: var(--panel);
+    border: solid var(--border-focused);
+}
+RenameScreen Label { width: 100%; margin-bottom: 1; color: var(--text); }
+#rn-input { width: 100%; }
+"""
+register_css_template("rename_screen", RENAME_SCREEN_CSS)
+
+
 class RenameScreen(Screen):
     BINDINGS = [("escape", "cancel", "Cancel")]
-
-    CSS = """
-    RenameScreen {
-        align: center middle;
-        background: rgba(0, 0, 0, 0.7);
-    }
-    #rn-dialog {
-        width: 50;
-        height: auto;
-        padding: 2;
-        background: #1f2127;
-        border: solid #5ac1fe;
-    }
-    Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
-    #rn-input { width: 100%; }
-    """
+    CSS = RENAME_SCREEN_CSS
 
     def __init__(self, current_name: str, **kwargs):
         super().__init__(**kwargs)
@@ -194,28 +208,31 @@ class RenameScreen(Screen):
         self.dismiss(None)
 
 
+FOLDER_PICKER_CSS = """
+FolderPicker {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.7);
+}
+#dialog {
+    width: 50;
+    height: auto;
+    padding: 2;
+    background: var(--panel);
+    border: solid var(--border-focused);
+}
+FolderPicker Label {
+    width: 100%;
+    margin-bottom: 1;
+    color: var(--text);
+}
+#folder-path { width: 100%; }
+"""
+register_css_template("folder_picker", FOLDER_PICKER_CSS)
+
+
 class FolderPicker(Screen):
     BINDINGS = [("escape", "cancel", "Cancel")]
-
-    CSS = """
-    FolderPicker {
-        align: center middle;
-        background: rgba(0, 0, 0, 0.7);
-    }
-    #dialog {
-        width: 50;
-        height: auto;
-        padding: 2;
-        background: #1f2127;
-        border: solid #5ac1fe;
-    }
-    Label {
-        width: 100%;
-        margin-bottom: 1;
-        color: #bfbdb6;
-    }
-    #folder-path { width: 100%; }
-    """
+    CSS = FOLDER_PICKER_CSS
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
@@ -229,48 +246,52 @@ class FolderPicker(Screen):
         self.dismiss(None)
 
 
+SPLASH_SCREEN_CSS = """
+SplashScreen {
+    align: center middle;
+    background: var(--background);
+}
+#splash-container {
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+#splash-logo {
+    text-align: center;
+    color: var(--accent);
+    text-style: bold;
+    margin-bottom: 1;
+}
+#splash-tagline {
+    text-align: center;
+    color: var(--text-muted);
+    text-style: bold;
+    margin-bottom: 0;
+}
+#splash-version {
+    text-align: center;
+    color: var(--border);
+    margin-bottom: 2;
+}
+#splash-bar {
+    text-align: center;
+    color: var(--accent);
+    width: 32;
+    margin-bottom: 0;
+}
+#splash-status {
+    text-align: center;
+    color: var(--text-muted);
+    width: 32;
+}
+"""
+register_css_template("splash_screen", SPLASH_SCREEN_CSS)
+
+
 class SplashScreen(Screen):
     """Splash screen shown for 2 seconds upon app startup."""
 
-    CSS = """
-    SplashScreen {
-        align: center middle;
-        background: #0d1016;
-    }
-    #splash-container {
-        align: center middle;
-        width: 100%;
-        height: 100%;
-    }
-    #splash-logo {
-        text-align: center;
-        color: #5ac1fe;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-    #splash-tagline {
-        text-align: center;
-        color: #4b4c4e;
-        text-style: bold;
-        margin-bottom: 0;
-    }
-    #splash-version {
-        text-align: center;
-        color: #3f4043;
-        margin-bottom: 2;
-    }
-    #splash-bar {
-        text-align: center;
-        color: #5ac1fe;
-        width: 32;
-        margin-bottom: 0;
-    }
-    #splash-status {
-        text-align: center;
-        color: #4b4c4e;
-        width: 32;
-    }
-    """
+    CSS = SPLASH_SCREEN_CSS
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -339,43 +360,46 @@ class SplashScreen(Screen):
         self.query_one("#splash-status", Static).update(statuses[status_idx])
 
 
+THEME_PICKER_SCREEN_CSS = """
+ThemePickerScreen {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.75);
+}
+#tp-dialog {
+    width: 36;
+    height: 18;
+    padding: 1 2;
+    background: var(--panel);
+    border: solid var(--border-focused);
+}
+#tp-title {
+    width: 100%;
+    text-align: center;
+    color: var(--accent);
+    text-style: bold;
+    margin-bottom: 1;
+}
+#tp-list {
+    background: var(--background);
+    border: none;
+    height: 1fr;
+}
+#tp-hint {
+    width: 100%;
+    text-align: center;
+    color: var(--text-muted);
+    margin-top: 1;
+}
+"""
+register_css_template("theme_picker_screen", THEME_PICKER_SCREEN_CSS)
+
+
 class ThemePickerScreen(Screen):
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
         ("enter", "confirm", "Confirm")
     ]
-
-    CSS = """
-    ThemePickerScreen {
-        align: center middle;
-        background: rgba(0, 0, 0, 0.75);
-    }
-    #tp-dialog {
-        width: 36;
-        height: 18;
-        padding: 1 2;
-        background: $panel;
-        border: solid $primary;
-    }
-    #tp-title {
-        width: 100%;
-        text-align: center;
-        color: $primary;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-    #tp-list {
-        background: $background;
-        border: none;
-        height: 1fr;
-    }
-    #tp-hint {
-        width: 100%;
-        text-align: center;
-        color: $secondary;
-        margin-top: 1;
-    }
-    """
+    CSS = THEME_PICKER_SCREEN_CSS
 
     def __init__(self, themes: list[dict], initial_theme: dict, **kwargs):
         super().__init__(**kwargs)

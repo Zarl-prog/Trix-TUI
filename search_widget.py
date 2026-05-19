@@ -9,36 +9,42 @@ from textual.widgets import Input, Label, ListItem, ListView, Static, TextArea
 from textual.widgets.text_area import Selection
 
 
+from themes import register_css_template
+
+EDITOR_SEARCH_CSS = """
+EditorSearch {
+    height: auto;
+    dock: top;
+    background: var(--panel);
+    border-bottom: solid var(--border);
+    padding: 0 1;
+    layout: horizontal;
+}
+EditorSearch Input {
+    width: 1fr;
+    height: 3;
+    border: solid var(--border);
+    background: var(--background);
+    color: var(--text);
+}
+EditorSearch Input:focus {
+    border: solid var(--border-focused);
+}
+#search-count {
+    width: auto;
+    height: 3;
+    content-align: center middle;
+    color: var(--text-muted);
+    padding: 0 1;
+}
+"""
+register_css_template("editor_search", EDITOR_SEARCH_CSS)
+
+
 class EditorSearch(Widget):
     """Inline search bar docked inside the editor panel."""
 
-    DEFAULT_CSS = """
-    EditorSearch {
-        height: auto;
-        dock: top;
-        background: #1f2127;
-        border-bottom: solid #3f4043;
-        padding: 0 1;
-        layout: horizontal;
-    }
-    EditorSearch Input {
-        width: 1fr;
-        height: 3;
-        border: solid #3f4043;
-        background: #0d1016;
-        color: #bfbdb6;
-    }
-    EditorSearch Input:focus {
-        border: solid #5ac1fe;
-    }
-    #search-count {
-        width: auto;
-        height: 3;
-        content-align: center middle;
-        color: #8a8986;
-        padding: 0 1;
-    }
-    """
+    DEFAULT_CSS = EDITOR_SEARCH_CSS
 
     def compose(self) -> ComposeResult:
         yield Input(id="search-input", placeholder="Search…")
@@ -123,45 +129,49 @@ class EditorSearch(Widget):
         ta.scroll_cursor_visible()
 
 
+GLOBAL_SEARCH_CSS = """
+GlobalSearch {
+    height: auto;
+    dock: top;
+    background: var(--panel);
+    border-bottom: solid var(--border);
+    padding: 0 1;
+    layout: vertical;
+}
+GlobalSearch Input {
+    width: 1fr;
+    height: 3;
+    border: solid var(--border);
+    background: var(--background);
+    color: var(--text);
+}
+GlobalSearch Input:focus {
+    border: solid var(--border-focused);
+}
+#global-results {
+    height: 10;
+    background: var(--background);
+    border: solid var(--border);
+}
+GlobalSearch ListItem {
+    padding: 0 1;
+    color: var(--text);
+    background: var(--background);
+}
+GlobalSearch ListItem:hover {
+    background: var(--border);
+}
+GlobalSearch ListView:focus > ListItem.--highlight {
+    background: var(--accent);
+}
+"""
+register_css_template("global_search", GLOBAL_SEARCH_CSS)
+
+
 class GlobalSearch(Widget):
     """Global search bar docked inside the files panel."""
 
-    DEFAULT_CSS = """
-    GlobalSearch {
-        height: auto;
-        dock: top;
-        background: #1f2127;
-        border-bottom: solid #3f4043;
-        padding: 0 1;
-        layout: vertical;
-    }
-    GlobalSearch Input {
-        width: 1fr;
-        height: 3;
-        border: solid #3f4043;
-        background: #0d1016;
-        color: #bfbdb6;
-    }
-    GlobalSearch Input:focus {
-        border: solid #5ac1fe;
-    }
-    #global-results {
-        height: 10;
-        background: #0d1016;
-        border: solid #3f4043;
-    }
-    GlobalSearch ListItem {
-        padding: 0 1;
-        color: #bfbdb6;
-        background: #0d1016;
-    }
-    GlobalSearch ListItem:hover {
-        background: #3e4043;
-    }
-    GlobalSearch ListView:focus > ListItem.--highlight {
-        background: #1f4a6e;
-    }
-    """
+    DEFAULT_CSS = GLOBAL_SEARCH_CSS
 
     def compose(self) -> ComposeResult:
         yield Input(id="global-search-input", placeholder="Search in files…")

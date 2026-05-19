@@ -1,18 +1,22 @@
 from textual.events import MouseDown, MouseMove, MouseUp
 from textual.widgets import Static
+from themes import register_css_template
+
+DIVIDER_CSS = """
+Divider {
+    width: 1;
+    height: 100%;
+    background: var(--border);
+}
+Divider:hover { background: var(--accent); }
+"""
+register_css_template("divider", DIVIDER_CSS)
 
 
 class Divider(Static):
     """Draggable 1-cell divider between two panels."""
 
-    DEFAULT_CSS = """
-    Divider {
-        width: 1;
-        height: 100%;
-        background: #3f4043;
-    }
-    Divider:hover { background: #5ac1fe; }
-    """
+    DEFAULT_CSS = DIVIDER_CSS
 
     def __init__(self, left_id: str, right_id: str, **kwargs):
         super().__init__("", **kwargs)

@@ -9,6 +9,8 @@ _HELP = """\
    [#bfbdb6]Ctrl+S[/#bfbdb6]           Save File
    [#bfbdb6]Ctrl+W[/#bfbdb6]           Close File
    [#bfbdb6]Ctrl+O[/#bfbdb6]           Open Folder
+   [#bfbdb6]F2[/#bfbdb6]               Rename File
+   [#bfbdb6]Delete[/#bfbdb6]           Delete File
 
  [bold #5ac1fe]Layout[/bold #5ac1fe]
    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
@@ -145,6 +147,46 @@ class NewFileScreen(Screen):
         with Vertical(id="nf-dialog"):
             yield Label("New file name:")
             yield Input(id="nf-input", placeholder="filename.txt")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.dismiss(event.value)
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+
+class RenameScreen(Screen):
+    BINDINGS = [("escape", "cancel", "Cancel")]
+
+    CSS = """
+    RenameScreen {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.7);
+    }
+    #rn-dialog {
+        width: 50;
+        height: auto;
+        padding: 2;
+        background: #1f2127;
+        border: solid #5ac1fe;
+    }
+    Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
+    #rn-input { width: 100%; }
+    """
+
+    def __init__(self, current_name: str, **kwargs):
+        super().__init__(**kwargs)
+        self._current_name = current_name
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="rn-dialog"):
+            yield Label(f"Rename: {self._current_name}")
+            yield Input(id="rn-input", value=self._current_name)
+
+    def on_mount(self) -> None:
+        inp = self.query_one("#rn-input", Input)
+        inp.focus()
+        inp.cursor_position = len(inp.value)
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)

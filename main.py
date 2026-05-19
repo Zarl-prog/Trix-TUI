@@ -8,7 +8,7 @@ from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
-from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen
+from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
 
 
 class TrixApp(App):
@@ -123,6 +123,8 @@ class TrixApp(App):
         ("ctrl+a", "editor_select_all", "Select All"),
         ("ctrl+underscore", "editor_comment", "Toggle Comment"),
         ("ctrl+d", "editor_duplicate", "Duplicate Line"),
+        ("f2", "rename_file", "Rename"),
+        ("delete", "delete_file", "Delete"),
         ("question_mark", "show_help", "Help"),
     ]
 
@@ -242,14 +244,14 @@ class TrixApp(App):
 
     async def action_open_folder(self) -> None:
         path_str = await self.push_screen_wait(FolderPicker())
-        if path_str is None:
+        if not path_str:
             return
         path = Path(path_str.strip())
         if not path.is_dir():
             self.query_one("#terminal", TerminalWidget).write(f"Invalid path: {path_str}")
             return
         tree = self.query_one(DirectoryTree)
-        tree.call_after_refresh(setattr, tree, "path", path)
+        tree.path = path
         self._current_file = None
         self._has_changes = False
         self.query_one("#editor", TextArea).load_text("")
@@ -284,14 +286,14 @@ class TrixApp(App):
         if not name:
             return
         tree = self.query_one(DirectoryTree)
-        root = Path(str(tree.path))
-        new_path = root / name.strip()
+        new_path = Path(tree.path) / name.strip()
         try:
+            new_path.parent.mkdir(parents=True, exist_ok=True)
             new_path.touch()
         except Exception as e:
-            self.query_one("#terminal", TerminalWidget).write(f"Error: {e}")
+            self.notify(f"Error: {e}", severity="error")
             return
-        tree.reload()
+        await tree.reload()
         self.query_one("#editor", TextArea).load_text("")
         self._current_file = new_path
         self._has_changes = False
@@ -302,6 +304,44 @@ class TrixApp(App):
         self._current_file = None
         self._has_changes = False
         self._update_editor_title()
+
+    async def action_rename_file(self) -> None:
+        if self._current_file is None:
+            self.notify("No file open to rename", severity="warning")
+            return
+        new_name = await self.push_screen_wait(RenameScreen(self._current_file.name))
+        if not new_name or new_name.strip() == self._current_file.name:
+            return
+        new_path = self._current_file.parent / new_name.strip()
+        try:
+            self._current_file.rename(new_path)
+        except Exception as e:
+            self.notify(f"Rename failed: {e}", severity="error")
+            return
+        self._current_file = new_path
+        self._has_changes = False
+        self._update_editor_title()
+        await self.query_one(DirectoryTree).reload()
+
+    async def action_delete_file(self) -> None:
+        if self._current_file is None:
+            self.notify("No file open to delete", severity="warning")
+            return
+        confirmed = await self.push_screen_wait(
+            ConfirmScreen(f"Delete {self._current_file.name}?")
+        )
+        if not confirmed:
+            return
+        try:
+            self._current_file.unlink()
+        except Exception as e:
+            self.notify(f"Delete failed: {e}", severity="error")
+            return
+        self.query_one("#editor", TextArea).load_text("")
+        self._current_file = None
+        self._has_changes = False
+        self._update_editor_title()
+        await self.query_one(DirectoryTree).reload()
 
     async def action_quit_app(self) -> None:
         if self._has_changes:

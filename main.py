@@ -231,12 +231,12 @@ class TrixApp(App):
             
             # Check Files Panel
             if isinstance(widget, DirectoryTree) or any(isinstance(a, DirectoryTree) for a in ancestors):
-                self.query_one(DirectoryTree).focus()
+                self.screen.query_one(DirectoryTree).focus()
                 return
                 
             # Check Editor Panel
             if isinstance(widget, TextArea) or any(isinstance(a, TextArea) for a in ancestors):
-                self.query_one("#editor", TextArea).focus()
+                self.screen.query_one("#editor", TextArea).focus()
                 return
                 
             # Check Terminal Panel
@@ -246,8 +246,8 @@ class TrixApp(App):
                 or (widget.id and widget.id in ("term-output", "term-input"))
                 or any(a.id and a.id in ("term-output", "term-input") for a in ancestors)
             ):
-                term_output = self.query_one("#term-output", RichLog)
-                term_input = self.query_one("#term-input", Input)
+                term_output = self.screen.query_one("#term-output", RichLog)
+                term_input = self.screen.query_one("#term-input", Input)
                 if widget == term_output or any(a == term_output for a in ancestors):
                     term_output.focus()
                 else:
@@ -256,18 +256,18 @@ class TrixApp(App):
 
         # 2. Coordinate boundary check fallback (for clicks on empty padding, borders, headers)
         x, y = event.screen_x, event.screen_y
-        files_panel = self.query_one("#files-panel")
-        editor_panel = self.query_one("#editor-panel")
-        terminal_panel = self.query_one("#terminal-panel")
+        files_panel = self.screen.query_one("#files-panel")
+        editor_panel = self.screen.query_one("#editor-panel")
+        terminal_panel = self.screen.query_one("#terminal-panel")
 
         if files_panel.display and files_panel.region.contains(x, y):
-            self.query_one(DirectoryTree).focus()
+            self.screen.query_one(DirectoryTree).focus()
         elif editor_panel.display and editor_panel.region.contains(x, y):
-            self.query_one("#editor", TextArea).focus()
+            self.screen.query_one("#editor", TextArea).focus()
         elif terminal_panel.display and terminal_panel.region.contains(x, y):
             # For terminal, check if click is on output or input area
-            term_output = self.query_one("#term-output", RichLog)
-            term_input = self.query_one("#term-input", Input)
+            term_output = self.screen.query_one("#term-output", RichLog)
+            term_input = self.screen.query_one("#term-input", Input)
             if term_output.region.contains(x, y):
                 term_output.focus()
             else:
@@ -320,7 +320,7 @@ class TrixApp(App):
             content = path.read_text(encoding="utf-8")
         except Exception:
             return
-        ta = self.query_one("#editor", TextArea)
+        ta = self.screen.query_one("#editor", TextArea)
         ta.load_text(content)
         try:
             ta.language = self._detect_language(path)
@@ -338,9 +338,9 @@ class TrixApp(App):
 
     def on_text_area_selection_changed(self) -> None:
         try:
-            ta = self.query_one("#editor", TextArea)
+            ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
-            self.query_one("#st-cursor", Static).update(f"Ln {row+1}, Col {col+1}")
+            self.screen.query_one("#st-cursor", Static).update(f"Ln {row+1}, Col {col+1}")
         except Exception:
             pass
 
@@ -352,25 +352,25 @@ class TrixApp(App):
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode
         show = not self._zen_mode
-        self.query_one("#files-panel").display = show and self._filetree_visible
-        self.query_one("#divider-1").display = show and self._filetree_visible
-        self.query_one("#terminal-panel").display = show
-        self.query_one("#divider-2").display = show
-        self.query_one("#statusbar").display = show
-        self.query_one("#header").display = show
-        self.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
+        self.screen.query_one("#files-panel").display = show and self._filetree_visible
+        self.screen.query_one("#divider-1").display = show and self._filetree_visible
+        self.screen.query_one("#terminal-panel").display = show
+        self.screen.query_one("#divider-2").display = show
+        self.screen.query_one("#statusbar").display = show
+        self.screen.query_one("#header").display = show
+        self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
 
     def action_toggle_filetree(self) -> None:
         self._filetree_visible = not self._filetree_visible
-        self.query_one("#files-panel").display = self._filetree_visible
-        self.query_one("#divider-1").display = self._filetree_visible
+        self.screen.query_one("#files-panel").display = self._filetree_visible
+        self.screen.query_one("#divider-1").display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:
             self.notify("No file open", severity="warning")
             return
         self._current_file.write_text(
-            self.query_one("#editor", TextArea).text, encoding="utf-8"
+            self.screen.query_one("#editor", TextArea).text, encoding="utf-8"
         )
         self._has_changes = False
         self._refresh_ui()
@@ -379,7 +379,7 @@ class TrixApp(App):
         self._theme_index = (self._theme_index + 1) % len(THEMES)
         t = THEMES[self._theme_index]
         self.theme = t["slug"]
-        self.query_one("#hdr-theme", Static).update(t["name"])
+        self.screen.query_one("#hdr-theme", Static).update(t["name"])
 
     def action_copy_selection(self) -> None:
         focused = self.focused
@@ -404,24 +404,24 @@ class TrixApp(App):
         if not path.is_dir():
             self.notify(f"Invalid path: {path_str}", severity="error")
             return
-        tree = self.query_one(DirectoryTree)
+        tree = self.screen.query_one(DirectoryTree)
         tree.path = path
         self._current_file = None
         self._has_changes = False
-        self.query_one("#editor", TextArea).load_text("")
-        self.query_one("#hdr-folder", Static).update(path.name)
-        self.query_one("#files-panel").border_title = f" Files - {path.name}"
+        self.screen.query_one("#editor", TextArea).load_text("")
+        self.screen.query_one("#hdr-folder", Static).update(path.name)
+        self.screen.query_one("#files-panel").border_title = f" Files - {path.name}"
         self._refresh_ui()
 
     def action_reload_tree(self) -> None:
-        self.query_one(DirectoryTree).reload()
+        self.screen.query_one(DirectoryTree).reload()
 
     @work
     async def action_new_file(self) -> None:
         name = await self.push_screen_wait(NewFileScreen())
         if not name:
             return
-        tree = self.query_one(DirectoryTree)
+        tree = self.screen.query_one(DirectoryTree)
         new_path = Path(tree.path) / name.strip()
         try:
             new_path.parent.mkdir(parents=True, exist_ok=True)
@@ -430,13 +430,13 @@ class TrixApp(App):
             self.notify(f"Error: {e}", severity="error")
             return
         await tree.reload()
-        self.query_one("#editor", TextArea).load_text("")
+        self.screen.query_one("#editor", TextArea).load_text("")
         self._current_file = new_path
         self._has_changes = False
         self._refresh_ui()
 
     def action_close_file(self) -> None:
-        self.query_one("#editor", TextArea).load_text("")
+        self.screen.query_one("#editor", TextArea).load_text("")
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()
@@ -458,7 +458,7 @@ class TrixApp(App):
         self._current_file = new_path
         self._has_changes = False
         self._refresh_ui()
-        await self.query_one(DirectoryTree).reload()
+        await self.screen.query_one(DirectoryTree).reload()
 
     @work
     async def action_delete_file(self) -> None:
@@ -475,11 +475,11 @@ class TrixApp(App):
         except Exception as e:
             self.notify(f"Delete failed: {e}", severity="error")
             return
-        self.query_one("#editor", TextArea).load_text("")
+        self.screen.query_one("#editor", TextArea).load_text("")
         self._current_file = None
         self._has_changes = False
         self._refresh_ui()
-        await self.query_one(DirectoryTree).reload()
+        await self.screen.query_one(DirectoryTree).reload()
 
     @work
     async def action_quit_app(self) -> None:
@@ -496,9 +496,9 @@ class TrixApp(App):
     def _cycle_panels(self) -> None:
         """Ctrl+] cycles: Files → Editor → Terminal → Files"""
         focused = self.focused
-        editor = self.query_one("#editor", TextArea)
-        term_input = self.query_one("#term-input", Input)
-        file_tree = self.query_one(DirectoryTree)
+        editor = self.screen.query_one("#editor", TextArea)
+        term_input = self.screen.query_one("#term-input", Input)
+        file_tree = self.screen.query_one(DirectoryTree)
 
         if focused is file_tree:
             editor.focus()
@@ -508,7 +508,7 @@ class TrixApp(App):
             file_tree.focus()
 
     def _editor_comment(self) -> None:
-        ta = self.query_one("#editor", TextArea)
+        ta = self.screen.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
         stripped = line.lstrip()
@@ -522,22 +522,22 @@ class TrixApp(App):
         ta.replace(new_line, (row, 0), (row, len(line)))
 
     def _editor_duplicate(self) -> None:
-        ta = self.query_one("#editor", TextArea)
+        ta = self.screen.query_one("#editor", TextArea)
         row, _ = ta.cursor_location
         line = ta.document.get_line(row)
         ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
     def _refresh_ui(self) -> None:
         if self._current_file is None:
-            self.query_one("#editor-panel").border_title = " Editor"
-            self.query_one("#st-file", Static).update("")
-            self.query_one("#st-lang", Static).update("")
+            self.screen.query_one("#editor-panel").border_title = " Editor"
+            self.screen.query_one("#st-file", Static).update("")
+            self.screen.query_one("#st-lang", Static).update("")
         else:
             suffix = " *" if self._has_changes else ""
             name = self._current_file.name
-            self.query_one("#editor-panel").border_title = f" Editor - {name}{suffix}"
-            self.query_one("#st-file", Static).update(f"{name}{suffix}")
-            self.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
+            self.screen.query_one("#editor-panel").border_title = f" Editor - {name}{suffix}"
+            self.screen.query_one("#st-file", Static).update(f"{name}{suffix}")
+            self.screen.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
 
     def _lang_label(self, path: Path) -> str:
         return {

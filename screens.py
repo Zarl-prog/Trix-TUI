@@ -249,7 +249,7 @@ class FolderPicker(Screen):
 SPLASH_SCREEN_CSS = """
 SplashScreen {
     align: center middle;
-    background: var(--background);
+    background: #0d1016;
 }
 #splash-container {
     align: center middle;
@@ -258,30 +258,30 @@ SplashScreen {
 }
 #splash-logo {
     text-align: center;
-    color: var(--accent);
+    color: #5ac1fe;
     text-style: bold;
     margin-bottom: 1;
 }
 #splash-tagline {
     text-align: center;
-    color: var(--text-muted);
+    color: #8a8986;
     text-style: bold;
     margin-bottom: 0;
 }
 #splash-version {
     text-align: center;
-    color: var(--border);
+    color: #3f4043;
     margin-bottom: 2;
 }
 #splash-bar {
     text-align: center;
-    color: var(--accent);
+    color: #5ac1fe;
     width: 32;
     margin-bottom: 0;
 }
 #splash-status {
     text-align: center;
-    color: var(--text-muted);
+    color: #8a8986;
     width: 32;
 }
 """

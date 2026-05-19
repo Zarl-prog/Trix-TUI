@@ -19,6 +19,7 @@ from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
+from git_history_screen import GitHistoryScreen
 
 
 def _git_branch() -> str:
@@ -289,6 +290,7 @@ class TrixApp(App):
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
         ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
+        ("ctrl+g",           "show_git_history","Git History"),
         ("f2",               "rename_file",     "Rename"),
         ("f1",               "show_help",       "Help"),
     ]
@@ -510,6 +512,13 @@ class TrixApp(App):
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())
+
+    def action_show_git_history(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        tree = self.screen.query_one(DirectoryTree)
+        repo_path = str(tree.path)
+        self.push_screen(GitHistoryScreen(repo_path))
 
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode

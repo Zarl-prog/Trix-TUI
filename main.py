@@ -9,12 +9,13 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal
-from textual.events import Click, Key
+from textual.events import Click, Key, MouseDown
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 from textual._work_decorator import work
 
 from themes import THEMES
 from terminal_widget import TerminalWidget
+from divider_widget import Divider
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
 
 
@@ -105,8 +106,6 @@ class TrixApp(App):
     #st-help   { width: auto; color: #4b4c4e; }
     """
 
-    # Only global shortcuts that don't conflict with any widget's own key handling.
-    # NO tab, NO delete, NO ctrl+z/y/a/d — those are handled contextually in on_key.
     BINDINGS = [
         ("ctrl+q",           "quit_app",        "Quit"),
         ("ctrl+s",           "save",            "Save"),
@@ -137,9 +136,11 @@ class TrixApp(App):
             yield Static(THEMES[0]["name"], id="hdr-theme")
         with Horizontal(id="main-area"):
             with Container(id="files-panel"):
-                yield DirectoryTree(".")
+                yield DirectoryTree(".", id="file-tree")
+            yield Divider("files-panel", "editor-panel", id="divider-1")
             with Container(id="editor-panel"):
                 yield TextArea(id="editor", show_line_numbers=True)
+            yield Divider("editor-panel", "terminal-panel", id="divider-2")
             with Container(id="terminal-panel"):
                 yield TerminalWidget(id="terminal")
         with Horizontal(id="statusbar"):
@@ -162,29 +163,51 @@ class TrixApp(App):
         # Focus the terminal input so all three panels are immediately usable
         self.query_one("#term-input", Input).focus()
 
-    # ── Key routing ───────────────────────────────────────────────────────────
+    # ── Mouse click handling ─────────────────────────────────────────────────
+
+    def on_click(self, event: Click) -> None:
+        """
+        Handle mouse clicks to focus the appropriate widget in each panel.
+        This enables mouse interaction across all panels.
+        """
+        x, y = event.screen_x, event.screen_y
+        files_panel = self.query_one("#files-panel")
+        editor_panel = self.query_one("#editor-panel")
+        terminal_panel = self.query_one("#terminal-panel")
+
+        if files_panel.display and files_panel.region.contains(x, y):
+            self.query_one(DirectoryTree).focus()
+        elif editor_panel.display and editor_panel.region.contains(x, y):
+            self.query_one("#editor", TextArea).focus()
+        elif terminal_panel.display and terminal_panel.region.contains(x, y):
+            # For terminal, check if click is on output or input area
+            term_output = self.query_one("#term-output", RichLog)
+            term_input = self.query_one("#term-input", Input)
+            if term_output.region.contains(x, y):
+                term_output.focus()
+            else:
+                term_input.focus()
+
+    # ── Key routing ─────────────────────────────────────────────────────────
 
     def on_key(self, event: Key) -> None:
-        """
-        Handle keys that must be scoped to a specific focused widget.
-        Global shortcuts are in BINDINGS above; this handles the rest.
-        """
+        """Handle keys that must be scoped to a specific focused widget."""
         focused = self.focused
         key = event.key
 
-        # Ctrl+] cycles panels without stealing Tab from widgets
+        # Ctrl+] cycles panels
         if key == "ctrl+right_square_bracket":
             self._cycle_panels()
             event.prevent_default()
             return
 
-        # Delete only deletes a file when the file tree is focused
+        # Delete only when file tree is focused
         if key == "delete" and isinstance(focused, DirectoryTree):
             self.call_later(self.action_delete_file)
             event.prevent_default()
             return
 
-        # Editor-only shortcuts — only when TextArea has focus
+        # Editor-only shortcuts
         if isinstance(focused, TextArea):
             if key == "ctrl+z":
                 focused.action_undo()
@@ -202,7 +225,7 @@ class TrixApp(App):
                 self._editor_duplicate()
                 event.prevent_default()
 
-    # ── Event handlers ────────────────────────────────────────────────────────
+    # ── Event handlers ─────────────────────────────────────────────────────
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
@@ -236,7 +259,7 @@ class TrixApp(App):
         except Exception:
             pass
 
-    # ── Actions ───────────────────────────────────────────────────────────────
+    # ── Actions ───────────────────────────────────────────────────────────
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())
@@ -245,7 +268,9 @@ class TrixApp(App):
         self._zen_mode = not self._zen_mode
         show = not self._zen_mode
         self.query_one("#files-panel").display = show and self._filetree_visible
+        self.query_one("#divider-1").display = show and self._filetree_visible
         self.query_one("#terminal-panel").display = show
+        self.query_one("#divider-2").display = show
         self.query_one("#statusbar").display = show
         self.query_one("#header").display = show
         self.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
@@ -253,6 +278,7 @@ class TrixApp(App):
     def action_toggle_filetree(self) -> None:
         self._filetree_visible = not self._filetree_visible
         self.query_one("#files-panel").display = self._filetree_visible
+        self.query_one("#divider-1").display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:
@@ -380,10 +406,10 @@ class TrixApp(App):
                 return
         self.exit()
 
-    # ── Private helpers ───────────────────────────────────────────────────────
+    # ── Private helpers ─────────────────────────────────────────────────────
 
     def _cycle_panels(self) -> None:
-        """Ctrl+] cycles: Files → Editor → Terminal → Files ..."""
+        """Ctrl+] cycles: Files → Editor → Terminal → Files"""
         focused = self.focused
         editor = self.query_one("#editor", TextArea)
         term_input = self.query_one("#term-input", Input)
@@ -394,7 +420,6 @@ class TrixApp(App):
         elif focused is editor:
             term_input.focus()
         else:
-            # terminal input, term-output, or anything else → files
             file_tree.focus()
 
     def _editor_comment(self) -> None:

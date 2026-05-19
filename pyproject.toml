@@ -20,7 +20,7 @@ dependencies = [
 trix = "app:run"
 
 [tool.setuptools]
-py-modules = ["main", "app", "screens", "themes", "terminal_widget", "search_widget"]
+py-modules = ["main", "app", "screens", "themes", "terminal_widget", "divider_widget", "search_widget"]
 
 [tool.setuptools.package-data]
 "*" = ["ayu.json"]

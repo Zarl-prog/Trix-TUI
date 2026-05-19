@@ -27,7 +27,7 @@ class TerminalWidget(Widget, can_focus=True):
 
     def compose(self) -> ComposeResult:
         yield RichLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
-        yield Input(id="term-input", placeholder="❯")
+        yield Input(id="term-input", placeholder=">")
 
     def on_mount(self) -> None:
         self._start_pty()

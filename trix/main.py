@@ -1,8 +1,16 @@
 from pathlib import Path
+import sys
 import subprocess
+from pathlib import Path
+
+# Force UTF-8 output on Windows
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower() != "utf-8":
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container, Horizontal
 from textual.events import Click
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
 
@@ -10,23 +18,6 @@ from trix.themes import THEMES
 from trix.terminal_widget import TerminalWidget
 from trix.divider_widget import Divider
 from trix.screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen
-
-# ── File type icons ───────────────────────────────────────────────────────────
-_EXT_ICONS = {
-    ".py": "🐍", ".js": "📜", ".json": "📋", ".md": "📝",
-    ".txt": "📄", ".toml": "⚙️", ".ts": "📜", ".tsx": "📜",
-    ".jsx": "📜", ".html": "🌐", ".htm": "🌐", ".css": "🎨",
-    ".rs": "🦀", ".go": "🐹", ".c": "⚡", ".cpp": "⚡",
-    ".h": "⚡", ".hpp": "⚡", ".java": "☕", ".sh": "🖥️",
-    ".yaml": "⚙️", ".yml": "⚙️", ".sql": "🗄️", ".xml": "📋",
-    ".svg": "🖼️", ".png": "🖼️", ".jpg": "🖼️",
-}
-
-
-def _file_icon(path: Path) -> str:
-    if path.is_dir():
-        return "📁 " if path.name != ".git" else "🔧 "
-    return _EXT_ICONS.get(path.suffix.lower(), "📄") + " "
 
 
 def _git_branch() -> str:
@@ -36,7 +27,7 @@ def _git_branch() -> str:
             capture_output=True, text=True, timeout=1
         )
         branch = result.stdout.strip()
-        return f" {branch}" if branch else ""
+        return f"  {branch}" if branch else ""
     except Exception:
         return ""
 
@@ -237,7 +228,7 @@ class TrixApp(App):
             if t["theme"] is not None:
                 self.register_theme(t["theme"])
 
-        self.query_one("#files-panel").border_title = "󰙅 Files"
+        self.query_one("#files-panel").border_title = " Files"
         self.query_one("#editor-panel").border_title = " Editor"
         self.query_one("#terminal-panel").border_title = " Terminal"
 
@@ -305,7 +296,7 @@ class TrixApp(App):
             panel.border_title = " Editor"
         else:
             suffix = " *" if self._has_changes else ""
-            panel.border_title = f" Editor — {self._current_file.name}{suffix}"
+            panel.border_title = f" Editor - {self._current_file.name}{suffix}"
 
     def _update_status(self) -> None:
         # File
@@ -404,7 +395,7 @@ class TrixApp(App):
         self.query_one("#editor-placeholder", Static).display = True
         self._root_folder = path.name
         self.query_one("#header-folder", Static).update(path.name)
-        self.query_one("#files-panel").border_title = f"󰙅 Files — {path.name}"
+        self.query_one("#files-panel").border_title = f" Files - {path.name}"
         self._update_all()
 
     # ── Navigation ────────────────────────────────────────────────────────────

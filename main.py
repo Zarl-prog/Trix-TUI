@@ -99,32 +99,74 @@ class ClickableDirectoryTree(DirectoryTree):
     def render_label(self, node, base_style, style):
         from rich.text import Text
         node_label = node._label.copy()
+        
+        # Harlequin style: Folders #bfbdb6, Files #8a8986
+        # Selected background #5ac1fe, dark text
+        if self.cursor_node == node:
+            style = style.update(bgcolor="#5ac1fe", color="#0d1016", bold=True)
+        else:
+            if node.data and node.data.path.is_dir():
+                style = style.update(color="#bfbdb6")
+            else:
+                style = style.update(color="#8a8986")
+        
         node_label.stylize(style)
         if not node.data:
             return node_label
         path = node.data.path
+        
+        # Harlequin connectors: ▶ (collapsed), ▼ (expanded)
+        # Files indented with ─ prefix
         if path.is_dir():
-            if path.name == ".git":
-                icon = "🌿 "
-            else:
-                icon = "📁 "
+            icon = "▼ " if node.expanded else "▶ "
         else:
-            suffix = path.suffix.lower()
-            if suffix == ".py":
-                icon = "🐍 "
-            elif suffix in (".js", ".jsx"):
-                icon = "🟨 "
-            elif suffix == ".json":
-                icon = "📦 "
-            elif suffix == ".md":
-                icon = "📝 "
-            elif suffix in (".toml", ".yaml", ".yml"):
-                icon = "⚙️ "
-            elif suffix in (".txt", ".log"):
-                icon = "📄 "
-            else:
-                icon = "📄 "
-        return Text(icon) + node_label
+            icon = "─ "
+            
+        return Text(icon, style=style) + node_label
+
+
+class PanelHeader(Static):
+    """Harlequin-style panel header: ── Title ──────────────────"""
+    
+    def __init__(self, title: str, id: str = None, classes: str = None):
+        super().__init__("", id=id, classes=classes)
+        self._title = title
+        self._is_active = False
+
+    def set_active(self, active: bool) -> None:
+        self._is_active = active
+        self._update_display()
+
+    def set_title(self, title: str) -> None:
+        self._title = title
+        self._update_display()
+
+    def on_mount(self) -> None:
+        self._update_display()
+
+    def on_resize(self) -> None:
+        self._update_display()
+
+    def _update_display(self) -> None:
+        width = self.size.width
+        if width < 5:
+            self.update("─" * width)
+            return
+            
+        label = f" {self._title} "
+        dash_color = "#3f4043"
+        text_color = "#5ac1fe" if self._is_active else "#bfbdb6"
+        
+        # Construct the string: ── Label ──────────────────
+        left_dashes = 2
+        right_dashes = max(0, width - left_dashes - len(label))
+        
+        from rich.text import Text
+        res = Text()
+        res.append("─" * left_dashes, style=dash_color)
+        res.append(label, style=text_color)
+        res.append("─" * right_dashes, style=dash_color)
+        self.update(res)
 
 
 class MainScreen(Screen):
@@ -132,16 +174,17 @@ class MainScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with LayoutHorizontal(id="header"):
-            yield Static("T  R  I  X", id="hdr-title")
-            yield Static("Trix TUI", id="hdr-title-center")
+            yield Static("TRIX", id="hdr-brand")
+            yield Static("", id="hdr-folder")
             yield Static(self.app._current_theme_dict["name"], id="hdr-theme")
+            
         with LayoutHorizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
-                yield Static("FILES", classes="panel-label")
+                yield PanelHeader("Files", id="header-files")
                 yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
             with LayoutContainer(id="editor-panel"):
-                yield Static("EDITOR", classes="panel-label", id="editor-label")
+                yield PanelHeader("Editor", id="header-editor")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield Static(
                     "Welcome to TRIX\n\nOpen a file from the Files panel\nor press Ctrl+O to open a folder",
@@ -149,16 +192,23 @@ class MainScreen(Screen):
                 )
             yield Divider("editor-panel", "terminal-panel", id="divider-2")
             with LayoutContainer(id="terminal-panel"):
-                yield Static("TERMINAL", classes="panel-label")
+                yield PanelHeader("Terminal", id="header-terminal")
                 yield TerminalWidget(id="terminal")
-        with LayoutHorizontal(id="statusbar"):
-            yield Static("TRIX", id="st-brand")
-            yield Static("", id="st-file")
-            yield Static("Ln 1, Col 1", id="st-cursor")
-            yield Static(_git_branch(), id="st-git")
-            yield Static(self.app._current_theme_dict["name"], id="st-theme")
-            yield Static("", id="st-lang")
-            yield Static("F1 Help", id="st-help")
+                
+        with Horizontal(id="bottom-bar"):
+            # ^q Quit   f1 Help   ^g Git   ^t Theme   ^b Files   ^o Open
+            yield Static(" ^q ", classes="kb-key")
+            yield Static("Quit  ", classes="kb-desc")
+            yield Static(" f1 ", classes="kb-key")
+            yield Static("Help  ", classes="kb-desc")
+            yield Static(" ^g ", classes="kb-key")
+            yield Static("Git  ", classes="kb-desc")
+            yield Static(" ^t ", classes="kb-key")
+            yield Static("Theme  ", classes="kb-desc")
+            yield Static(" ^b ", classes="kb-key")
+            yield Static("Files  ", classes="kb-desc")
+            yield Static(" ^o ", classes="kb-key")
+            yield Static("Open  ", classes="kb-desc")
 
     def on_click(self, event: Click) -> None:
         self.app.on_click(event)
@@ -179,16 +229,16 @@ class TrixApp(App):
         background: #0d1016;
     }
 
+    /* ── Header ── */
     #header {
-        height: 2;
-        background: #1a1e26;
+        height: 1;
+        background: #0d1016;
         layout: horizontal;
         padding: 0 1;
-        border-bottom: solid #3f4043;
     }
-    #hdr-title  { width: auto; color: #5ac1fe; text-style: bold; }
-    #hdr-title-center { width: 1fr; color: #4b4c4e; text-style: bold; text-align: center; }
-    #hdr-theme  { width: auto; color: #feb454; text-style: bold; }
+    #hdr-brand  { width: auto; color: #5ac1fe; text-style: bold; }
+    #hdr-folder { width: 1fr; color: #4b4c4e; text-align: center; }
+    #hdr-theme  { width: auto; color: #4b4c4e; }
 
     #main-area {
         height: 1fr;
@@ -200,41 +250,43 @@ class TrixApp(App):
         background: #0d1016;
         padding: 0;
     }
-    #files-panel {
-        background: #1a1d23;
-    }
-    #editor-panel, #terminal-panel {
-        background: #0d1016;
-    }
-
-    /* Focus indicator: subtle top accent line */
-    LayoutContainer:focus-within, Container:focus-within, #files-panel:focus-within, #editor-panel:focus-within, #terminal-panel:focus-within {
-        border-top: solid #5ac1fe;
-    }
 
     #files-panel    { width: 20%; min-width: 10%; }
     #editor-panel   { width: 2fr; min-width: 20%; }
     #terminal-panel { width: 2fr; min-width: 20%; }
 
-    .panel-label {
+    PanelHeader {
         height: 1;
-        padding: 0 1;
-        color: #4b4c4e;
-        text-style: bold;
+        width: 100%;
         background: transparent;
     }
 
-    DirectoryTree { height: 1fr; background: #1a1d23; }
-    DirectoryTree > .tree--cursor    { background: #1f232c; color: #5ac1fe; text-style: bold; }
-    DirectoryTree > .tree--highlight { background: #1f232c; }
+    /* ── File Tree ── */
+    DirectoryTree { 
+        height: 1fr; 
+        background: #0d1016; 
+        scrollbar-size: 1 1;
+        scrollbar-color: #5ac1fe;
+        scrollbar-background: #0d1016;
+    }
+    DirectoryTree > .tree--cursor    { background: #5ac1fe; color: #0d1016; text-style: bold; }
+    DirectoryTree > .tree--highlight { background: #5ac1fe; color: #0d1016; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
-    DirectoryTree:hover > .tree--cursor { background: #252830; }
+    DirectoryTree:hover > .tree--cursor { background: #5ac1fe; color: #0d1016; }
 
-    TextArea { height: 1fr; background: #0d1016; color: #bfbdb6; }
-    TextArea .text-area--gutter        { background: #0d1016; color: #4b4c4e; }
+    /* ── Editor ── */
+    TextArea { 
+        height: 1fr; 
+        background: #0d1016; 
+        color: #bfbdb6; 
+        scrollbar-size: 1 1;
+        scrollbar-color: #5ac1fe;
+        scrollbar-background: #0d1016;
+    }
+    TextArea .text-area--gutter        { background: #0d1016; color: #3f4043; }
     TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--cursor        { background: #5ac1fe; }
-    TextArea .text-area--cursor-line   { background: #1f2127; }
+    TextArea .text-area--cursor-line   { background: #131721; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
     #editor-welcome {
@@ -247,44 +299,46 @@ class TrixApp(App):
         text-style: bold;
     }
 
+    /* ── Terminal ── */
     TerminalWidget { height: 1fr; layout: vertical; }
-    #term-output   { height: 1fr; background: #0d1016; color: #bfbdb6; }
+    #term-output   { 
+        height: 1fr; 
+        background: #0d1016; 
+        color: #8a8986; 
+        scrollbar-size: 1 1;
+        scrollbar-color: #5ac1fe;
+        scrollbar-background: #0d1016;
+    }
     #term-output:focus { border: none; }
     #term-output .rich-log--highlight { background: #1f4a6e; }
     #term-input {
-        height: 3;
+        height: 1;
         dock: bottom;
-        background: #1f2127;
+        background: #131721;
         color: #bfbdb6;
         border: none;
         padding: 0 1;
     }
     #term-input:focus {
-        border-top: solid #5ac1fe;
+        background: #131721;
     }
 
-    Input { background: #1f2127; color: #bfbdb6; border: none; }
+    Input { background: #131721; color: #bfbdb6; border: none; }
     Input:focus { border: none; }
 
-    #statusbar {
-        height: 2;
-        background: #161a1f;
+    /* ── Bottom Bar ── */
+    #bottom-bar {
+        height: 1;
+        background: #131721;
         layout: horizontal;
         padding: 0 1;
-        border-top: solid #3f4043;
     }
-    #st-brand  { width: auto; color: #5ac1fe; text-style: bold; }
-    #st-file   { width: auto; color: #bfbdb6; padding: 0 2; }
-    #st-cursor { width: 1fr;  color: #4b4c4e; text-align: center; content-align: center middle; }
-    #st-git    { width: auto; color: #aad84c; padding: 0 2; }
-    #st-theme  { width: auto; color: #feb454; padding: 0 1; }
-    #st-lang   { width: auto; color: #5ac1fe; padding: 0 1; }
-    #st-help   { width: auto; color: #4b4c4e; }
+    .kb-key  { width: auto; color: #5ac1fe; text-style: bold; }
+    .kb-desc { width: auto; color: #8a8986; margin-right: 1; }
 
-    DirectoryTree, TextArea, RichLog {
-        scrollbar-size: 1 1;
-        scrollbar-color: #5ac1fe;
-        scrollbar-background: #3f4043;
+    /* ── Divider ── */
+    Divider {
+        background: #1a1d23;
     }
     """
 
@@ -382,10 +436,6 @@ class TrixApp(App):
         if self.screen.__class__.__name__ == "MainScreen":
             try:
                 self.screen.query_one("#hdr-theme", Static).update(theme["name"])
-            except Exception:
-                pass
-            try:
-                self.screen.query_one("#st-theme", Static).update(theme["name"])
             except Exception:
                 pass
 
@@ -514,9 +564,32 @@ class TrixApp(App):
         try:
             ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
-            self.screen.query_one("#st-cursor", Static).update(f"Ln {row+1}, Col {col+1}")
+            # Harlequin style: cursor location removed from status bar, moved to future line?
+            # For now, keep it hidden or invisible
         except Exception:
             pass
+
+    def on_descendant_focus(self, event) -> None:
+        self._update_headers()
+
+    def on_descendant_blur(self, event) -> None:
+        self._update_headers()
+
+    def _update_headers(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        focused = self.focused
+        
+        tree = self.screen.query_one(DirectoryTree)
+        editor = self.screen.query_one("#editor", TextArea)
+        term_output = self.screen.query_one("#term-output", RichLog)
+        term_input = self.screen.query_one("#term-input", Input)
+
+        self.screen.query_one("#header-files", PanelHeader).set_active(focused is tree)
+        self.screen.query_one("#header-editor", PanelHeader).set_active(focused is editor)
+        self.screen.query_one("#header-terminal", PanelHeader).set_active(
+            focused is term_output or focused is term_input
+        )
 
     # ── Actions ───────────────────────────────────────────────────────────
 
@@ -537,7 +610,7 @@ class TrixApp(App):
         self.screen.query_one("#divider-1").display = show and self._filetree_visible
         self.screen.query_one("#terminal-panel").display = show
         self.screen.query_one("#divider-2").display = show
-        self.screen.query_one("#statusbar").display = show
+        self.screen.query_one("#bottom-bar").display = show
         self.screen.query_one("#header").display = show
         self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
 
@@ -599,7 +672,6 @@ class TrixApp(App):
         self._has_changes = False
         self.screen.query_one("#editor", TextArea).load_text("")
         self.screen.query_one("#hdr-folder", Static).update(path.name)
-        self.screen.query_one("#files-panel").border_title = f" Files - {path.name}"
         self._refresh_ui()
 
     def action_reload_tree(self) -> None:
@@ -742,38 +814,24 @@ class TrixApp(App):
     def _refresh_ui(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
             return
+        
         try:
-            self.screen.query_one("#st-theme", Static).update(self._current_theme_dict["name"])
+            tree = self.screen.query_one(DirectoryTree)
+            self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
         except Exception:
             pass
+            
         if self._current_file is None:
-            self.screen.query_one("#editor-label", Static).update("EDITOR")
+            self.screen.query_one("#header-editor", PanelHeader).set_title("Editor")
             self.screen.query_one("#editor").display = False
             self.screen.query_one("#editor-welcome").display = True
-            self.screen.query_one("#st-file", Static).update("")
-            self.screen.query_one("#st-lang", Static).update("")
         else:
-            suffix = " *" if self._has_changes else ""
+            unsaved = " ●" if self._has_changes else ""
             name = self._current_file.name
-            ext = self._current_file.suffix.lower()
-            icon = "📄"
-            if ext == ".py":
-                icon = "🐍"
-            elif ext in (".js", ".jsx"):
-                icon = "🟨"
-            elif ext == ".json":
-                icon = "📦"
-            elif ext == ".md":
-                icon = "📝"
-            elif ext in (".toml", ".yaml", ".yml"):
-                icon = "⚙️"
-            elif ext in (".txt", ".log"):
-                icon = "📄"
-            self.screen.query_one("#editor-label", Static).update(f"{icon} {name}{suffix}".upper())
+            title = f"Editor — {name}{unsaved}"
+            self.screen.query_one("#header-editor", PanelHeader).set_title(title)
             self.screen.query_one("#editor").display = True
             self.screen.query_one("#editor-welcome").display = False
-            self.screen.query_one("#st-file", Static).update(f"{name}{suffix}")
-            self.screen.query_one("#st-lang", Static).update(self._lang_label(self._current_file))
 
     def _lang_label(self, path: Path) -> str:
         return {

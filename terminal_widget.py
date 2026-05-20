@@ -243,7 +243,7 @@ class TerminalWidget(Widget, can_focus=True):
         self.query_one("#term-input", Input).clear()
         if cmd:
             self._history.append(cmd)
-            self._query_one_write(f"\u276f {cmd}")
+            self._query_one_write(f"❯ {cmd}")
         self._hist_idx = -1
         self._write_pty(cmd + "\r\n")
 
@@ -285,7 +285,7 @@ class TerminalWidget(Widget, can_focus=True):
 
     def compose(self) -> ComposeResult:
         yield TerminalOutputLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
-        yield Input(id="term-input", placeholder="\u276f")
+        yield Input(id="term-input", placeholder="❯")
 
     def on_mount(self) -> None:
         self._start_pty()

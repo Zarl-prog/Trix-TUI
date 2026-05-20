@@ -33,20 +33,7 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 
 ## Preview
 
-```
-┌─ T R I X ────────────────────────────────────────────────────────────────────┐
-│                                                                               │
-│ ┌─ Files ──────┬──── Editor — app.py ──────────────────┬──── Terminal ──────┐ │
-│ │ 📁 .git      │  1  from pathlib import Path          │ PowerShell>        │ │
-│ │ 📁 trix      │  2  import asyncio                    │ PS C:\> git status  │ │
-│ │   app.py     │  3  import json                       │ On branch main     │ │
-│ │   main.py    │  4                                    │ nothing to commit  │ │
-│ │   themes.py  │  5  from textual.app import App       │                    │ │
-│ │   ayu.json   │  6                                    │ PS C:\>            │ │
-│ └──────────────┴───────────────────────────────────────┴────────────────────┘ │
-│ TRIX  main.py  Ln 6, Col 1  Python  main  ? Help                              │
-└───────────────────────────────────────────────────────────────────────────────┘
-```
+<img width="1907" height="952" alt="Screenshot 2026-05-19 150836" src="https://github.com/user-attachments/assets/73dfffc6-8d39-4ff5-854e-28a06fa11fef" />
 
 ---
 

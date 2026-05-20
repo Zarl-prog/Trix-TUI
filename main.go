@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -22,6 +23,7 @@ var (
 	fileColor         = lipgloss.Color("#8a8986")
 	folderColor       = lipgloss.Color("#bfbdb6")
 	unsavedColor      = lipgloss.Color("#feb454")
+	terminalOutputCol = lipgloss.Color("#8a8986")
 )
 
 type FileNode struct {
@@ -36,6 +38,10 @@ type FileContent struct {
 	Content string
 }
 
+type TerminalData struct {
+	Data string `json:"data"`
+}
+
 type model struct {
 	bridge      *Bridge
 	err         error
@@ -46,8 +52,18 @@ type model struct {
 	cursor      int
 	flatTree    []FileNode
 	textarea    textarea.Model
+	terminalLog viewport.Model
+	terminalBuf strings.Builder
 	currentPath string
 	hasChanges  bool
+}
+
+func flattenTree(node FileNode, depth int) []FileNode {
+	res := []FileNode{node}
+	for _, child := range node.Children {
+		res = append(res, flattenTree(child, depth+1)...)
+	}
+	return res
 }
 
 func fetchFileTree(b *Bridge, path string) tea.Cmd {
@@ -94,22 +110,54 @@ func saveFile(b *Bridge, path, content string) tea.Cmd {
 	}
 }
 
+func waitForEvents(b *Bridge) tea.Cmd {
+	return func() tea.Msg {
+		return <-b.Events()
+	}
+}
+
+func spawnTerminal(b *Bridge, rows, cols int) tea.Cmd {
+	return func() tea.Msg {
+		_, err := b.Call("terminal_spawn", map[string]int{"rows": rows, "cols": cols})
+		if err != nil {
+			return err
+		}
+		return "terminal_spawned"
+	}
+}
+
+func writeTerminal(b *Bridge, data string) tea.Cmd {
+	return func() tea.Msg {
+		_, err := b.Call("terminal_write", map[string]string{"data": data})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
 func initialModel() model {
 	b, _ := NewBridge("python")
 	ta := textarea.New()
 	ta.Placeholder = "No file open"
 	ta.FocusedStyle.CursorLine = lipgloss.NewStyle().Background(lipgloss.Color("#131721"))
 	
+	vp := viewport.New(0, 0)
+	vp.Style = lipgloss.NewStyle().Foreground(terminalOutputCol)
+	
 	return model{
-		bridge:   b,
-		active:   "terminal",
-		textarea: ta,
+		bridge:      b,
+		active:      "terminal",
+		textarea:    ta,
+		terminalLog: vp,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		fetchFileTree(m.bridge, "."),
+		spawnTerminal(m.bridge, 24, 80),
+		waitForEvents(m.bridge),
 		textarea.Blink,
 	)
 }
@@ -121,6 +169,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	)
 
 	switch msg := msg.(type) {
+	case RPCEvent:
+		if msg.Event == "terminal_data" {
+			var td TerminalData
+			if err := json.Unmarshal(msg.Data, &td); err == nil {
+				m.terminalBuf.WriteString(td.Data)
+				m.terminalLog.SetContent(m.terminalBuf.String())
+				m.terminalLog.GotoBottom()
+			}
+		}
+		return m, waitForEvents(m.bridge)
 	case FileNode:
 		m.rootNode = msg
 		m.flatTree = flattenTree(m.rootNode, 0)
@@ -140,20 +198,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		
-		// Update textarea size
+		// Update panel sizes
 		filesWidth := m.width / 5
 		dividerWidth := 1
 		remainingWidth := m.width - filesWidth - (dividerWidth * 2)
 		editorWidth := remainingWidth / 2
+		terminalWidth := remainingWidth - editorWidth
+		
 		m.textarea.SetWidth(editorWidth)
-		m.textarea.SetHeight(m.height - 3) // Approx
+		m.textarea.SetHeight(m.height - 3)
+		
+		m.terminalLog.Width = terminalWidth
+		m.terminalLog.Height = m.height - 3
 	case tea.KeyMsg:
+		if m.active == "terminal" {
+			input := msg.String()
+			if input == "enter" {
+				input = "\r\n"
+			} else if input == "backspace" {
+				input = "\b"
+			} else if len(input) > 1 && !strings.Contains(input, "ctrl") {
+				input = "" 
+			}
+			
+			if input != "" && input != "q" && input != "ctrl+]" {
+				return m, writeTerminal(m.bridge, input)
+			}
+		}
+
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			if m.bridge != nil {
 				m.bridge.Close()
 			}
 			return m, tea.Quit
+		case "q":
+			if m.active != "terminal" && m.active != "editor" {
+				if m.bridge != nil {
+					m.bridge.Close()
+				}
+				return m, tea.Quit
+			}
 		case "up":
 			if m.active == "files" && m.cursor > 0 {
 				m.cursor--
@@ -192,15 +277,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.active == "editor" {
 		m.textarea, cmd = m.textarea.Update(msg)
 		cmds = append(cmds, cmd)
-		if m.textarea.Value() != "" && !m.hasChanges {
-			// This is a bit naive, ideally we track if value actually changed from original
-			// m.hasChanges = true
-		}
+	} else if m.active == "terminal" {
+		m.terminalLog, cmd = m.terminalLog.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	return m, tea.Batch(cmds...)
 }
-
 
 func renderFileTree(m model, width, height int) string {
 	var s strings.Builder
@@ -264,19 +347,16 @@ func (m model) View() string {
 		return "Initializing..."
 	}
 
-	// Calculate dimensions
 	headerHeight := 1
 	footerHeight := 1
 	mainHeight := m.height - headerHeight - footerHeight
 	
-	// Panel widths
 	filesWidth := m.width / 5
 	dividerWidth := 1
 	remainingWidth := m.width - filesWidth - (dividerWidth * 2)
 	editorWidth := remainingWidth / 2
 	terminalWidth := remainingWidth - editorWidth
 
-	// Header
 	headerStyle := lipgloss.NewStyle().
 		Height(headerHeight).
 		Width(m.width).
@@ -287,23 +367,19 @@ func (m model) View() string {
 	theme := lipgloss.NewStyle().Foreground(headerFolderColor).Render("Ayu Dark")
 	header := headerStyle.Render(lipgloss.JoinHorizontal(lipgloss.Left, brand, folder, theme))
 
-	// Main Area
 	panelStyle := lipgloss.NewStyle().Height(mainHeight).Background(backgroundColor)
 	dividerStyle := lipgloss.NewStyle().Width(dividerWidth).Height(mainHeight).Background(dividerBg)
 
-	// Files Panel
 	filesHeader := renderPanelHeader("Files", filesWidth, m.active == "files")
 	filesContent := renderFileTree(m, filesWidth, mainHeight-1)
 	filesPanel := panelStyle.Width(filesWidth).Render(lipgloss.JoinVertical(lipgloss.Left, filesHeader, filesContent))
 
-	// Editor Panel
 	editorHeader := renderPanelHeader("Editor", editorWidth, m.active == "editor")
-	editorContent := lipgloss.NewStyle().Width(editorWidth).Height(mainHeight - 1).Render("Editor Content...")
+	editorContent := m.textarea.View()
 	editorPanel := panelStyle.Width(editorWidth).Render(lipgloss.JoinVertical(lipgloss.Left, editorHeader, editorContent))
 
-	// Terminal Panel
 	terminalHeader := renderPanelHeader("Terminal", terminalWidth, m.active == "terminal")
-	terminalContent := lipgloss.NewStyle().Width(terminalWidth).Height(mainHeight - 1).Render("Terminal Content...")
+	terminalContent := m.terminalLog.View()
 	terminalPanel := panelStyle.Width(terminalWidth).Render(lipgloss.JoinVertical(lipgloss.Left, terminalHeader, terminalContent))
 
 	mainArea := lipgloss.JoinHorizontal(lipgloss.Top,
@@ -314,7 +390,6 @@ func (m model) View() string {
 		terminalPanel,
 	)
 
-	// Footer
 	footerStyle := lipgloss.NewStyle().
 		Height(footerHeight).
 		Width(m.width).
@@ -334,7 +409,6 @@ func (m model) View() string {
 
 	return lipgloss.JoinVertical(lipgloss.Left, header, mainArea, footer)
 }
-
 
 func main() {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())

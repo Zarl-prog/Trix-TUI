@@ -98,21 +98,24 @@ class ClickableDirectoryTree(DirectoryTree):
 
     def render_label(self, node, base_style, style):
         from rich.text import Text
+        from rich.style import Style
+        
+        if not node.data:
+            return node._label.copy()
+            
         node_label = node._label.copy()
         
         # Harlequin style: Folders #bfbdb6, Files #8a8986
         # Selected background #5ac1fe, dark text
         if self.cursor_node == node:
-            style = style.update(bgcolor="#5ac1fe", color="#0d1016", bold=True)
+            style = Style(bgcolor="#5ac1fe", color="#0d1016", bold=True)
         else:
-            if node.data and node.data.path.is_dir():
-                style = style.update(color="#bfbdb6")
+            if node.data.path.is_dir():
+                style = Style(color="#bfbdb6")
             else:
-                style = style.update(color="#8a8986")
+                style = Style(color="#8a8986")
         
         node_label.stylize(style)
-        if not node.data:
-            return node_label
         path = node.data.path
         
         # Harlequin connectors: ▶ (collapsed), ▼ (expanded)

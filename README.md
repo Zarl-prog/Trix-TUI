@@ -1,3 +1,5 @@
+Changing the Whole project to the Go + Python
+
 <div align="center">
 
 ```
@@ -46,6 +48,7 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 ## Features
 
 **Editor**
+
 - 3-panel layout — File Tree, Editor, Terminal side by side
 - Syntax highlighting for 20+ languages
 - Open, edit, and save files with `Ctrl+S`
@@ -59,34 +62,40 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 - Toggle comment with `Ctrl+_`
 
 **Git**
+
 - Git History popup with `Ctrl+G` — floating modal overlay
 - Two-column view: commit list on the left, commit details + files changed on the right
 - Copy commit hash with `C`, navigate with `↑↓`, preview with `Enter`
 
 **Terminal**
+
 - Fully embedded native PowerShell via winpty
 - Real shell behavior — `cd`, `git`, `npm`, everything works
 - Command history with `↑` `↓`
 - Copy terminal output with `Ctrl+Shift+C`
 
 **Layout**
+
 - Resizable panels — drag the dividers to resize
 - Toggle file tree with `Ctrl+B`
 - Zen mode — fullscreen editor focus with `Ctrl+\`
 - Cycle panels with `Ctrl+]`
 
 **Themes**
+
 - Built-in Ayu Dark, Ayu Light, and Ayu Mirage themes
 - Cycle themes with `Ctrl+T`
 - Theme picker with `Ctrl+Shift+T`
 
 **Status Bar**
+
 - Live line and column indicator
 - Current git branch
 - Active theme name
 - File language detection
 
 **Keyboard First**
+
 - Full keyboard shortcut system
 - Press `F1` anytime to see all shortcuts
 - Global shortcuts work from any panel
@@ -96,16 +105,19 @@ TRIX is a lightweight, terminal-native IDE built entirely inside your terminal. 
 ## Installation
 
 **Via pip**
+
 ```bash
 pip install trix-ide
 ```
 
 **Via pipx (recommended — isolated environment)**
+
 ```bash
 pipx install trix-ide
 ```
 
 **From source**
+
 ```bash
 git clone https://github.com/Zarl-prog/Trix-TUI.git
 cd Trix-TUI
@@ -125,11 +137,13 @@ pip install -e .
 ## Running TRIX
 
 After installing via pip or pipx:
+
 ```bash
 trix
 ```
 
 From source:
+
 ```bash
 python main.py
 ```
@@ -138,30 +152,30 @@ python main.py
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|---|---|
-| `Ctrl+S` | Save current file |
-| `Ctrl+O` | Open folder |
-| `Ctrl+N` | New file |
-| `Ctrl+W` | Close current file |
-| `Ctrl+F` | Search in file |
-| `Ctrl+Shift+F` | Search across all files |
-| `Ctrl+B` | Toggle file tree |
-| `Ctrl+\` | Zen mode |
-| `Ctrl+]` | Cycle panels |
-| `Ctrl+T` | Cycle themes |
-| `Ctrl+Shift+T` | Theme picker |
-| `Ctrl+G` | Git History |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
-| `Ctrl+A` | Select all |
-| `Ctrl+_` | Toggle comment |
-| `Ctrl+D` | Duplicate line |
-| `Ctrl+R` | Reload file tree |
-| `F2` | Rename file |
-| `Delete` | Delete file (focus file tree first) |
-| `Ctrl+Q` | Quit |
-| `F1` | Show all shortcuts |
+| Shortcut       | Action                              |
+| -------------- | ----------------------------------- |
+| `Ctrl+S`       | Save current file                   |
+| `Ctrl+O`       | Open folder                         |
+| `Ctrl+N`       | New file                            |
+| `Ctrl+W`       | Close current file                  |
+| `Ctrl+F`       | Search in file                      |
+| `Ctrl+Shift+F` | Search across all files             |
+| `Ctrl+B`       | Toggle file tree                    |
+| `Ctrl+\`       | Zen mode                            |
+| `Ctrl+]`       | Cycle panels                        |
+| `Ctrl+T`       | Cycle themes                        |
+| `Ctrl+Shift+T` | Theme picker                        |
+| `Ctrl+G`       | Git History                         |
+| `Ctrl+Z`       | Undo                                |
+| `Ctrl+Y`       | Redo                                |
+| `Ctrl+A`       | Select all                          |
+| `Ctrl+_`       | Toggle comment                      |
+| `Ctrl+D`       | Duplicate line                      |
+| `Ctrl+R`       | Reload file tree                    |
+| `F2`           | Rename file                         |
+| `Delete`       | Delete file (focus file tree first) |
+| `Ctrl+Q`       | Quit                                |
+| `F1`           | Show all shortcuts                  |
 
 ---
 
@@ -218,6 +232,5 @@ Built by **Asim** — [GitHub](https://github.com/Zarl-prog)
 <div align="center">
   <sub>If you find TRIX useful, leave a ⭐ on GitHub — it helps a lot!</sub>
 </div>
-
 
 A terminal-native IDE built with Textual.

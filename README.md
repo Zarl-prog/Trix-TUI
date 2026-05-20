@@ -1,3 +1,10 @@
+Changing this whole repo to GO(UI) + Python (Core Features).
+This might take some time... 
+but dont miss the Output
+
+
+
+
 <div align="center">
 
 ```

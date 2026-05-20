@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -10,21 +11,59 @@ import (
 )
 
 var (
-	backgroundColor = lipgloss.Color("#0d1016")
-	borderColor     = lipgloss.Color("#3f4043")
-	activeColor      = lipgloss.Color("#5ac1fe")
-	inactiveColor    = lipgloss.Color("#bfbdb6")
+	backgroundColor   = lipgloss.Color("#0d1016")
+	borderColor       = lipgloss.Color("#3f4043")
+	activeColor        = lipgloss.Color("#5ac1fe")
+	inactiveColor      = lipgloss.Color("#bfbdb6")
 	headerFolderColor = lipgloss.Color("#4b4c4e")
-	bottomBarBg      = lipgloss.Color("#131721")
-	dividerBg        = lipgloss.Color("#1a1d23")
+	bottomBarBg       = lipgloss.Color("#131721")
+	dividerBg          = lipgloss.Color("#1a1d23")
+	fileColor         = lipgloss.Color("#8a8986")
+	folderColor       = lipgloss.Color("#bfbdb6")
 )
 
+type FileNode struct {
+	Name     string     `json:"name"`
+	Path     string     `json:"path"`
+	IsDir    bool       `json:"is_dir"`
+	Children []FileNode `json:"children,omitempty"`
+}
+
 type model struct {
-	bridge *Bridge
-	err    error
-	width  int
-	height int
-	active string // "files", "editor", "terminal"
+	bridge   *Bridge
+	err      error
+	width    int
+	height   int
+	active   string // "files", "editor", "terminal"
+	rootNode FileNode
+	cursor   int
+	flatTree []FileNode
+}
+
+func flattenTree(node FileNode, depth int) []FileNode {
+	// Simple flattening for now, can be improved with expansion state
+	res := []FileNode{node}
+	for _, child := range node.Children {
+		res = append(res, flattenTree(child, depth+1)...)
+	}
+	return res
+}
+
+func fetchFileTree(b *Bridge, path string) tea.Cmd {
+	return func() tea.Msg {
+		res, err := b.Call("get_file_tree", map[string]string{"path": path})
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Status string   `json:"status"`
+			Tree   FileNode `json:"tree"`
+		}
+		if err := json.Unmarshal(res, &result); err != nil {
+			return err
+		}
+		return result.Tree
+	}
 }
 
 func initialModel() model {
@@ -36,11 +75,16 @@ func initialModel() model {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return fetchFileTree(m.bridge, ".")
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case FileNode:
+		m.rootNode = msg
+		m.flatTree = flattenTree(m.rootNode, 0)
+	case error:
+		m.err = msg
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -51,6 +95,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.bridge.Close()
 			}
 			return m, tea.Quit
+		case "up":
+			if m.active == "files" && m.cursor > 0 {
+				m.cursor--
+			}
+		case "down":
+			if m.active == "files" && m.cursor < len(m.flatTree)-1 {
+				m.cursor++
+			}
+		case "ctrl+r":
+			return m, fetchFileTree(m.bridge, ".")
 		case "ctrl+]":
 			switch m.active {
 			case "files":
@@ -63,6 +117,40 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 	return m, nil
+}
+
+func renderFileTree(m model, width, height int) string {
+	var s strings.Builder
+	for i, node := range m.flatTree {
+		if i >= height {
+			break
+		}
+
+		cursor := "  "
+		style := lipgloss.NewStyle()
+		if i == m.cursor && m.active == "files" {
+			cursor = "> "
+			style = style.Background(activeColor).Foreground(backgroundColor).Bold(true)
+		} else {
+			if node.IsDir {
+				style = style.Foreground(folderColor)
+			} else {
+				style = style.Foreground(fileColor)
+			}
+		}
+
+		icon := "─ "
+		if node.IsDir {
+			icon = "▶ "
+		}
+
+		line := fmt.Sprintf("%s%s%s", cursor, icon, node.Name)
+		if len(line) > width {
+			line = line[:width]
+		}
+		s.WriteString(style.Width(width).Render(line) + "\n")
+	}
+	return s.String()
 }
 
 func renderPanelHeader(title string, width int, active bool) string {
@@ -122,7 +210,7 @@ func (m model) View() string {
 
 	// Files Panel
 	filesHeader := renderPanelHeader("Files", filesWidth, m.active == "files")
-	filesContent := lipgloss.NewStyle().Width(filesWidth).Height(mainHeight - 1).Render("File Tree...")
+	filesContent := renderFileTree(m, filesWidth, mainHeight-1)
 	filesPanel := panelStyle.Width(filesWidth).Render(lipgloss.JoinVertical(lipgloss.Left, filesHeader, filesContent))
 
 	// Editor Panel
@@ -163,6 +251,7 @@ func (m model) View() string {
 
 	return lipgloss.JoinVertical(lipgloss.Left, header, mainArea, footer)
 }
+
 
 func main() {
 	p := tea.NewProgram(initialModel(), tea.WithAltScreen())

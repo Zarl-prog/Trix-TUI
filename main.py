@@ -196,26 +196,42 @@ class TrixApp(App):
     }
 
     LayoutContainer, Container, #files-panel, #editor-panel, #terminal-panel {
-        border: solid #2d2f34;
-        border-title-align: left;
-        background: #1f2127;
-        padding: 0 1;
+        border: none;
+        background: #0d1016;
+        padding: 0;
     }
+    #files-panel {
+        background: #1a1d23;
+    }
+    #editor-panel, #terminal-panel {
+        background: #0d1016;
+    }
+
+    /* Focus indicator: subtle top accent line */
     LayoutContainer:focus-within, Container:focus-within, #files-panel:focus-within, #editor-panel:focus-within, #terminal-panel:focus-within {
-        border: double #5ac1fe;
+        border-top: solid #5ac1fe;
     }
 
     #files-panel    { width: 20%; min-width: 10%; }
     #editor-panel   { width: 2fr; min-width: 20%; }
     #terminal-panel { width: 2fr; min-width: 20%; }
 
-    DirectoryTree { height: 100%; background: #1f2127; }
+    .panel-label {
+        height: 1;
+        padding: 0 1;
+        color: #4b4c4e;
+        text-style: bold;
+        background: transparent;
+    }
+
+    DirectoryTree { height: 1fr; background: #1a1d23; }
     DirectoryTree > .tree--cursor    { background: #1f232c; color: #5ac1fe; text-style: bold; }
     DirectoryTree > .tree--highlight { background: #1f232c; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
     DirectoryTree:hover > .tree--cursor { background: #252830; }
 
-    TextArea { height: 100%; background: #0d1016; color: #bfbdb6; }
+    TextArea { height: 1fr; background: #0d1016; color: #bfbdb6; }
+
     TextArea .text-area--gutter        { background: #0d1016; color: #4b4c4e; }
     TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--cursor        { background: #5ac1fe; }

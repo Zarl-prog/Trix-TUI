@@ -243,7 +243,7 @@ class GlobalSearch(Widget):
             app: TrixApp = self.app  # type: ignore
             app._current_file = fpath
             app._has_changes = False
-            app._update_editor_title()
+            app._refresh_ui()
         except Exception:
             pass
         line_text = ta.document.get_line(lineno)

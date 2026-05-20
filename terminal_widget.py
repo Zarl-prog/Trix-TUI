@@ -10,7 +10,7 @@ Features:
 from __future__ import annotations
 
 import asyncio
-import re as _re
+import re
 import winpty
 
 from textual.app import ComposeResult
@@ -24,18 +24,28 @@ from textual.widgets import Input, RichLog
 # ==============================================================================
 
 # Comprehensive regex that strips EVERY known ANSI/VT100 escape pattern.
-_ANSI_ESCAPE = _re.compile(
+# Covers CSI, OSC, DCS, SOS, PM, APC, Fe, and all control chars except \t \n \r.
+_ANSI_ESCAPE = re.compile(
+    # CSI sequences: ESC[ + optional params + final byte
     r"\x1b\[[\d;]*[A-Za-z]"
+    # CSI private mode: ESC[? + digits + hl
     r"|\x1b\[\?[\d;]*[hl]"
+    # OSC sequences: ESC] ... terminated by BEL (\x07) or ST (\x1b\\)
     r"|\x1b\][^\x07]*(?:\x07|\x1b\\)"
+    # DCS/SOS/PM/APC: ESC P/X/^/_ ... terminated by ST
     r"|\x1b[PX^_].*?\x1b\\"
+    # 2-byte escapes: ESC + one char from [@-Z\-_]
     r"|\x1b[@-Z\-_]"
+    # All control characters EXCEPT \t (0x09), \n (0x0a), \r (0x0d)
     r"|[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]",
 )
 
 
 def strip_ansi(text: str) -> str:
-    """Remove ALL ANSI/VT100 escape codes and control characters."""
+    """Remove ALL ANSI/VT100 escape codes and control characters from text.
+
+    Preserves only printable characters plus \t, \n, \r.
+    """
     return _ANSI_ESCAPE.sub("", text)
 
 
@@ -55,43 +65,46 @@ def _is_startup_noise(line: str) -> bool:
     """Return True if line is part of the PowerShell startup banner."""
     stripped = line.strip()
     if not stripped:
-        return True
+        return True  # suppress all empty lines during startup
     for pattern in _STARTUP_FILTERS:
         if pattern in stripped:
             return True
     return False
 
 
-
 # ==============================================================================
 # Prompt detection / transformation
 # ==============================================================================
 
-_PROMPT_RE = _re.compile(r"^PS [A-Za-z]:\..*> ?")
+# Matches PowerShell prompt like "PS C:\Users\...> "
+_PROMPT_RE = re.compile(r"^PS [A-Za-z]:\\.*> ?")
 
 
 def _clean_prompt(line: str) -> str:
-    """Transform PowerShell prompt line into clean CC display."""
+    """Transform a PowerShell prompt line into a clean CC display."""
     if _PROMPT_RE.match(line):
         return "\u276f"
     return line
 
 
 # ==============================================================================
-# Spacing tracker
+# Spacing tracker - ensures exactly one blank line between output blocks
 # ==============================================================================
 
 
 class _SpacingTracker:
-    """Collapse consecutive blank lines to at most one."""
-    def __init__(self):
+    """Tracks consecutive blank lines to collapse them to at most one."""
+
+    def __init__(self) -> None:
         self._prev_blank = False
-    def process(self, line):
+
+    def process(self, line: str) -> str | None:
+        """Return the line to write, or None to skip."""
         if not line.strip():
             if self._prev_blank:
-                return None
+                return None  # suppress second consecutive blank
             self._prev_blank = True
-            return ""
+            return ""  # write a blank line
         self._prev_blank = False
         return line
 
@@ -102,6 +115,8 @@ class _SpacingTracker:
 
 
 class TerminalOutputLog(RichLog):
+    """RichLog that redirects click/mouse focus to the parent's input bar."""
+
     def on_click(self, event: Click) -> None:
         parent = self.parent
         if parent and hasattr(parent, "input_bar"):
@@ -129,6 +144,9 @@ class TerminalWidget(Widget, can_focus=True):
         self._pty: winpty.PtyProcess | None = None
         self._read_task: asyncio.Task | None = None
         self._history: list[str] = []
+        self._hist_idx: int = -1
+        self._startup_phase = True
+        self._spacing = _SpacingTracker()
 
     async def _read_loop(self) -> None:
         """Async loop reading PTY output, stripping escapes and filtering."""
@@ -251,7 +269,7 @@ class TerminalWidget(Widget, can_focus=True):
         if self._pty and self._pty.isalive():
             self._pty.terminate()
 
-        self._hist_idx: int = -1
+        self._hist_idx = -1
         self._startup_phase = True
         self._spacing = _SpacingTracker()
 

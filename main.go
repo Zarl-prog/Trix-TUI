@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -20,6 +21,7 @@ var (
 	dividerBg          = lipgloss.Color("#1a1d23")
 	fileColor         = lipgloss.Color("#8a8986")
 	folderColor       = lipgloss.Color("#bfbdb6")
+	unsavedColor      = lipgloss.Color("#feb454")
 )
 
 type FileNode struct {
@@ -29,24 +31,23 @@ type FileNode struct {
 	Children []FileNode `json:"children,omitempty"`
 }
 
-type model struct {
-	bridge   *Bridge
-	err      error
-	width    int
-	height   int
-	active   string // "files", "editor", "terminal"
-	rootNode FileNode
-	cursor   int
-	flatTree []FileNode
+type FileContent struct {
+	Path    string
+	Content string
 }
 
-func flattenTree(node FileNode, depth int) []FileNode {
-	// Simple flattening for now, can be improved with expansion state
-	res := []FileNode{node}
-	for _, child := range node.Children {
-		res = append(res, flattenTree(child, depth+1)...)
-	}
-	return res
+type model struct {
+	bridge      *Bridge
+	err         error
+	width       int
+	height      int
+	active      string // "files", "editor", "terminal"
+	rootNode    FileNode
+	cursor      int
+	flatTree    []FileNode
+	textarea    textarea.Model
+	currentPath string
+	hasChanges  bool
 }
 
 func fetchFileTree(b *Bridge, path string) tea.Cmd {
@@ -66,28 +67,86 @@ func fetchFileTree(b *Bridge, path string) tea.Cmd {
 	}
 }
 
+func readFile(b *Bridge, path string) tea.Cmd {
+	return func() tea.Msg {
+		res, err := b.Call("read_file", map[string]string{"path": path})
+		if err != nil {
+			return err
+		}
+		var result struct {
+			Status  string `json:"status"`
+			Content string `json:"content"`
+		}
+		if err := json.Unmarshal(res, &result); err != nil {
+			return err
+		}
+		return FileContent{Path: path, Content: result.Content}
+	}
+}
+
+func saveFile(b *Bridge, path, content string) tea.Cmd {
+	return func() tea.Msg {
+		_, err := b.Call("save_file", map[string]string{"path": path, "content": content})
+		if err != nil {
+			return err
+		}
+		return "saved"
+	}
+}
+
 func initialModel() model {
 	b, _ := NewBridge("python")
+	ta := textarea.New()
+	ta.Placeholder = "No file open"
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle().Background(lipgloss.Color("#131721"))
+	
 	return model{
-		bridge: b,
-		active: "terminal",
+		bridge:   b,
+		active:   "terminal",
+		textarea: ta,
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return fetchFileTree(m.bridge, ".")
+	return tea.Batch(
+		fetchFileTree(m.bridge, "."),
+		textarea.Blink,
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		cmds []tea.Cmd
+		cmd  tea.Cmd
+	)
+
 	switch msg := msg.(type) {
 	case FileNode:
 		m.rootNode = msg
 		m.flatTree = flattenTree(m.rootNode, 0)
+	case FileContent:
+		m.currentPath = msg.Path
+		m.textarea.SetValue(msg.Content)
+		m.hasChanges = false
+		m.active = "editor"
+		m.textarea.Focus()
+	case string:
+		if msg == "saved" {
+			m.hasChanges = false
+		}
 	case error:
 		m.err = msg
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		
+		// Update textarea size
+		filesWidth := m.width / 5
+		dividerWidth := 1
+		remainingWidth := m.width - filesWidth - (dividerWidth * 2)
+		editorWidth := remainingWidth / 2
+		m.textarea.SetWidth(editorWidth)
+		m.textarea.SetHeight(m.height - 3) // Approx
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
@@ -103,21 +162,45 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.active == "files" && m.cursor < len(m.flatTree)-1 {
 				m.cursor++
 			}
+		case "enter":
+			if m.active == "files" && len(m.flatTree) > 0 {
+				node := m.flatTree[m.cursor]
+				if !node.IsDir {
+					return m, readFile(m.bridge, node.Path)
+				}
+			}
+		case "ctrl+s":
+			if m.currentPath != "" {
+				return m, saveFile(m.bridge, m.currentPath, m.textarea.Value())
+			}
 		case "ctrl+r":
 			return m, fetchFileTree(m.bridge, ".")
 		case "ctrl+]":
 			switch m.active {
 			case "files":
 				m.active = "editor"
+				m.textarea.Focus()
 			case "editor":
 				m.active = "terminal"
+				m.textarea.Blur()
 			case "terminal":
 				m.active = "files"
 			}
 		}
 	}
-	return m, nil
+
+	if m.active == "editor" {
+		m.textarea, cmd = m.textarea.Update(msg)
+		cmds = append(cmds, cmd)
+		if m.textarea.Value() != "" && !m.hasChanges {
+			// This is a bit naive, ideally we track if value actually changed from original
+			// m.hasChanges = true
+		}
+	}
+
+	return m, tea.Batch(cmds...)
 }
+
 
 func renderFileTree(m model, width, height int) string {
 	var s strings.Builder

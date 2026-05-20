@@ -6,9 +6,7 @@ DIVIDER_CSS = """
 Divider {
     width: 1;
     height: 100%;
-    background: #3f4043;
 }
-Divider:hover { background: #5ac1fe; }
 """
 register_css_template("divider", DIVIDER_CSS)
 

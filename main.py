@@ -137,9 +137,11 @@ class MainScreen(Screen):
             yield Static(self.app._current_theme_dict["name"], id="hdr-theme")
         with LayoutHorizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
+                yield Static("FILES", classes="panel-label")
                 yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
             with LayoutContainer(id="editor-panel"):
+                yield Static("EDITOR", classes="panel-label", id="editor-label")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield Static(
                     "Welcome to TRIX\n\nOpen a file from the Files panel\nor press Ctrl+O to open a folder",
@@ -147,6 +149,7 @@ class MainScreen(Screen):
                 )
             yield Divider("editor-panel", "terminal-panel", id="divider-2")
             with LayoutContainer(id="terminal-panel"):
+                yield Static("TERMINAL", classes="panel-label")
                 yield TerminalWidget(id="terminal")
         with LayoutHorizontal(id="statusbar"):
             yield Static("TRIX", id="st-brand")
@@ -164,9 +167,6 @@ class MainScreen(Screen):
         self.app.on_click(event)
 
     def on_mount(self) -> None:
-        self.query_one("#files-panel").border_title = " 📁 Files"
-        self.query_one("#editor-panel").border_title = " 📝 Editor"
-        self.query_one("#terminal-panel").border_title = " 💻 Terminal"
         self.app._refresh_ui()
         # Focus the terminal input so all three panels are immediately usable
         self.query_one("#term-input", Input).focus()
@@ -231,7 +231,6 @@ class TrixApp(App):
     DirectoryTree:hover > .tree--cursor { background: #252830; }
 
     TextArea { height: 1fr; background: #0d1016; color: #bfbdb6; }
-
     TextArea .text-area--gutter        { background: #0d1016; color: #4b4c4e; }
     TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--cursor        { background: #5ac1fe; }
@@ -257,16 +256,11 @@ class TrixApp(App):
         dock: bottom;
         background: #1f2127;
         color: #bfbdb6;
-        border-left: solid #5ac1fe;
-        border-top: none;
-        border-right: none;
-        border-bottom: none;
+        border: none;
+        padding: 0 1;
     }
     #term-input:focus {
-        border-left: solid #5ac1fe;
-        border-top: none;
-        border-right: none;
-        border-bottom: none;
+        border-top: solid #5ac1fe;
     }
 
     Input { background: #1f2127; color: #bfbdb6; border: none; }
@@ -753,7 +747,7 @@ class TrixApp(App):
         except Exception:
             pass
         if self._current_file is None:
-            self.screen.query_one("#editor-panel").border_title = " 📝 Editor"
+            self.screen.query_one("#editor-label", Static).update("EDITOR")
             self.screen.query_one("#editor").display = False
             self.screen.query_one("#editor-welcome").display = True
             self.screen.query_one("#st-file", Static).update("")
@@ -775,7 +769,7 @@ class TrixApp(App):
                 icon = "⚙️"
             elif ext in (".txt", ".log"):
                 icon = "📄"
-            self.screen.query_one("#editor-panel").border_title = f" {icon} {name}{suffix}"
+            self.screen.query_one("#editor-label", Static).update(f"{icon} {name}{suffix}".upper())
             self.screen.query_one("#editor").display = True
             self.screen.query_one("#editor-welcome").display = False
             self.screen.query_one("#st-file", Static).update(f"{name}{suffix}")
@@ -820,3 +814,6 @@ def run():
         except Exception:
             pass
     TrixApp().run()
+
+if __name__ == "__main__":
+    run()

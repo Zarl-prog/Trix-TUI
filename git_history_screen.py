@@ -364,10 +364,13 @@ class GitHistoryScreen(ModalScreen):
             return
         self._show_commit_detail(self.commits[list_view.index])
 
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        if event.list_view.index is not None and event.list_view.index < len(self.commits):
+            self._show_commit_detail(self.commits[event.list_view.index])
+
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        list_view = self.query_one("#gh-commits", ListView)
-        if list_view.index is not None and list_view.index < len(self.commits):
-            self._show_commit_detail(self.commits[list_view.index])
+        if event.list_view.index is not None and event.list_view.index < len(self.commits):
+            self._show_commit_detail(self.commits[event.list_view.index])
 
     def _show_commit_detail(self, commit: CommitDetail) -> None:
         self.query_one("#gh-detail-hash", Label).update(commit.full_hash)
@@ -380,6 +383,8 @@ class GitHistoryScreen(ModalScreen):
 
         files = commit.get_files(self.repo_path)
         if files:
+            import time
+            unique = int(time.time() * 1000)
             for i, (filename, adds, dels) in enumerate(files):
                 files_container.mount(Horizontal(
                     Static("●", classes="gh-file-dot"),
@@ -387,7 +392,7 @@ class GitHistoryScreen(ModalScreen):
                     Static(f"+{adds}" if adds else "", classes="gh-file-add"),
                     Static(f"-{dels}" if dels else "", classes="gh-file-del"),
                     classes="gh-file-row",
-                    id=f"gh-file-{i}",
+                    id=f"gh-file-{unique}-{i}",
                 ))
         else:
             files_container.mount(Static("No files changed", id="gh-empty-files"))

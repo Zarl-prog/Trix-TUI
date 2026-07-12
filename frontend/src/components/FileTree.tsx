@@ -5,9 +5,10 @@ import PanelHeader from "./PanelHeader.js";
 
 interface Props {
   id: PaneId;
+  panelWidth: number;
 }
 
-export default function FileTree({ id }: Props) {
+export default function FileTree({ id, panelWidth }: Props) {
   const { isFocused } = useFocus({ id });
   const setActivePane = useStore((s) => s.setActivePane);
 
@@ -19,7 +20,7 @@ export default function FileTree({ id }: Props) {
 
   return (
     <Box flexDirection="column" height="100%">
-      <PanelHeader title="Files" isFocused={isFocused} />
+      <PanelHeader title="Files" isFocused={isFocused} panelWidth={panelWidth} />
       <Box flexGrow={1} flexDirection="column" paddingX={1}>
         {entries.length === 0 ? (
           <Text color="#4b4c4e">No files loaded</Text>

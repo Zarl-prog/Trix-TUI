@@ -10,9 +10,9 @@ export default function Header() {
       <Text bold color="#5ac1fe">
         TRIX
       </Text>
-      <Box flexGrow={1}>
+      <Box flexGrow={1} justifyContent="center">
         <Text color="#4b4c4e">
-          {" "}{folderPath || "No project open"}{" "}
+          {folderPath || ""}
         </Text>
       </Box>
       <Text color="#4b4c4e">

@@ -5,9 +5,10 @@ import PanelHeader from "./PanelHeader.js";
 
 interface Props {
   id: PaneId;
+  panelWidth: number;
 }
 
-export default function Editor({ id }: Props) {
+export default function Editor({ id, panelWidth }: Props) {
   const { isFocused } = useFocus({ id });
   const setActivePane = useStore((s) => s.setActivePane);
 
@@ -24,6 +25,7 @@ export default function Editor({ id }: Props) {
       <PanelHeader
         title={activeFile ? activeFile.path.split("/").pop() || "Editor" : "Editor"}
         isFocused={isFocused}
+        panelWidth={panelWidth}
       />
       <Box flexGrow={1} flexDirection="column" paddingX={1} paddingY={0}>
         {activeFile ? (
@@ -32,10 +34,13 @@ export default function Editor({ id }: Props) {
           <Box flexGrow={1} alignItems="center" justifyContent="center">
             <Box flexDirection="column" alignItems="center">
               <Text bold color="#4b4c4e">
-                No file open
+                Welcome to TRIX
               </Text>
               <Text color="#4b4c4e">
-                Press Ctrl+O to open a file
+                {"\n"}Open a file from the Files panel
+              </Text>
+              <Text color="#4b4c4e">
+                or press Ctrl+O to open a folder
               </Text>
             </Box>
           </Box>

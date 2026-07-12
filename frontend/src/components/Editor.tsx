@@ -18,6 +18,9 @@ export default function Editor({ id, panelWidth }: Props) {
 
   const openFiles = useStore((s) => s.openFiles);
   const activeFileIndex = useStore((s) => s.activeFileIndex);
+  const editorContent = useStore((s) => s.editorContent);
+  const cursorLine = useStore((s) => s.cursorLine);
+  const cursorCol = useStore((s) => s.cursorCol);
   const activeFile = activeFileIndex >= 0 ? openFiles[activeFileIndex] : null;
 
   return (
@@ -29,19 +32,29 @@ export default function Editor({ id, panelWidth }: Props) {
       />
       <Box flexGrow={1} flexDirection="column" paddingX={1} paddingY={0}>
         {activeFile ? (
-          <Text color="#bfbdb6">{activeFile.content}</Text>
+          <Box flexGrow={1}>
+            <Box flexDirection="column">
+              {editorContent.split("\n").map((line, i) => (
+                <Box key={i} height={1}>
+                  <Text color={cursorLine === i ? "#5ac1fe" : "#3f4043"} bold={cursorLine === i}>
+                    {String(i + 1).padStart(3, " ")}{" "}
+                  </Text>
+                  <Text
+                    backgroundColor={cursorLine === i && isFocused ? "#131721" : undefined}
+                    color="#bfbdb6"
+                  >
+                    {line || " "}
+                  </Text>
+                </Box>
+              ))}
+            </Box>
+          </Box>
         ) : (
           <Box flexGrow={1} alignItems="center" justifyContent="center">
             <Box flexDirection="column" alignItems="center">
-              <Text bold color="#4b4c4e">
-                Welcome to TRIX
-              </Text>
-              <Text color="#4b4c4e">
-                {"\n"}Open a file from the Files panel
-              </Text>
-              <Text color="#4b4c4e">
-                or press Ctrl+O to open a folder
-              </Text>
+              <Text bold color="#4b4c4e">Welcome to TRIX</Text>
+              <Text color="#4b4c4e">{"\n"}Open a file from the Files panel</Text>
+              <Text color="#4b4c4e">or press Ctrl+O to open a folder</Text>
             </Box>
           </Box>
         )}

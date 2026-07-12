@@ -1,4 +1,4 @@
-import { useInput, useFocusManager, Box } from "ink";
+import { useInput, useFocusManager, useStdout, Box } from "ink";
 import { useStore } from "./store.js";
 import Header from "./components/Header.js";
 import BottomBar from "./components/BottomBar.js";
@@ -10,9 +10,13 @@ import CommandPalette from "./components/CommandPalette.js";
 
 export default function App() {
   const { focusNext, focusPrevious } = useFocusManager();
+  const { stdout } = useStdout();
+  const cols = stdout.columns;
+  const fileTreeWidth = useStore((s) => s.fileTreeWidth);
+  const showPalette = useStore((s) => s.showPalette);
 
   useInput((input, key) => {
-    const { keybindingLayer, activePane, showPalette } =
+    const { keybindingLayer, activePane } =
       useStore.getState();
 
     if (showPalette || keybindingLayer === "palette") {
@@ -87,29 +91,42 @@ export default function App() {
           return;
       }
     }
-  });
 
-  const fileTreeWidth = useStore((s) => s.fileTreeWidth);
-  const showPalette = useStore((s) => s.showPalette);
+    if (activePane === "tree") {
+      if (key.leftArrow && key.ctrl) {
+        useStore.getState().setFileTreeWidth(fileTreeWidth - 5);
+        return;
+      }
+      if (key.rightArrow && key.ctrl) {
+        useStore.getState().setFileTreeWidth(fileTreeWidth + 5);
+        return;
+      }
+    }
+  });
 
   if (showPalette) {
     return <CommandPalette />;
   }
 
+  const fileW = Math.max(10, Math.floor(cols * fileTreeWidth / 100));
+  const restW = cols - fileW - 2;
+  const editW = Math.floor(restW / 2);
+  const termW = restW - editW;
+
   return (
     <Box flexDirection="column" height="100%">
       <Header />
       <Box flexGrow={1} flexDirection="row">
-        <Box width={`${fileTreeWidth}%`} flexShrink={0} minWidth={10}>
-          <FileTree id="tree" />
+        <Box width={fileW} flexShrink={0}>
+          <FileTree id="tree" panelWidth={fileW} />
         </Box>
         <Divider />
         <Box flexGrow={2}>
-          <Editor id="editor" />
+          <Editor id="editor" panelWidth={editW} />
         </Box>
         <Divider />
         <Box flexGrow={2}>
-          <TerminalPanel id="terminal" />
+          <TerminalPanel id="terminal" panelWidth={termW} />
         </Box>
       </Box>
       <BottomBar />

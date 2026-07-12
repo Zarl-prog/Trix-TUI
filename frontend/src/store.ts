@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type PaneId = "tree" | "editor" | "terminal";
-export type KeybindingLayer = "normal" | "insert" | "palette" | "command";
+export type KeybindingLayer = "normal" | "insert" | "palette";
 
 export interface OpenFile {
   path: string;
@@ -9,9 +9,10 @@ export interface OpenFile {
   content: string;
 }
 
-export interface FileEntry {
+export interface TreeNode {
   name: string;
   type: "file" | "directory";
+  children?: TreeNode[];
 }
 
 export interface SearchResult {
@@ -61,20 +62,30 @@ export interface AppState {
   fileTreeWidth: number;
   setFileTreeWidth: (width: number) => void;
 
-  fileTreeData: FileEntry[];
-  setFileTreeData: (data: FileEntry[]) => void;
+  treeData: TreeNode[];
+  setTreeData: (data: TreeNode[]) => void;
+  treeSelectedIndex: number;
+  setTreeSelectedIndex: (idx: number) => void;
+  treeExpanded: Record<string, boolean>;
+  toggleExpanded: (path: string) => void;
+  treeScroll: number;
+  setTreeScroll: (scroll: number) => void;
+
+  editorContent: string;
+  setEditorContent: (content: string) => void;
+  cursorLine: number;
+  cursorCol: number;
+  setCursor: (line: number, col: number) => void;
+
+  terminalOutput: string;
+  appendTerminalOutput: (data: string) => void;
+  clearTerminalOutput: () => void;
+  terminalInput: string;
+  setTerminalInput: (val: string) => void;
 
   searchResults: SearchResult[];
   setSearchResults: (results: SearchResult[]) => void;
 }
-
-const DEFAULT_PALETTE_COMMANDS: PaletteCommand[] = [
-  { id: "open-file", label: "Open File", action: () => {} },
-  { id: "save", label: "Save", action: () => {} },
-  { id: "toggle-terminal", label: "Toggle Terminal", action: () => {} },
-  { id: "toggle-file-tree", label: "Toggle File Tree", action: () => {} },
-  { id: "quit", label: "Quit", action: () => process.exit(0) },
-];
 
 export const useStore = create<AppState>((set, get) => ({
   activePane: "tree",
@@ -96,7 +107,11 @@ export const useStore = create<AppState>((set, get) => ({
   showPalette: false,
   paletteSelectedIndex: 0,
   paletteFilter: "",
-  paletteCommands: DEFAULT_PALETTE_COMMANDS,
+  paletteCommands: [
+    { id: "toggle-files", label: "Toggle File Tree", action: () => {} },
+    { id: "save", label: "Save File", action: () => {} },
+    { id: "quit", label: "Quit", action: () => process.exit(0) },
+  ],
   openPalette: () =>
     set((s) => ({
       showPalette: true,
@@ -146,16 +161,41 @@ export const useStore = create<AppState>((set, get) => ({
   closeFile: (index) =>
     set((s) => {
       const files = s.openFiles.filter((_, i) => i !== index);
-      const activeIdx =
-        s.activeFileIndex >= files.length ? files.length - 1 : s.activeFileIndex;
+      const activeIdx = s.activeFileIndex >= files.length ? files.length - 1 : s.activeFileIndex;
       return { openFiles: files, activeFileIndex: activeIdx };
     }),
 
-  fileTreeWidth: 25,
+  fileTreeWidth: 20,
   setFileTreeWidth: (width) => set({ fileTreeWidth: Math.max(10, Math.min(60, width)) }),
 
-  fileTreeData: [],
-  setFileTreeData: (data) => set({ fileTreeData: data }),
+  treeData: [],
+  setTreeData: (data) => set({ treeData: data }),
+  treeSelectedIndex: 0,
+  setTreeSelectedIndex: (idx) => set({ treeSelectedIndex: idx }),
+  treeExpanded: {},
+  toggleExpanded: (path) =>
+    set((s) => ({
+      treeExpanded: { ...s.treeExpanded, [path]: !s.treeExpanded[path] },
+    })),
+  treeScroll: 0,
+  setTreeScroll: (scroll) => set({ treeScroll: scroll }),
+
+  editorContent: "",
+  setEditorContent: (content) => set({ editorContent: content }),
+  cursorLine: 0,
+  cursorCol: 0,
+  setCursor: (line, col) => set({ cursorLine: line, cursorCol: col }),
+
+  terminalOutput: "",
+  appendTerminalOutput: (data) =>
+    set((s) => {
+      const maxLen = 50000;
+      const out = s.terminalOutput + data;
+      return { terminalOutput: out.length > maxLen ? out.slice(-maxLen) : out };
+    }),
+  clearTerminalOutput: () => set({ terminalOutput: "" }),
+  terminalInput: "",
+  setTerminalInput: (val) => set({ terminalInput: val }),
 
   searchResults: [],
   setSearchResults: (results) => set({ searchResults: results }),

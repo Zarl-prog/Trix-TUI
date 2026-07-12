@@ -17,7 +17,7 @@ _HELP = """\
    [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels (Files→Editor→Terminal)
    [#bfbdb6]Click[/#bfbdb6]            Focus any panel by clicking it
    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
-   [#bfbdb6]Ctrl+\[/#bfbdb6]           Zen Mode (Editor only)
+    [#bfbdb6]Ctrl+\\[/#bfbdb6]           Zen Mode (Editor only)
 
  [bold #5ac1fe]Editor[/bold #5ac1fe]
    [#bfbdb6]Ctrl+Z[/#bfbdb6]           Undo

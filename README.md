@@ -1,4 +1,4 @@
-Changing this whole repo to GO(UI) + Python (Core Features).
+Changing this whole repo to Python (Core Features) with python textual framework.
 This might take some time... 
 but dont miss the Output
 

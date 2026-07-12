@@ -1,30 +1,29 @@
 import { Box, Text } from "ink";
 
 const KEYBINDINGS = [
-  { key: "^q", desc: "Quit" },
-  { key: "F1", desc: "Help" },
-  { key: "^g", desc: "Git" },
-  { key: "^t", desc: "Theme" },
-  { key: "^b", desc: "Files" },
-  { key: "^o", desc: "Open" },
-  { key: "^s", desc: "Save" },
-  { key: "^f", desc: "Search" },
-  { key: "^p", desc: "Palette" },
+  { key: " ^q ", desc: "Quit  " },
+  { key: " f1 ", desc: "Help  " },
+  { key: " ^g ", desc: "Git  " },
+  { key: " ^t ", desc: "Theme  " },
+  { key: " ^b ", desc: "Files  " },
+  { key: " ^o ", desc: "Open  " },
 ];
 
 export default function BottomBar() {
   return (
     <Box height={1} paddingX={1}>
-      {KEYBINDINGS.map((kb, i) => (
-        <Box key={i}>
-          <Text bold color="#5ac1fe">
-            {kb.key}
+      <Text backgroundColor="#131721">
+        {KEYBINDINGS.map((kb, i) => (
+          <Text key={i}>
+            <Text bold color="#5ac1fe">
+              {kb.key}
+            </Text>
+            <Text color="#8a8986">
+              {kb.desc}
+            </Text>
           </Text>
-          <Text color="#8a8986">
-            {" "}{kb.desc}{"  "}
-          </Text>
-        </Box>
-      ))}
+        ))}
+      </Text>
     </Box>
   );
 }

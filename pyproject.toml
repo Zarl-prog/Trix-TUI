@@ -12,9 +12,11 @@ authors = [
 ]
 dependencies = [
     "textual>=0.80.0",
-    "pywinpty",
     "pyperclip",
 ]
+
+[project.optional-dependencies]
+windows = ["pywinpty"]
 
 [project.scripts]
 trix = "app:run"

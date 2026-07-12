@@ -228,8 +228,4 @@ CSS_TEMPLATES: dict[str, str] = {}
 def register_css_template(name: str, css: str) -> None:
     CSS_TEMPLATES[name] = css
 
-ACTIVE_APP = None
 
-def apply_theme(theme: dict) -> None:
-    if ACTIVE_APP is not None:
-        ACTIVE_APP.apply_theme(theme)

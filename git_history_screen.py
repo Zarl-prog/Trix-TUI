@@ -418,7 +418,4 @@ class GitHistoryScreen(ModalScreen):
                     files_list += f" +{len(files) - 5} more"
                 self.notify(f"Files changed: {files_list}")
 
-    def on_key(self, event) -> None:
-        if event.key == "escape":
-            self.action_close()
-            event.prevent_default()
+

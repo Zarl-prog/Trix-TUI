@@ -1,5 +1,7 @@
 import { useInput, useFocusManager, Box } from "ink";
 import { useStore } from "./store.js";
+import Header from "./components/Header.js";
+import BottomBar from "./components/BottomBar.js";
 import FileTree from "./components/FileTree.js";
 import Editor from "./components/Editor.js";
 import TerminalPanel from "./components/TerminalPanel.js";
@@ -10,7 +12,7 @@ export default function App() {
   const { focusNext, focusPrevious } = useFocusManager();
 
   useInput((input, key) => {
-    const { keybindingLayer, activePane, fileTreeWidth, showPalette } =
+    const { keybindingLayer, activePane, showPalette } =
       useStore.getState();
 
     if (showPalette || keybindingLayer === "palette") {
@@ -85,17 +87,6 @@ export default function App() {
           return;
       }
     }
-
-    if (activePane === "divider") {
-      if (key.leftArrow) {
-        useStore.getState().setFileTreeWidth(fileTreeWidth - 3);
-        return;
-      }
-      if (key.rightArrow) {
-        useStore.getState().setFileTreeWidth(fileTreeWidth + 3);
-        return;
-      }
-    }
   });
 
   const fileTreeWidth = useStore((s) => s.fileTreeWidth);
@@ -106,17 +97,22 @@ export default function App() {
   }
 
   return (
-    <Box flexDirection="column">
-      <Box flexDirection="row" flexGrow={1}>
-        <Box flexBasis={`${fileTreeWidth}%`} flexShrink={0} minWidth={10}>
+    <Box flexDirection="column" height="100%">
+      <Header />
+      <Box flexGrow={1} flexDirection="row">
+        <Box width={`${fileTreeWidth}%`} flexShrink={0} minWidth={10}>
           <FileTree id="tree" />
         </Box>
-        <Divider id="divider" />
-        <Box flexGrow={1}>
+        <Divider />
+        <Box flexGrow={2}>
           <Editor id="editor" />
         </Box>
+        <Divider />
+        <Box flexGrow={2}>
+          <TerminalPanel id="terminal" />
+        </Box>
       </Box>
-      <TerminalPanel id="terminal" />
+      <BottomBar />
     </Box>
   );
 }

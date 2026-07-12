@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type PaneId = "tree" | "editor" | "terminal" | "divider";
+export type PaneId = "tree" | "editor" | "terminal";
 export type KeybindingLayer = "normal" | "insert" | "palette" | "command";
 
 export interface OpenFile {
@@ -30,6 +30,12 @@ export interface PaletteCommand {
 export interface AppState {
   activePane: PaneId;
   setActivePane: (id: PaneId) => void;
+
+  folderPath: string;
+  setFolderPath: (path: string) => void;
+
+  themeName: string;
+  setThemeName: (name: string) => void;
 
   keybindingLayer: KeybindingLayer;
   previousLayer: KeybindingLayer;
@@ -73,6 +79,12 @@ const DEFAULT_PALETTE_COMMANDS: PaletteCommand[] = [
 export const useStore = create<AppState>((set, get) => ({
   activePane: "tree",
   setActivePane: (id) => set({ activePane: id }),
+
+  folderPath: "",
+  setFolderPath: (path) => set({ folderPath: path }),
+
+  themeName: "Ayu Dark",
+  setThemeName: (name) => set({ themeName: name }),
 
   keybindingLayer: "normal",
   previousLayer: "normal",

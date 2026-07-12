@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Box, Text, useFocus } from "ink";
 import { useStore, type PaneId } from "../store.js";
+import PanelHeader from "./PanelHeader.js";
 
 interface Props {
   id: PaneId;
@@ -19,27 +20,25 @@ export default function Editor({ id }: Props) {
   const activeFile = activeFileIndex >= 0 ? openFiles[activeFileIndex] : null;
 
   return (
-    <Box
-      flexDirection="column"
-      flexGrow={1}
-      borderStyle={isFocused ? "bold" : "single"}
-      borderColor={isFocused ? "#5ac1fe" : "#3f4043"}
-    >
-      <Box>
-        <Text bold color={isFocused ? "#5ac1fe" : "#bfbdb6"}>
-          {" "}Editor{" "}
-        </Text>
-        {activeFile && (
-          <Text color="#8a8986">— {activeFile.path}</Text>
-        )}
-      </Box>
-      <Box flexGrow={1} flexDirection="column" paddingX={1}>
+    <Box flexDirection="column" height="100%">
+      <PanelHeader
+        title={activeFile ? activeFile.path.split("/").pop() || "Editor" : "Editor"}
+        isFocused={isFocused}
+      />
+      <Box flexGrow={1} flexDirection="column" paddingX={1} paddingY={0}>
         {activeFile ? (
           <Text color="#bfbdb6">{activeFile.content}</Text>
         ) : (
-          <Text color="#4b4c4e">
-            No file open{'\n'}Press Ctrl+O to open a file
-          </Text>
+          <Box flexGrow={1} alignItems="center" justifyContent="center">
+            <Box flexDirection="column" alignItems="center">
+              <Text bold color="#4b4c4e">
+                No file open
+              </Text>
+              <Text color="#4b4c4e">
+                Press Ctrl+O to open a file
+              </Text>
+            </Box>
+          </Box>
         )}
       </Box>
     </Box>

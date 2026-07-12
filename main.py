@@ -12,7 +12,7 @@ from textual.screen import Screen
 from textual.containers import Container, Horizontal
 from textual.events import Click, Key, MouseDown
 from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
-from textual._work_decorator import work
+from textual import work
 
 import json
 from themes import THEMES
@@ -558,12 +558,12 @@ class TrixApp(App):
         ta.focus()
         self._refresh_ui()
 
-    def on_text_area_changed(self) -> None:
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if self._current_file and not self._has_changes:
             self._has_changes = True
             self._refresh_ui()
 
-    def on_text_area_selection_changed(self) -> None:
+    def on_text_area_selection_changed(self, event: TextArea.SelectionChanged) -> None:
         try:
             ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
@@ -677,8 +677,8 @@ class TrixApp(App):
         self.screen.query_one("#hdr-folder", Static).update(path.name)
         self._refresh_ui()
 
-    def action_reload_tree(self) -> None:
-        self.screen.query_one(DirectoryTree).reload()
+    async def action_reload_tree(self) -> None:
+        await self.screen.query_one(DirectoryTree).reload()
 
     @work
     async def action_new_file(self) -> None:

@@ -602,12 +602,12 @@ class MainScreen(Screen):
     """Main application screen that routes its click events to the app click handler."""
 
     def compose(self) -> ComposeResult:
-        with LayoutHorizontal(id="header"):
+        with Horizontal(id="header"):
             yield Static("TRIX", id="hdr-brand")
             yield Static("", id="hdr-folder")
             yield Static(self.app._current_theme_dict["name"], id="hdr-theme")
             
-        with LayoutHorizontal(id="main-area"):
+        with Horizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
                 yield PanelHeader("Files", id="header-files")
                 yield GlobalSearch(id="global-search")

@@ -256,8 +256,6 @@ SplashScreen {
 }
 #splash-container {
     align: center middle;
-    width: 100%;
-    height: 100%;
 }
 #splash-logo {
     text-align: center;
@@ -279,13 +277,11 @@ SplashScreen {
 #splash-bar {
     text-align: center;
     color: #5ac1fe;
-    width: 32;
     margin-bottom: 0;
 }
 #splash-status {
     text-align: center;
     color: #8a8986;
-    width: 32;
 }
 """
 register_css_template("splash_screen", SPLASH_SCREEN_CSS)

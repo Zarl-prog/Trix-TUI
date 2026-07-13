@@ -18,6 +18,7 @@ import json
 from themes import THEMES
 from terminal_widget import TerminalWidget
 from divider_widget import Divider
+from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
 from git_history_screen import GitHistoryScreen
 
@@ -184,10 +185,12 @@ class MainScreen(Screen):
         with LayoutHorizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
                 yield PanelHeader("Files", id="header-files")
+                yield GlobalSearch(id="global-search")
                 yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
             with LayoutContainer(id="editor-panel"):
                 yield PanelHeader("Editor", id="header-editor")
+                yield EditorSearch(id="editor-search")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield Static(
                     "Welcome to TRIX\n\nOpen a file from the Files panel\nor press Ctrl+O to open a folder",
@@ -352,6 +355,8 @@ class TrixApp(App):
         ("ctrl+w",           "close_file",      "Close File"),
         ("ctrl+o",           "open_folder",     "Open Folder"),
         ("ctrl+r",           "reload_tree",     "Reload Tree"),
+        ("ctrl+f",           "search",          "Search in File"),
+        ("ctrl+shift+f",     "global_search",   "Global Search"),
         ("ctrl+t",           "cycle_theme",     "Cycle Theme"),
         ("ctrl+shift+t",     "pick_theme",      "Theme Picker"),
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
@@ -598,6 +603,21 @@ class TrixApp(App):
 
     def action_show_help(self) -> None:
         self.push_screen(HelpScreen())
+
+    def action_search(self) -> None:
+        """Ctrl+F — inline search inside the editor."""
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        if self._current_file is None:
+            self.notify("Open a file first", severity="warning")
+            return
+        self.screen.query_one("#editor-search", EditorSearch).open()
+
+    def action_global_search(self) -> None:
+        """Ctrl+Shift+F — search across all files."""
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        self.screen.query_one("#global-search", GlobalSearch).open()
 
     def action_show_git_history(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":

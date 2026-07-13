@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import os
+import pty
 import re
+import signal
+import struct
 import sys
+import termios
 from typing import Any
 
 from textual.app import ComposeResult
@@ -26,44 +31,12 @@ def strip_ansi(text: str) -> str:
     return _ANSI_ESCAPE.sub("", text)
 
 
-_IS_WINDOWS = sys.platform == "win32"
-
-_STARTUP_FILTERS: tuple[str, ...] = ()
-_PROMPT_RE: re.Pattern | None = None
-_DEFAULT_SHELL = "powershell.exe"
-
-if _IS_WINDOWS:
-    _STARTUP_FILTERS = (
-        "Windows PowerShell",
-        "Copyright (C) Microsoft Corporation",
-        "Install the latest PowerShell",
-        "https://aka.ms/PSWindows",
-    )
-    _PROMPT_RE = re.compile(r"^PS [A-Za-z]:\\.*> ?")
-    _DEFAULT_SHELL = "powershell.exe"
-else:
-    _DEFAULT_SHELL = os.environ.get("SHELL", "bash")
-
-
-def _is_startup_noise(line: str) -> bool:
-    if not _STARTUP_FILTERS:
-        return False
-    stripped = line.strip()
-    if not stripped:
-        return True
-    for pattern in _STARTUP_FILTERS:
-        if pattern in stripped:
-            return True
-    return False
-
-
-def _clean_prompt(line: str) -> str:
-    if _PROMPT_RE and _PROMPT_RE.match(line):
-        return "\u276f"
-    return line
+_DEFAULT_SHELL = os.environ.get("SHELL", "/bin/bash")
 
 
 class _SpacingTracker:
+    """Collapses consecutive blank lines into a single blank line."""
+
     def __init__(self) -> None:
         self._prev_blank = False
 
@@ -90,84 +63,152 @@ class TerminalOutputLog(RichLog):
 
 
 class TerminalWidget(Widget, can_focus=True):
-    """Embedded terminal using the system shell."""
+    """
+    Embedded terminal using a real PTY (pty.fork) on Linux/macOS.
+    Spawns $SHELL (default: /bin/bash) in a pseudo-terminal so interactive
+    programs (python REPL, vim, top, etc.) work correctly.
+    """
 
     COLS = 200
     ROWS = 50
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self._process: Any = None
+        self._master_fd: int | None = None
+        self._child_pid: int | None = None
         self._read_task: asyncio.Task | None = None
         self._history: list[str] = []
         self._hist_idx: int = -1
-        self._startup_phase = True
         self._spacing = _SpacingTracker()
-        self._winpty_impl = None
-        if _IS_WINDOWS:
-            import winpty
-            self._winpty_impl = winpty
+
+    # ── Compose / mount ────────────────────────────────────────────────────
+
+    def compose(self) -> ComposeResult:
+        yield TerminalOutputLog(
+            id="term-output", auto_scroll=True, markup=False, highlight=False
+        )
+        yield Input(id="term-input", placeholder="❯")
+
+    def on_mount(self) -> None:
+        asyncio.get_event_loop().create_task(self._start_pty())
+
+    # ── PTY lifecycle ──────────────────────────────────────────────────────
+
+    async def _start_pty(self) -> None:
+        log = self.query_one("#term-output", RichLog)
+        try:
+            pid, master_fd = pty.fork()
+        except Exception as e:
+            log.write(f"[ERROR] pty.fork() failed: {e}")
+            return
+
+        if pid == 0:
+            # ── child process ──
+            # Set terminal size
+            try:
+                s = struct.pack("HHHH", self.ROWS, self.COLS, 0, 0)
+                fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCSWINSZ, s)
+            except Exception:
+                pass
+            # Clean environment
+            env = os.environ.copy()
+            env.setdefault("TERM", "xterm-256color")
+            env.setdefault("COLORTERM", "truecolor")
+            try:
+                os.execvpe(_DEFAULT_SHELL, [_DEFAULT_SHELL], env)
+            except Exception:
+                os._exit(1)
+        else:
+            # ── parent process ──
+            self._child_pid = pid
+            self._master_fd = master_fd
+            # Set initial PTY window size
+            try:
+                s = struct.pack("HHHH", self.ROWS, self.COLS, 0, 0)
+                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, s)
+            except Exception:
+                pass
+            # Make master_fd non-blocking for async reading
+            flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+            fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+            self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
+            log.write(f"Terminal ready ({_DEFAULT_SHELL})")
 
     async def _read_loop(self) -> None:
         log = self.query_one("#term-output", RichLog)
-        loop = asyncio.get_event_loop()
         buf = ""
+        loop = asyncio.get_event_loop()
 
-        while True:
-            if _IS_WINDOWS:
-                alive = self._process and self._process.isalive()
-            else:
-                p = self._process
-                alive = p is not None and isinstance(p, asyncio.subprocess.Process) and p.returncode is None
-
-            if not alive:
-                break
-
+        while self._master_fd is not None:
             try:
-                if _IS_WINDOWS:
-                    data = await loop.run_in_executor(None, self._process.read, 4096)
-                else:
-                    data = await self._process.stdout.read(4096)
+                data = await loop.run_in_executor(None, self._blocking_read)
+            except Exception:
+                await asyncio.sleep(0.02)
+                continue
 
-                if not data:
-                    await asyncio.sleep(0.01)
-                    continue
+            if not data:
+                await asyncio.sleep(0.02)
+                continue
 
-                raw = data if isinstance(data, str) else data.decode("utf-8", errors="replace")
-                buf += raw
+            raw = data.decode("utf-8", errors="replace")
+            buf += raw
 
-                if "\x1b[2J" in buf or "\x1b[3J" in buf:
-                    log.clear()
-                    buf = ""
-                    self._spacing = _SpacingTracker()
-                    continue
+            # Handle clear-screen escape sequences
+            if "\x1b[2J" in buf or "\x1b[3J" in buf:
+                log.clear()
+                buf = ""
+                self._spacing = _SpacingTracker()
+                continue
 
-                while "\n" in buf:
-                    line, buf = buf.split("\n", 1)
-                    self._write_line(line)
+            while "\n" in buf:
+                line, buf = buf.split("\n", 1)
+                self._write_line(line)
 
-            except Exception as e:
-                log.write(f"[READ ERROR] {e}")
-                await asyncio.sleep(0.1)
+    def _blocking_read(self) -> bytes:
+        """Read from master fd, return empty bytes if nothing available."""
+        if self._master_fd is None:
+            return b""
+        try:
+            return os.read(self._master_fd, 4096)
+        except BlockingIOError:
+            import time
+            time.sleep(0.02)
+            return b""
+        except OSError:
+            return b""
 
     def _write_line(self, raw_line: str) -> None:
-        line = strip_ansi(raw_line)
-        line = line.rstrip("\r")
-
-        if self._startup_phase:
-            if _PROMPT_RE and _PROMPT_RE.match(line):
-                self._startup_phase = False
-                self._spacing = _SpacingTracker()
-                return
-            if _is_startup_noise(line):
-                return
-
-        line = _clean_prompt(line)
+        line = strip_ansi(raw_line).rstrip("\r")
         out = self._spacing.process(line)
         if out is None:
             return
         log = self.query_one("#term-output", RichLog)
         log.write(out)
+
+    def _write_pty(self, data: str) -> None:
+        if self._master_fd is None:
+            return
+        try:
+            os.write(self._master_fd, data.encode("utf-8"))
+        except OSError as e:
+            self._safe_write(f"[WRITE ERROR] {e}")
+
+    def _safe_write(self, text: str) -> None:
+        try:
+            self.query_one("#term-output", RichLog).write(strip_ansi(text))
+        except Exception:
+            pass
+
+    # ── Input handling ─────────────────────────────────────────────────────
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        cmd = event.value
+        self.query_one("#term-input", Input).clear()
+        if cmd:
+            self._history.append(cmd)
+        self._hist_idx = -1
+        self._write_pty(cmd + "\n")
 
     def on_key(self, event: Key) -> None:
         key = event.key
@@ -179,6 +220,7 @@ class TerminalWidget(Widget, can_focus=True):
             inp.cursor_position = len(inp.value)
             event.prevent_default()
             return
+
         if key == "down":
             if self._hist_idx > 0:
                 self._hist_idx -= 1
@@ -192,6 +234,7 @@ class TerminalWidget(Widget, can_focus=True):
 
         if key == "ctrl+c":
             event.prevent_default()
+            # Copy selected terminal text if any
             log = self.query_one("#term-output", RichLog)
             sel = log.text_selection
             if sel:
@@ -201,59 +244,14 @@ class TerminalWidget(Widget, can_focus=True):
                     self.app.copy_to_clipboard(text)
                     self.app.notify("Copied to clipboard")
                     return
+            # Otherwise send SIGINT to child
             self._write_pty("\x03")
+
         elif key == "ctrl+z":
             event.prevent_default()
             self._write_pty("\x1a")
 
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        cmd = event.value
-        self.query_one("#term-input", Input).clear()
-        if cmd:
-            self._history.append(cmd)
-            self._query_one_write(f"\u276f {cmd}")
-        self._hist_idx = -1
-        self._write_pty(cmd + "\n")
-
-    def _write_pty(self, data: str) -> None:
-        if self._process is None:
-            return
-        try:
-            if _IS_WINDOWS:
-                self._process.write(data)
-            else:
-                p = self._process
-                if isinstance(p, asyncio.subprocess.Process) and p.returncode is None:
-                    p.stdin.write(data)
-                    asyncio.ensure_future(p.stdin.drain())
-        except Exception as e:
-            self._query_one_write(f"[WRITE ERROR] {e}")
-
-    def write(self, text: str) -> None:
-        self._query_one_write(text)
-
-    def _query_one_write(self, text: str) -> None:
-        log = self.query_one("#term-output", RichLog)
-        log.write(strip_ansi(text))
-
-    async def on_unmount(self) -> None:
-        if self._read_task:
-            self._read_task.cancel()
-        if _IS_WINDOWS:
-            if self._process and self._process.isalive():
-                self._process.terminate()
-        else:
-            p = self._process
-            if isinstance(p, asyncio.subprocess.Process) and p.returncode is None:
-                p.terminate()
-                try:
-                    await asyncio.wait_for(p.wait(), timeout=2)
-                except asyncio.TimeoutError:
-                    p.kill()
-
-        self._hist_idx = -1
-        self._startup_phase = True
-        self._spacing = _SpacingTracker()
+    # ── Click / focus ──────────────────────────────────────────────────────
 
     @property
     def input_bar(self) -> Input:
@@ -265,30 +263,38 @@ class TerminalWidget(Widget, can_focus=True):
     def on_mouse_down(self, event: MouseDown) -> None:
         self.input_bar.focus()
 
-    def compose(self) -> ComposeResult:
-        yield TerminalOutputLog(id="term-output", auto_scroll=True, markup=False, highlight=False)
-        yield Input(id="term-input", placeholder="\u276f")
+    # ── Cleanup ────────────────────────────────────────────────────────────
 
-    def on_mount(self) -> None:
-        asyncio.get_event_loop().create_task(self._start_pty())
+    async def on_unmount(self) -> None:
+        if self._read_task:
+            self._read_task.cancel()
+            try:
+                await self._read_task
+            except asyncio.CancelledError:
+                pass
 
-    async def _start_pty(self) -> None:
-        log = self.query_one("#term-output", RichLog)
-        try:
-            if _IS_WINDOWS:
-                self._process = self._winpty_impl.PtyProcess.spawn(
-                    _DEFAULT_SHELL,
-                    dimensions=(self.ROWS, self.COLS),
-                )
-                self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
-            else:
-                self._process = await asyncio.create_subprocess_exec(
-                    _DEFAULT_SHELL,
-                    stdin=asyncio.subprocess.PIPE,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.STDOUT,
-                )
-                self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
-            log.write(f"Terminal ready ({_DEFAULT_SHELL}).")
-        except Exception as e:
-            log.write(f"[ERROR] Failed to start terminal: {e}")
+        if self._child_pid is not None:
+            try:
+                os.kill(self._child_pid, signal.SIGTERM)
+            except OSError:
+                pass
+            try:
+                os.waitpid(self._child_pid, os.WNOHANG)
+            except OSError:
+                pass
+            self._child_pid = None
+
+        if self._master_fd is not None:
+            try:
+                os.close(self._master_fd)
+            except OSError:
+                pass
+            self._master_fd = None
+
+        self._hist_idx = -1
+        self._spacing = _SpacingTracker()
+
+    # ── Public helper ──────────────────────────────────────────────────────
+
+    def write(self, text: str) -> None:
+        self._safe_write(text)

@@ -25,6 +25,8 @@ _HELP = """\
    [#bfbdb6]Ctrl+A[/#bfbdb6]           Select All
    [#bfbdb6]Ctrl+_[/#bfbdb6]           Toggle Comment
    [#bfbdb6]Ctrl+D[/#bfbdb6]           Duplicate Line
+   [#bfbdb6]Ctrl+F[/#bfbdb6]           Search in File (Enter=next, Esc=close)
+   [#bfbdb6]Ctrl+Shift+F[/#bfbdb6]     Search Across All Files
    [#bfbdb6]Ctrl+T[/#bfbdb6]           Cycle Theme
    [#bfbdb6]Ctrl+R[/#bfbdb6]           Reload File Tree
 

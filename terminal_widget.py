@@ -31,6 +31,64 @@ def strip_ansi(text: str) -> str:
     return _ANSI_ESCAPE.sub("", text)
 
 
+import re as _re
+
+# ── Terminal line colorizer ────────────────────────────────────────────────
+
+_COLOR_RULES: list[tuple[_re.Pattern, str]] = [
+    # Errors
+    (_re.compile(r"(?i)(error|traceback|exception|fatal|failed|failure|critical|abort)", _re.IGNORECASE), "#ef7177"),
+    # Warnings
+    (_re.compile(r"(?i)(warning|warn|deprecated)", _re.IGNORECASE), "#e6b450"),
+    # Success / OK
+    (_re.compile(r"(?i)(success|succeeded|done|ok\b|passed|installed|complete|built)", _re.IGNORECASE), "#aad84c"),
+    # Prompts (lines ending with $ or ❯ or lines that look like shell prompts)
+    (_re.compile(r"(^|\s)(\$|❯|>>|#)\s*$"), "#5ac1fe"),
+    # Git output
+    (_re.compile(r"^(On branch|HEAD|commit [0-9a-f]{7}|Author:|Date:|    )"), "#bfbdb6"),
+    # File paths
+    (_re.compile(r"(/[\w./\-_]+|[A-Za-z]:\\[\w\\./\-_]+)"), "#39bae6"),
+    # Numbers / exit codes
+    (_re.compile(r"\b(exit code|returned|status):?\s*\d+"), "#feb454"),
+]
+
+
+def _colorize_line(line: str) -> str:
+    """Return a Rich markup-colored version of a terminal output line."""
+    if not line.strip():
+        return line
+
+    # Prompt lines (PS1-style: ends with $ or > or ❯)
+    if _re.search(r"[$❯#>]\s*$", line):
+        return f"[bold #5ac1fe]{line}[/bold #5ac1fe]"
+
+    # Error lines
+    if _re.search(r"(?i)\b(error|traceback|exception|fatal|failed|failure|critical|abort)\b", line):
+        return f"[#ef7177]{line}[/#ef7177]"
+
+    # Warning lines
+    if _re.search(r"(?i)\b(warning|warn|deprecated)\b", line):
+        return f"[#e6b450]{line}[/#e6b450]"
+
+    # Success lines
+    if _re.search(r"(?i)\b(success|succeeded|done|passed|installed|complete|built)\b", line):
+        return f"[#aad84c]{line}[/#aad84c]"
+
+    # Git branch / status lines
+    if _re.match(r"^(On branch|HEAD detached|Your branch|nothing to commit|Changes|Untracked)", line):
+        return f"[#bfbdb6]{line}[/#bfbdb6]"
+
+    # Git commit hash lines
+    if _re.match(r"^[0-9a-f]{7,40}\s", line):
+        return f"[#feb454]{line}[/#feb454]"
+
+    # Info / note lines
+    if _re.search(r"(?i)\b(info|note|hint|tip)\b", line):
+        return f"[#4b4c4e]{line}[/#4b4c4e]"
+
+    return line
+
+
 _DEFAULT_SHELL = os.environ.get("SHELL", "/bin/bash")
 
 
@@ -133,7 +191,7 @@ class TerminalWidget(Widget, can_focus=True):
             fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
             self._read_task = asyncio.get_event_loop().create_task(self._read_loop())
-            log.write(f"Terminal ready ({_DEFAULT_SHELL})")
+            log.write(f"[#aad84c]Terminal ready ({_DEFAULT_SHELL})[/#aad84c]", markup=True)
 
     async def _read_loop(self) -> None:
         log = self.query_one("#term-output", RichLog)
@@ -184,7 +242,8 @@ class TerminalWidget(Widget, can_focus=True):
         if out is None:
             return
         log = self.query_one("#term-output", RichLog)
-        log.write(out)
+        colored = _colorize_line(out)
+        log.write(colored, markup=True)
 
     def _write_pty(self, data: str) -> None:
         if self._master_fd is None:

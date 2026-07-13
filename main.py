@@ -1,5 +1,6 @@
 import sys
 import subprocess
+from collections import defaultdict
 from functools import partial
 from pathlib import Path
 from typing import cast
@@ -10,11 +11,13 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from textual.app import App, ComposeResult
+from textual.message import Message
 from textual.screen import Screen
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import DirectoryTree, Input, ListView, ListItem, RichLog, Static, TextArea
+from textual.widgets.text_area import Selection
 from textual import work
 
 import json

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 from pathlib import Path
 
 from textual.app import ComposeResult
@@ -40,6 +41,51 @@ EditorSearch Input:focus {
 """
 register_css_template("editor_search", EDITOR_SEARCH_CSS)
 
+_SEARCH_MATCH_KEY = "search.match"
+_SEARCH_ACTIVE_KEY = "search.match.active"
+
+
+def _inject_search_highlights(ta: TextArea, matches: list[tuple[int, int, int]], active_idx: int) -> None:
+    """Inject all search match highlights directly into TextArea._highlights."""
+    from rich.style import Style
+
+    # Register custom highlight styles on the active theme
+    try:
+        theme = ta._theme  # type: ignore[attr-defined]
+        if theme is not None:
+            theme.syntax_styles[_SEARCH_MATCH_KEY] = Style(bgcolor="#2d4a6e", color="#bfbdb6")
+            theme.syntax_styles[_SEARCH_ACTIVE_KEY] = Style(bgcolor="#5ac1fe", color="#0d1016", bold=True)
+    except Exception:
+        pass
+
+    # Back up original highlights (syntax) if not already done
+    if not hasattr(ta, "_search_backup_highlights"):
+        ta._search_backup_highlights = {}  # type: ignore[attr-defined]
+
+    # Build per-row original highlights backup (first time only)
+    # We always work on a fresh copy: restore clean then re-inject
+    _restore_search_highlights(ta)
+
+    # Backup current _highlights state
+    ta._search_backup_highlights = {row: list(entries) for row, entries in ta._highlights.items()}  # type: ignore[attr-defined]
+
+    # Inject our highlights on top
+    for i, (row, col_start, col_end) in enumerate(matches):
+        key = _SEARCH_ACTIVE_KEY if i == active_idx else _SEARCH_MATCH_KEY
+        ta._highlights[row].append((col_start, col_end, key))  # type: ignore[attr-defined]
+
+    ta.refresh()
+
+
+def _restore_search_highlights(ta: TextArea) -> None:
+    """Remove injected search highlights, restoring original syntax highlights."""
+    backup = getattr(ta, "_search_backup_highlights", None)
+    if backup is not None:
+        ta._highlights.clear()  # type: ignore[attr-defined]
+        ta._highlights.update(backup)  # type: ignore[attr-defined]
+        ta._search_backup_highlights = {}  # type: ignore[attr-defined]
+        ta.refresh()
+
 
 class EditorSearch(Widget):
     """Inline search bar docked inside the editor panel."""
@@ -52,17 +98,25 @@ class EditorSearch(Widget):
 
     def on_mount(self) -> None:
         self.display = False
+        self._matches: list[tuple[int, int, int]] = []
+        self._idx = 0
 
     def open(self) -> None:
         self.display = True
         self.query_one("#search-input", Input).focus()
-        self._matches: list[tuple[int, int, int]] = []  # (row, col_start, col_end)
+        self._matches = []
         self._idx = 0
 
     def close(self) -> None:
         self.display = False
-        self.query_one("#search-input", Input).value = ""
+        inp = self.query_one("#search-input", Input)
+        inp.value = ""
         self.query_one("#search-count", Static).update("")
+        # Clear all search highlights from editor
+        try:
+            _restore_search_highlights(self._get_editor())
+        except Exception:
+            pass
         self._matches = []
         self._idx = 0
 
@@ -88,13 +142,15 @@ class EditorSearch(Widget):
         self._matches = []
         self._idx = 0
         count_label = self.query_one("#search-count", Static)
+        ta = self._get_editor()
+
         if not query:
             count_label.update("")
+            _restore_search_highlights(ta)
             return
-        ta = self._get_editor()
+
         text = ta.text
         q_lower = query.lower()
-        pos = 0
         lines = text.split("\n")
         for row, line in enumerate(lines):
             col = 0
@@ -105,11 +161,13 @@ class EditorSearch(Widget):
                     break
                 self._matches.append((row, found, found + len(query)))
                 col = found + 1
+
         if self._matches:
             count_label.update(f"1 of {len(self._matches)}")
             self._jump(0)
         else:
             count_label.update("No results")
+            _restore_search_highlights(ta)
 
     def _step(self, direction: int) -> None:
         if not self._matches:
@@ -127,6 +185,9 @@ class EditorSearch(Widget):
         ta = self._get_editor()
         ta.selection = Selection((row, col_start), (row, col_end))
         ta.scroll_cursor_visible()
+        # Redraw all highlights with updated active index
+        _inject_search_highlights(ta, self._matches, idx)
+
 
 
 GLOBAL_SEARCH_CSS = """

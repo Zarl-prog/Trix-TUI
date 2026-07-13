@@ -43,23 +43,47 @@ def _init_config_dir() -> Path:
     return p / "config.json"
 
 
-def _load_theme_persistence() -> str:
+def _load_config() -> dict:
     path = _init_config_dir()
     if path.exists():
         try:
-            config = json.loads(path.read_text())
-            return config.get("theme", "Ayu Dark")
+            return json.loads(path.read_text())
         except Exception:
             pass
-    return "Ayu Dark"
+    return {}
+
+
+def _save_config(data: dict) -> None:
+    path = _init_config_dir()
+    try:
+        path.write_text(json.dumps(data, indent=4))
+    except Exception:
+        pass
+
+
+def _load_theme_persistence() -> str:
+    return _load_config().get("theme", "Ayu Dark")
 
 
 def _save_theme_persistence(theme_name: str) -> None:
-    path = _init_config_dir()
-    try:
-        path.write_text(json.dumps({"theme": theme_name}, indent=4))
-    except Exception:
-        pass
+    config = _load_config()
+    config["theme"] = theme_name
+    _save_config(config)
+
+
+def _load_recent_files() -> list[str]:
+    return _load_config().get("recent_files", [])
+
+
+def _save_recent_file(path: Path) -> None:
+    config = _load_config()
+    recent = config.get("recent_files", [])
+    path_str = str(path)
+    # Remove if already present, then prepend
+    recent = [r for r in recent if r != path_str]
+    recent.insert(0, path_str)
+    config["recent_files"] = recent[:15]  # keep last 15
+    _save_config(config)
 
 
 from textual.command import Provider, Hit, Hits, DiscoveryHit
@@ -456,6 +480,120 @@ class TabStrip(Widget):
             offset += w
 
 
+class WelcomePanel(Widget):
+    """Welcome screen shown when no file is open, with recent files list."""
+
+    class FileClicked(Message):
+        def __init__(self, path: Path) -> None:
+            super().__init__()
+            self.path = path
+
+    DEFAULT_CSS = """
+    WelcomePanel {
+        width: 100%;
+        height: 100%;
+        background: #0d1016;
+        align: center middle;
+        layout: vertical;
+        padding: 2 4;
+    }
+    #welcome-header {
+        width: 100%;
+        text-align: center;
+        color: #5ac1fe;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #welcome-tagline {
+        width: 100%;
+        text-align: center;
+        color: #4b4c4e;
+        margin-bottom: 2;
+    }
+    #welcome-recent-label {
+        width: 100%;
+        color: #8a8986;
+        text-style: bold;
+        margin-bottom: 1;
+        padding: 0 2;
+    }
+    #welcome-recent-list {
+        width: 100%;
+        height: auto;
+        max-height: 16;
+        background: #0d1016;
+        border: none;
+    }
+    #welcome-recent-list > ListItem {
+        padding: 0 2;
+        background: #0d1016;
+        color: #bfbdb6;
+    }
+    #welcome-recent-list > ListItem:hover {
+        background: #1f2430;
+        color: #5ac1fe;
+    }
+    #welcome-recent-list > ListItem.--highlight {
+        background: #1f2430;
+    }
+    #welcome-hint {
+        width: 100%;
+        text-align: center;
+        color: #3f4043;
+        margin-top: 2;
+    }
+    #welcome-empty {
+        width: 100%;
+        text-align: center;
+        color: #4b4c4e;
+        margin-top: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Static("T R I X", id="welcome-header")
+        yield Static("Your Terminal. Reimagined.", id="welcome-tagline")
+        yield Static("Recent Files", id="welcome-recent-label")
+        yield ListView(id="welcome-recent-list")
+        yield Static("Open a file to get started", id="welcome-empty")
+        yield Static("^O Open Folder   ^N New File   F1 Help", id="welcome-hint")
+
+    def on_mount(self) -> None:
+        self._recent: list[str] = []
+        self.refresh_content(_load_recent_files())
+
+    def refresh_content(self, recent_files: list[str]) -> None:
+        self._recent = recent_files
+        lv = self.query_one("#welcome-recent-list", ListView)
+        lv.clear()
+
+        valid = [r for r in recent_files[:8] if Path(r).exists()]
+        stale = [r for r in recent_files[:8] if not Path(r).exists()]
+
+        if valid or stale:
+            self.query_one("#welcome-empty").display = False
+            self.query_one("#welcome-recent-label").display = True
+            lv.display = True
+            for path_str in valid:
+                p = Path(path_str)
+                lv.append(ListItem(Static(f"📄 {p.name}  [dim]{p.parent}[/dim]", markup=True)))
+            for path_str in stale:
+                p = Path(path_str)
+                lv.append(ListItem(Static(f"✗  [dim]{p.name}  {p.parent}[/dim]", markup=True)))
+        else:
+            self.query_one("#welcome-empty").display = True
+            self.query_one("#welcome-recent-label").display = False
+            lv.display = False
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        idx = event.list_view.index
+        if idx is None:
+            return
+        valid = [r for r in self._recent[:8] if Path(r).exists()]
+        if idx < len(valid):
+            self.post_message(self.FileClicked(Path(valid[idx])))
+
+
 class MainScreen(Screen):
     """Main application screen that routes its click events to the app click handler."""
 
@@ -476,10 +614,7 @@ class MainScreen(Screen):
                 yield TabStrip(id="tab-strip")
                 yield EditorSearch(id="editor-search")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
-                yield Static(
-                    "Welcome to TRIX\n\nOpen a file from the Files panel\nor press Ctrl+O to open a folder",
-                    id="editor-welcome"
-                )
+                yield WelcomePanel(id="editor-welcome-panel")
             yield Divider("editor-panel", "terminal-panel", id="divider-2")
             with LayoutContainer(id="terminal-panel"):
                 yield PanelHeader("Terminal", id="header-terminal")
@@ -598,7 +733,41 @@ class TrixApp(App):
         text-align: center;
         color: #4b4c4e;
         background: #0d1016;
+    }
+    .welcome-title {
+        text-align: center;
+        color: #5ac1fe;
         text-style: bold;
+        width: 100%;
+        margin-bottom: 1;
+    }
+    .welcome-subtitle {
+        text-align: center;
+        color: #4b4c4e;
+        width: 100%;
+        margin-bottom: 2;
+    }
+    .welcome-section {
+        text-align: left;
+        color: #8a8986;
+        width: 100%;
+        margin-bottom: 1;
+        text-style: bold;
+    }
+    .recent-file-item {
+        width: 100%;
+        color: #bfbdb6;
+        padding: 0 2;
+    }
+    .recent-file-item:hover {
+        background: #1f2430;
+        color: #5ac1fe;
+    }
+    .welcome-hint {
+        text-align: center;
+        color: #3f4043;
+        width: 100%;
+        margin-top: 2;
     }
 
     /* ── Terminal ── */
@@ -792,6 +961,7 @@ class TrixApp(App):
 
     def _open_in_tab(self, path: Path, content: str) -> None:
         """Open a file in a tab, switching to it if already open."""
+        _save_recent_file(path)
         if path in self._open_files:
             idx = self._open_files.index(path)
         else:
@@ -984,6 +1154,15 @@ class TrixApp(App):
                 event.prevent_default()
 
     # ── Event handlers ─────────────────────────────────────────────────────
+
+    def on_welcome_panel_file_clicked(self, event: WelcomePanel.FileClicked) -> None:
+        path = event.path
+        try:
+            content = path.read_text(encoding="utf-8")
+        except Exception:
+            self.notify(f"Cannot open {path.name}", severity="error")
+            return
+        self._open_in_tab(path, content)
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
         path = event.path
@@ -1323,14 +1502,22 @@ class TrixApp(App):
         if self._current_file is None:
             cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
             self.screen.query_one("#editor").display = False
-            self.screen.query_one("#editor-welcome").display = True
+            try:
+                wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
+                wp.display = True
+                wp.refresh_content(_load_recent_files())
+            except Exception:
+                pass
         else:
             unsaved = " ●" if self._has_changes else ""
             name = self._current_file.name
             title = f"Editor — {name}{unsaved}"
             cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(title)
             self.screen.query_one("#editor").display = True
-            self.screen.query_one("#editor-welcome").display = False
+            try:
+                self.screen.query_one("#editor-welcome-panel", WelcomePanel).display = False
+            except Exception:
+                pass
         self._update_tab_strip()
         self._refresh_status_bar()
 

@@ -1,6 +1,7 @@
 import sys
 import subprocess
 from pathlib import Path
+from typing import cast
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -122,7 +123,7 @@ class ClickableDirectoryTree(DirectoryTree):
         # Harlequin connectors: ▶ (collapsed), ▼ (expanded)
         # Files indented with ─ prefix
         if path.is_dir():
-            icon = "▼ " if node.expanded else "▶ "
+            icon = "▼ " if node.is_expanded else "▶ "
         else:
             icon = "─ "
             
@@ -593,9 +594,9 @@ class TrixApp(App):
         term_output = self.screen.query_one("#term-output", RichLog)
         term_input = self.screen.query_one("#term-input", Input)
 
-        self.screen.query_one("#header-files", PanelHeader).set_active(focused is tree)
-        self.screen.query_one("#header-editor", PanelHeader).set_active(focused is editor)
-        self.screen.query_one("#header-terminal", PanelHeader).set_active(
+        cast(PanelHeader, self.screen.query_one("#header-files")).set_active(focused is tree)
+        cast(PanelHeader, self.screen.query_one("#header-editor")).set_active(focused is editor)
+        cast(PanelHeader, self.screen.query_one("#header-terminal")).set_active(
             focused is term_output or focused is term_input
         )
 
@@ -845,14 +846,14 @@ class TrixApp(App):
             pass
             
         if self._current_file is None:
-            self.screen.query_one("#header-editor", PanelHeader).set_title("Editor")
+            cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
             self.screen.query_one("#editor").display = False
             self.screen.query_one("#editor-welcome").display = True
         else:
             unsaved = " ●" if self._has_changes else ""
             name = self._current_file.name
             title = f"Editor — {name}{unsaved}"
-            self.screen.query_one("#header-editor", PanelHeader).set_title(title)
+            cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(title)
             self.screen.query_one("#editor").display = True
             self.screen.query_one("#editor-welcome").display = False
 

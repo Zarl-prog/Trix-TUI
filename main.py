@@ -1,5 +1,6 @@
 import sys
 import subprocess
+from functools import partial
 from pathlib import Path
 from typing import cast
 
@@ -61,7 +62,53 @@ def _save_theme_persistence(theme_name: str) -> None:
         pass
 
 
-class LayoutHorizontal(Horizontal):
+from textual.command import Provider, Hit, Hits, DiscoveryHit
+from textual.types import IgnoreReturnCallbackType
+
+class TrixCommandProvider(Provider):
+    """Provides Trix-specific commands to the command palette."""
+
+    COMMANDS = [
+        ("Save File",           "Ctrl+S",  "action_save"),
+        ("New File",            "Ctrl+N",  "action_new_file"),
+        ("Open Folder",         "Ctrl+O",  "action_open_folder"),
+        ("Close File",          "Ctrl+W",  "action_close_file"),
+        ("Rename File",         "F2",      "action_rename_file"),
+        ("Delete File",         "Del",     "action_delete_file"),
+        ("Toggle File Tree",    "Ctrl+B",  "action_toggle_filetree"),
+        ("Zen Mode",            "Ctrl+\\", "action_zen_mode"),
+        ("Search in File",      "Ctrl+F",  "action_search"),
+        ("Search Across Files", "Ctrl+Shift+F", "action_global_search"),
+        ("Git History",         "Ctrl+G",  "action_show_git_history"),
+        ("Cycle Theme",         "Ctrl+T",  "action_cycle_theme"),
+        ("Theme Picker",        "Ctrl+Shift+T", "action_pick_theme"),
+        ("Reload File Tree",    "Ctrl+R",  "action_reload_tree"),
+        ("Show Help",           "F1",      "action_show_help"),
+        ("Quit",                "Ctrl+Q",  "action_quit_app"),
+    ]
+
+    async def search(self, query: str) -> Hits:
+        matcher = self.matcher(query)
+        for name, shortcut, action in self.COMMANDS:
+            score = matcher.match(name)
+            if score > 0:
+                yield Hit(
+                    score,
+                    matcher.highlight(name),
+                    partial(self.app.run_action, action),
+                    help=shortcut,
+                )
+
+    async def discover(self) -> Hits:
+        for name, shortcut, action in self.COMMANDS:
+            yield DiscoveryHit(
+                name,
+                partial(self.app.run_action, action),
+                help=shortcut,
+            )
+
+
+
     """Horizontal container that doesn't steal focus and bubbles mouse events."""
     can_focus = False
     COMPONENT_CLASSES = set()
@@ -92,11 +139,48 @@ class ClickableTextArea(TextArea):
 class ClickableDirectoryTree(DirectoryTree):
     """DirectoryTree subclass that explicitly focuses itself when clicked."""
 
+    # Git status cache: maps absolute path string → git status code ('M', '?', 'D', 'A', etc.)
+    _git_status_cache: dict[str, str] = {}
+    _git_root: str | None = None
+
     def on_click(self, event: Click) -> None:
         self.focus()
 
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
+
+    def on_mount(self) -> None:
+        self._refresh_git_status()
+
+    def _refresh_git_status(self) -> None:
+        """Run git status --porcelain and cache results."""
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain", "-u"],
+                cwd=str(self.path),
+                capture_output=True, text=True, timeout=3
+            )
+            root_result = subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                cwd=str(self.path),
+                capture_output=True, text=True, timeout=2
+            )
+            self.__class__._git_root = root_result.stdout.strip()
+            cache: dict[str, str] = {}
+            for line in result.stdout.splitlines():
+                if len(line) >= 3:
+                    code = line[:2].strip()
+                    fpath = line[3:].strip()
+                    if self.__class__._git_root:
+                        abs_path = str(Path(self.__class__._git_root) / fpath)
+                        cache[abs_path] = code
+            self.__class__._git_status_cache = cache
+        except Exception:
+            self.__class__._git_status_cache = {}
+
+    def watch_path(self, path) -> None:
+        """Re-run git status when the tree path changes."""
+        self._refresh_git_status()
 
     def render_label(self, node, base_style, style):
         from rich.text import Text
@@ -106,28 +190,142 @@ class ClickableDirectoryTree(DirectoryTree):
             return node._label.copy()
             
         node_label = node._label.copy()
-        
-        # Harlequin style: Folders #bfbdb6, Files #8a8986
-        # Selected background #5ac1fe, dark text
+        path = node.data.path
+
+        # Git status color for files
+        git_code = self.__class__._git_status_cache.get(str(path), "")
+
         if self.cursor_node == node:
             style = Style(bgcolor="#5ac1fe", color="#0d1016", bold=True)
         else:
-            if node.data.path.is_dir():
+            if path.is_dir():
                 style = Style(color="#bfbdb6")
             else:
-                style = Style(color="#8a8986")
-        
+                # Color by git status
+                if git_code in ("M", "MM", "AM"):
+                    style = Style(color="#e6b450")   # modified → orange
+                elif git_code in ("??",):
+                    style = Style(color="#aad84c")   # untracked → green
+                elif git_code in ("D", "DD", " D"):
+                    style = Style(color="#ef7177")   # deleted → red
+                elif git_code in ("A", "AM"):
+                    style = Style(color="#aad84c")   # added → green
+                elif git_code in ("R", "C"):
+                    style = Style(color="#5ac1fe")   # renamed/copied → accent
+                else:
+                    style = Style(color="#8a8986")   # default
+
         node_label.stylize(style)
-        path = node.data.path
-        
-        # Harlequin connectors: ▶ (collapsed), ▼ (expanded)
-        # Files indented with ─ prefix
+
+        # Folder icons
         if path.is_dir():
-            icon = "▼ " if node.is_expanded else "▶ "
-        else:
-            icon = "─ "
-            
-        return Text(icon, style=style) + node_label
+            icon = "▼ 📂 " if node.is_expanded else "▶ 📁 "
+            return Text(icon, style=style) + node_label
+
+        # File type icon map
+        _EXT_ICONS: dict[str, str] = {
+            # Python
+            ".py": "🐍 ", ".pyw": "🐍 ", ".pyi": "🐍 ",
+            # JavaScript / TypeScript
+            ".js": "🟨 ", ".mjs": "🟨 ", ".cjs": "🟨 ",
+            ".jsx": "⚛️ ", ".tsx": "⚛️ ",
+            ".ts": "🔷 ",
+            # Web
+            ".html": "🌐 ", ".htm": "🌐 ",
+            ".css": "🎨 ", ".scss": "🎨 ", ".sass": "🎨 ", ".less": "🎨 ",
+            # Data / Config
+            ".json": "📋 ", ".jsonc": "📋 ",
+            ".yaml": "⚙️ ", ".yml": "⚙️ ",
+            ".toml": "⚙️ ", ".ini": "⚙️ ", ".cfg": "⚙️ ", ".conf": "⚙️ ",
+            ".env": "🔒 ",
+            # Docs
+            ".md": "📝 ", ".mdx": "📝 ", ".rst": "📝 ", ".txt": "📄 ",
+            # Systems
+            ".c": "⚡ ", ".h": "⚡ ",
+            ".cpp": "⚡ ", ".cc": "⚡ ", ".cxx": "⚡ ", ".hpp": "⚡ ",
+            ".rs": "🦀 ",
+            ".go": "🐹 ",
+            ".java": "☕ ", ".kt": "☕ ", ".kts": "☕ ",
+            ".cs": "🔵 ",
+            ".swift": "🍎 ",
+            ".rb": "💎 ",
+            ".php": "🐘 ",
+            # Shell
+            ".sh": "🖥️ ", ".bash": "🖥️ ", ".zsh": "🖥️ ", ".fish": "🖥️ ",
+            ".ps1": "🖥️ ",
+            # Data
+            ".sql": "🗄️ ", ".db": "🗄️ ", ".sqlite": "🗄️ ",
+            ".csv": "📊 ", ".tsv": "📊 ",
+            # Media
+            ".png": "🖼️ ", ".jpg": "🖼️ ", ".jpeg": "🖼️ ", ".gif": "🖼️ ",
+            ".svg": "🖼️ ", ".ico": "🖼️ ", ".webp": "🖼️ ",
+            ".mp4": "🎬 ", ".mov": "🎬 ", ".avi": "🎬 ",
+            ".mp3": "🎵 ", ".wav": "🎵 ", ".ogg": "🎵 ",
+            # Archives
+            ".zip": "📦 ", ".tar": "📦 ", ".gz": "📦 ", ".bz2": "📦 ",
+            ".7z": "📦 ", ".rar": "📦 ",
+            # Special files
+            ".git": "🌿 ", ".gitignore": "🙈 ", ".gitattributes": "🙈 ",
+            ".dockerfile": "🐳 ", ".lock": "🔒 ",
+            ".xml": "📰 ",
+            ".lua": "🌙 ", ".vim": "📗 ", ".nvim": "📗 ",
+            ".r": "📈 ", ".rmd": "📈 ",
+        }
+        # Special full-name matches
+        _NAME_ICONS: dict[str, str] = {
+            "dockerfile":         "🐳 ",
+            "docker-compose.yml": "🐳 ",
+            "docker-compose.yaml":"🐳 ",
+            "makefile":           "🔧 ",
+            "cmake":              "🔧 ",
+            "justfile":           "🔧 ",
+            ".gitignore":         "🙈 ",
+            ".gitattributes":     "🙈 ",
+            ".env":               "🔒 ",
+            ".env.local":         "🔒 ",
+            "license":            "⚖️ ",
+            "licence":            "⚖️ ",
+            "readme.md":          "📖 ",
+            "readme":             "📖 ",
+            "changelog.md":       "📋 ",
+            "changelog":          "📋 ",
+            "pyproject.toml":     "🐍 ",
+            "setup.py":           "🐍 ",
+            "setup.cfg":          "🐍 ",
+            "requirements.txt":   "📦 ",
+            "package.json":       "📦 ",
+            "package-lock.json":  "🔒 ",
+            "yarn.lock":          "🔒 ",
+            "cargo.toml":         "🦀 ",
+            "cargo.lock":         "🦀 ",
+            "go.mod":             "🐹 ",
+            "go.sum":             "🐹 ",
+        }
+
+        name_lower = path.name.lower()
+        ext = path.suffix.lower()
+
+        icon = (
+            _NAME_ICONS.get(name_lower)
+            or _EXT_ICONS.get(ext)
+            or "📄 "
+        )
+
+        # Append git badge
+        git_badge = ""
+        if git_code == "??" :
+            git_badge = " [dim]?[/dim]"
+        elif git_code in ("M", "MM", "AM"):
+            git_badge = " [dim]M[/dim]"
+        elif git_code in ("A",):
+            git_badge = " [dim]A[/dim]"
+        elif git_code in ("D", "DD"):
+            git_badge = " [dim]D[/dim]"
+
+        result = Text(icon, style=style) + node_label
+        if git_badge:
+            result.append(git_badge, style=Style(color="#4b4c4e", dim=True))
+        return result
 
 
 class PanelHeader(Static):
@@ -174,6 +372,90 @@ class PanelHeader(Static):
         self.update(res)
 
 
+class TabStrip(Widget):
+    """Horizontal tab bar showing open files above the editor."""
+
+    DEFAULT_CSS = """
+    TabStrip {
+        height: 1;
+        layout: horizontal;
+        background: #0d1016;
+        overflow-x: auto;
+        scrollbar-size: 0 0;
+    }
+    .tab-item {
+        width: auto;
+        height: 1;
+        padding: 0 1;
+        color: #4b4c4e;
+        background: #0d1016;
+    }
+    .tab-item.--tab-active {
+        color: #bfbdb6;
+        background: #131721;
+        text-style: bold;
+    }
+    .tab-item.--tab-unsaved {
+        color: #e6b450;
+    }
+    .tab-item.--tab-active.--tab-unsaved {
+        color: #e6b450;
+        background: #131721;
+        text-style: bold;
+    }
+    """
+
+    class TabClicked(Message):
+        def __init__(self, index: int) -> None:
+            super().__init__()
+            self.index = index
+
+    class TabClosed(Message):
+        def __init__(self, index: int) -> None:
+            super().__init__()
+            self.index = index
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._tabs: list[tuple[Path, bool]] = []  # (path, has_unsaved_changes)
+        self._active: int = -1
+
+    def set_tabs(self, tabs: list[tuple[Path, bool]], active: int) -> None:
+        self._tabs = tabs
+        self._active = active
+        self._rebuild()
+
+    def _rebuild(self) -> None:
+        self.remove_children()
+        for i, (path, unsaved) in enumerate(self._tabs):
+            dot = " ●" if unsaved else "  "
+            label = f" {path.name}{dot} ✕ "
+            classes = "tab-item"
+            if i == self._active:
+                classes += " --tab-active"
+            if unsaved:
+                classes += " --tab-unsaved"
+            tab = Static(label, classes=classes, id=f"tab-{i}")
+            self.mount(tab)
+
+    def on_click(self, event: Click) -> None:
+        # Determine which tab was clicked
+        x = event.x
+        offset = 0
+        for i, child in enumerate(self.children):
+            w = child.size.width
+            if offset <= x < offset + w:
+                label = child.renderable if hasattr(child, "renderable") else ""
+                raw = str(label)
+                # If click is near the ✕ (last 3 chars of label region)
+                if x >= offset + w - 3:
+                    self.post_message(self.TabClosed(i))
+                else:
+                    self.post_message(self.TabClicked(i))
+                return
+            offset += w
+
+
 class MainScreen(Screen):
     """Main application screen that routes its click events to the app click handler."""
 
@@ -191,6 +473,7 @@ class MainScreen(Screen):
             yield Divider("files-panel", "editor-panel", id="divider-1")
             with LayoutContainer(id="editor-panel"):
                 yield PanelHeader("Editor", id="header-editor")
+                yield TabStrip(id="tab-strip")
                 yield EditorSearch(id="editor-search")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield Static(
@@ -203,7 +486,7 @@ class MainScreen(Screen):
                 yield TerminalWidget(id="terminal")
                 
         with Horizontal(id="bottom-bar"):
-            # ^q Quit   f1 Help   ^g Git   ^t Theme   ^b Files   ^o Open
+            # Left: keybinding hints
             yield Static(" ^q ", classes="kb-key")
             yield Static("Quit  ", classes="kb-desc")
             yield Static(" f1 ", classes="kb-key")
@@ -216,6 +499,12 @@ class MainScreen(Screen):
             yield Static("Files  ", classes="kb-desc")
             yield Static(" ^o ", classes="kb-key")
             yield Static("Open  ", classes="kb-desc")
+            # Right: status info (spacer + status segments)
+            yield Static("", id="sb-spacer")
+            yield Static("", id="sb-unsaved")
+            yield Static("", id="sb-lang")
+            yield Static("", id="sb-cursor")
+            yield Static("", id="sb-branch")
 
     def on_click(self, event: Click) -> None:
         self.app.on_click(event)
@@ -230,6 +519,8 @@ class MainScreen(Screen):
 
 
 class TrixApp(App):
+    ENABLE_COMMAND_PALETTE = True
+    COMMANDS = App.COMMANDS | {TrixCommandProvider}
     CSS = """
     Screen {
         layout: vertical;
@@ -257,6 +548,10 @@ class TrixApp(App):
         background: #0d1016;
         padding: 0;
     }
+
+    #files-panel.--panel-active    { border-left: tall #5ac1fe; }
+    #editor-panel.--panel-active   { border-left: tall #5ac1fe; }
+    #terminal-panel.--panel-active { border-left: tall #5ac1fe; }
 
     #files-panel    { width: 20%; min-width: 10%; }
     #editor-panel   { width: 2fr; min-width: 20%; }
@@ -343,9 +638,49 @@ class TrixApp(App):
     .kb-key  { width: auto; color: #5ac1fe; text-style: bold; }
     .kb-desc { width: auto; color: #8a8986; margin-right: 1; }
 
+    /* Status bar right-side segments */
+    #sb-spacer  { width: 1fr; }
+    #sb-unsaved { width: auto; color: #e6b450; margin-right: 1; }
+    #sb-lang    { width: auto; color: #8a8986; margin-right: 2; }
+    #sb-cursor  { width: auto; color: #4b4c4e; margin-right: 2; }
+    #sb-branch  { width: auto; color: #aad84c; margin-right: 1; }
+
     /* ── Divider ── */
     Divider {
         background: #1a1d23;
+    }
+
+    /* ── Notification Toasts ── */
+    Toast {
+        background: #1f2430;
+        border-left: tall #5ac1fe;
+        color: #bfbdb6;
+        padding: 0 1;
+    }
+    Toast.-information {
+        border-left: tall #5ac1fe;
+    }
+    Toast.-warning {
+        border-left: tall #e6b450;
+        background: #1f1e2a;
+    }
+    Toast.-error {
+        border-left: tall #ef7177;
+        background: #2a1f20;
+    }
+    Toast .toast--title {
+        color: #5ac1fe;
+        text-style: bold;
+    }
+    Toast.-warning .toast--title {
+        color: #e6b450;
+    }
+    Toast.-error .toast--title {
+        color: #ef7177;
+    }
+    ToastRack {
+        align: right bottom;
+        padding: 1 2;
     }
     """
 
@@ -372,6 +707,10 @@ class TrixApp(App):
         super().__init__()
         self._current_file: Path | None = None
         self._has_changes = False
+        self._open_files: list[Path] = []          # all open tabs
+        self._open_files_dirty: dict[Path, bool] = {}  # unsaved state per file
+        self._open_files_content: dict[Path, str] = {} # cached content per file
+        self._active_tab: int = -1
         self._themes = THEMES
         persisted_theme_name = _load_theme_persistence()
         self._theme_index = 0
@@ -447,6 +786,106 @@ class TrixApp(App):
                 self.screen.query_one("#hdr-theme", Static).update(theme["name"])
             except Exception:
                 pass
+
+    # ── Tab management ───────────────────────────────────────────────────────
+
+    def _open_in_tab(self, path: Path, content: str) -> None:
+        """Open a file in a tab, switching to it if already open."""
+        if path in self._open_files:
+            idx = self._open_files.index(path)
+        else:
+            # Save current editor content before switching
+            if self._current_file and self._current_file in self._open_files:
+                try:
+                    ta = self.screen.query_one("#editor", TextArea)
+                    self._open_files_content[self._current_file] = ta.text
+                except Exception:
+                    pass
+            self._open_files.append(path)
+            self._open_files_dirty[path] = False
+            self._open_files_content[path] = content
+            idx = len(self._open_files) - 1
+        self._switch_tab(idx)
+
+    def _switch_tab(self, idx: int) -> None:
+        """Switch to tab at index, saving current state first."""
+        if not self._open_files:
+            return
+        idx = max(0, min(idx, len(self._open_files) - 1))
+
+        # Save current editor content
+        if self._current_file and self._current_file in self._open_files:
+            try:
+                ta = self.screen.query_one("#editor", TextArea)
+                self._open_files_content[self._current_file] = ta.text
+            except Exception:
+                pass
+
+        # Switch
+        self._active_tab = idx
+        self._current_file = self._open_files[idx]
+        self._has_changes = self._open_files_dirty.get(self._current_file, False)
+
+        ta = self.screen.query_one("#editor", TextArea)
+        content = self._open_files_content.get(self._current_file, "")
+        ta.load_text(content)
+        try:
+            ta.language = self._detect_language(self._current_file)
+        except Exception:
+            ta.language = None
+        ta.focus()
+        self._refresh_ui()
+
+    def _close_tab(self, idx: int) -> None:
+        """Close tab at index, switching to adjacent tab."""
+        if not self._open_files or idx >= len(self._open_files):
+            return
+        closing = self._open_files[idx]
+        self._open_files.pop(idx)
+        self._open_files_dirty.pop(closing, None)
+        self._open_files_content.pop(closing, None)
+
+        if not self._open_files:
+            self._active_tab = -1
+            self._current_file = None
+            self._has_changes = False
+            ta = self.screen.query_one("#editor", TextArea)
+            ta.load_text("")
+            self._refresh_ui()
+        else:
+            new_idx = min(idx, len(self._open_files) - 1)
+            self._active_tab = -1  # force switch
+            self._switch_tab(new_idx)
+
+    def _update_tab_strip(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        try:
+            strip = self.screen.query_one("#tab-strip", TabStrip)
+            tabs = [(p, self._open_files_dirty.get(p, False)) for p in self._open_files]
+            strip.set_tabs(tabs, self._active_tab)
+            strip.display = len(self._open_files) > 0
+        except Exception:
+            pass
+
+    def on_tab_strip_tab_clicked(self, event: TabStrip.TabClicked) -> None:
+        self._switch_tab(event.index)
+
+    def on_tab_strip_tab_closed(self, event: TabStrip.TabClosed) -> None:
+        closing = self._open_files[event.index] if event.index < len(self._open_files) else None
+        if closing and self._open_files_dirty.get(closing):
+            self.call_later(self._confirm_close_tab, event.index)
+        else:
+            self._close_tab(event.index)
+
+    @work
+    async def _confirm_close_tab(self, idx: int) -> None:
+        if idx >= len(self._open_files):
+            return
+        name = self._open_files[idx].name
+        confirmed = await self.push_screen_wait(ConfirmScreen(f"Close {name} with unsaved changes?"))
+        if confirmed:
+            self._close_tab(idx)
 
     # ── Mouse click handling ─────────────────────────────────────────────────
 
@@ -553,28 +992,45 @@ class TrixApp(App):
             content = path.read_text(encoding="utf-8")
         except Exception:
             return
-        ta = self.screen.query_one("#editor", TextArea)
-        ta.load_text(content)
-        try:
-            ta.language = self._detect_language(path)
-        except Exception:
-            ta.language = None
-        self._current_file = path
-        self._has_changes = False
-        ta.focus()
-        self._refresh_ui()
+        self._open_in_tab(path, content)
 
     def on_text_area_changed(self, event: TextArea.Changed) -> None:
         if self._current_file and not self._has_changes:
             self._has_changes = True
+            if self._current_file in self._open_files_dirty:
+                self._open_files_dirty[self._current_file] = True
             self._refresh_ui()
+        self._refresh_status_bar()
 
     def on_text_area_selection_changed(self, event: TextArea.SelectionChanged) -> None:
+        self._refresh_status_bar()
+
+    def _refresh_status_bar(self) -> None:
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
         try:
+            # Cursor position
             ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
-            # Harlequin style: cursor location removed from status bar, moved to future line?
-            # For now, keep it hidden or invisible
+            self.screen.query_one("#sb-cursor", Static).update(f"Ln {row + 1}, Col {col + 1}")
+        except Exception:
+            pass
+        try:
+            # Language
+            lang = self._lang_label(self._current_file) if self._current_file else ""
+            self.screen.query_one("#sb-lang", Static).update(lang)
+        except Exception:
+            pass
+        try:
+            # Unsaved indicator
+            unsaved = "● unsaved" if self._has_changes else ""
+            self.screen.query_one("#sb-unsaved", Static).update(unsaved)
+        except Exception:
+            pass
+        try:
+            # Git branch (cached — only refresh when file changes)
+            branch = _git_branch()
+            self.screen.query_one("#sb-branch", Static).update(branch)
         except Exception:
             pass
 
@@ -594,11 +1050,18 @@ class TrixApp(App):
         term_output = self.screen.query_one("#term-output", RichLog)
         term_input = self.screen.query_one("#term-input", Input)
 
-        cast(PanelHeader, self.screen.query_one("#header-files")).set_active(focused is tree)
-        cast(PanelHeader, self.screen.query_one("#header-editor")).set_active(focused is editor)
-        cast(PanelHeader, self.screen.query_one("#header-terminal")).set_active(
-            focused is term_output or focused is term_input
-        )
+        files_active = focused is tree
+        editor_active = focused is editor
+        terminal_active = focused is term_output or focused is term_input
+
+        cast(PanelHeader, self.screen.query_one("#header-files")).set_active(files_active)
+        cast(PanelHeader, self.screen.query_one("#header-editor")).set_active(editor_active)
+        cast(PanelHeader, self.screen.query_one("#header-terminal")).set_active(terminal_active)
+
+        # Panel glow: toggle --panel-active class
+        self.screen.query_one("#files-panel").set_class(files_active, "--panel-active")
+        self.screen.query_one("#editor-panel").set_class(editor_active, "--panel-active")
+        self.screen.query_one("#terminal-panel").set_class(terminal_active, "--panel-active")
 
     # ── Actions ───────────────────────────────────────────────────────────
 
@@ -651,6 +1114,14 @@ class TrixApp(App):
             self.screen.query_one("#editor", TextArea).text, encoding="utf-8"
         )
         self._has_changes = False
+        if self._current_file in self._open_files_dirty:
+            self._open_files_dirty[self._current_file] = False
+        # Refresh git status to reflect the save
+        try:
+            self.screen.query_one(DirectoryTree)._refresh_git_status()
+            self.screen.query_one(DirectoryTree).refresh()
+        except Exception:
+            pass
         self._refresh_ui()
 
     def action_cycle_theme(self) -> None:
@@ -721,10 +1192,13 @@ class TrixApp(App):
         self._refresh_ui()
 
     def action_close_file(self) -> None:
-        self.screen.query_one("#editor", TextArea).load_text("")
-        self._current_file = None
-        self._has_changes = False
-        self._refresh_ui()
+        if self._active_tab >= 0:
+            self.on_tab_strip_tab_closed(TabStrip.TabClosed(self._active_tab))
+        else:
+            self.screen.query_one("#editor", TextArea).load_text("")
+            self._current_file = None
+            self._has_changes = False
+            self._refresh_ui()
 
     def _get_target_path(self) -> "Path | None":
         """Return the file to operate on: open file first, then tree selection."""
@@ -856,6 +1330,8 @@ class TrixApp(App):
             cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(title)
             self.screen.query_one("#editor").display = True
             self.screen.query_one("#editor-welcome").display = False
+        self._update_tab_strip()
+        self._refresh_status_bar()
 
     def _lang_label(self, path: Path) -> str:
         return {

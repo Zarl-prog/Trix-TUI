@@ -13,7 +13,8 @@ from textual.app import App, ComposeResult
 from textual.screen import Screen
 from textual.containers import Container, Horizontal
 from textual.events import Click, Key, MouseDown
-from textual.widgets import DirectoryTree, Input, RichLog, Static, TextArea
+from textual.widget import Widget
+from textual.widgets import DirectoryTree, Input, ListView, ListItem, RichLog, Static, TextArea
 from textual import work
 
 import json

@@ -636,6 +636,8 @@ class MainScreen(Screen):
             yield Static("Theme  ", classes="kb-desc")
             yield Static(" ^b ", classes="kb-key")
             yield Static("Files  ", classes="kb-desc")
+            yield Static(" ` ", classes="kb-key")
+            yield Static("Terminal  ", classes="kb-desc")
             yield Static(" ^o ", classes="kb-key")
             yield Static("Open  ", classes="kb-desc")
             # Right: status info (spacer + status segments)
@@ -653,6 +655,12 @@ class MainScreen(Screen):
 
     def on_mount(self) -> None:
         self.app._refresh_ui()
+        # Hide panels by default — only editor is shown at startup
+        self.query_one("#files-panel").display = False
+        self.query_one("#divider-1").display = False
+        self.query_one("#terminal-panel").display = False
+        self.query_one("#divider-2").display = False
+        self.query_one("#editor-panel").styles.width = "1fr"
         # Focus the terminal input so all three panels are immediately usable
         self.query_one("#term-input", Input).focus()
 
@@ -872,6 +880,7 @@ class TrixApp(App):
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
         ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
+        ("ctrl+`",           "toggle_terminal", "Toggle Terminal"),
         ("ctrl+g",           "show_git_history","Git History"),
         ("f2",               "rename_file",     "Rename"),
         ("f1",               "show_help",       "Help"),
@@ -893,7 +902,8 @@ class TrixApp(App):
                 self._theme_index = i
                 break
         self._current_theme_dict = self._themes[self._theme_index]
-        self._filetree_visible = True
+        self._filetree_visible = False
+        self._terminal_visible = False
         self._zen_mode = False
 
     async def on_mount(self) -> None:
@@ -1279,8 +1289,8 @@ class TrixApp(App):
         show = not self._zen_mode
         self.screen.query_one("#files-panel").display = show and self._filetree_visible
         self.screen.query_one("#divider-1").display = show and self._filetree_visible
-        self.screen.query_one("#terminal-panel").display = show
-        self.screen.query_one("#divider-2").display = show
+        self.screen.query_one("#terminal-panel").display = show and self._terminal_visible
+        self.screen.query_one("#divider-2").display = show and (self._terminal_visible or self._filetree_visible)
         self.screen.query_one("#bottom-bar").display = show
         self.screen.query_one("#header").display = show
         self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
@@ -1289,6 +1299,14 @@ class TrixApp(App):
         self._filetree_visible = not self._filetree_visible
         self.screen.query_one("#files-panel").display = self._filetree_visible
         self.screen.query_one("#divider-1").display = self._filetree_visible
+
+    def action_toggle_terminal(self) -> None:
+        """Toggle terminal panel visibility."""
+        self._terminal_visible = not self._terminal_visible
+        self.screen.query_one("#terminal-panel").display = self._terminal_visible
+        self.screen.query_one("#divider-2").display = (
+            self._terminal_visible or self._filetree_visible
+        )
 
     def action_save(self) -> None:
         if self._current_file is None:

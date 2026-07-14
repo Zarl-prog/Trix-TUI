@@ -324,8 +324,8 @@ class SplashScreen(Screen):
         )
         with Vertical(id="splash-container"):
             yield Static(logo, id="splash-logo")
-            yield Label("Your Terminal. Reimagined.", id="splash-tagline")
-            yield Label(self.version, id="splash-version")
+            yield Static("Your Terminal. Reimagined.", id="splash-tagline")
+            yield Static(self.version, id="splash-version")
             yield Static("░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░", id="splash-bar")
             yield Static("Initializing...", id="splash-status")
 

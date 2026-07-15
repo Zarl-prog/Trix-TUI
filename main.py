@@ -14,7 +14,7 @@ from textual.app import App, ComposeResult
 from textual.message import Message
 from textual.screen import Screen
 from textual.containers import Container, Horizontal, Vertical
-from textual.events import Click, Key, MouseDown
+from textual.events import Click, Key, MouseDown, MouseMove, MouseUp
 from textual.widget import Widget
 from textual.widgets import DirectoryTree, Input, ListView, ListItem, RichLog, Static, TextArea
 from textual.widgets.text_area import Selection

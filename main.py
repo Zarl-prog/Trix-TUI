@@ -1360,16 +1360,16 @@ class TrixApp(App):
         path_str = await self.push_screen_wait(FolderPicker())
         if not path_str:
             return
-        path = Path(path_str.strip())
-        if not path.is_dir():
-            self.notify(f"Invalid path: {path_str}", severity="error")
+        cleaned = Path(path_str.strip()).expanduser().resolve()
+        if not cleaned.is_dir():
+            self.notify(f"Invalid path: {cleaned}", severity="error")
             return
         tree = self.screen.query_one(DirectoryTree)
-        tree.path = path
+        tree.path = cleaned
         self._current_file = None
         self._has_changes = False
         self.screen.query_one("#editor", TextArea).load_text("")
-        self.screen.query_one("#hdr-folder", Static).update(path.name)
+        self.screen.query_one("#hdr-folder", Static).update(cleaned.name)
         self._refresh_ui()
 
     async def action_reload_tree(self) -> None:

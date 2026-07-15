@@ -243,6 +243,9 @@ class FolderPicker(Screen):
             yield Label("Enter folder path:")
             yield Input(id="folder-path", placeholder="/path/to/folder")
 
+    def on_mount(self) -> None:
+        self.query_one("#folder-path", Input).focus()
+
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
 

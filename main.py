@@ -104,6 +104,7 @@ class TrixCommandProvider(Provider):
         ("Rename File",         "F2",      "action_rename_file"),
         ("Delete File",         "Del",     "action_delete_file"),
         ("Toggle File Tree",    "Ctrl+B",  "action_toggle_filetree"),
+        ("Toggle Terminal",    "Ctrl+`",  "action_toggle_terminal"),
         ("Zen Mode",            "Ctrl+\\", "action_zen_mode"),
         ("Search in File",      "Ctrl+F",  "action_search"),
         ("Search Across Files", "Ctrl+Shift+F", "action_global_search"),
@@ -636,7 +637,7 @@ class MainScreen(Screen):
             yield Static("Theme  ", classes="kb-desc")
             yield Static(" ^b ", classes="kb-key")
             yield Static("Files  ", classes="kb-desc")
-            yield Static(" ` ", classes="kb-key")
+            yield Static(" ^` ", classes="kb-key")
             yield Static("Terminal  ", classes="kb-desc")
             yield Static(" ^o ", classes="kb-key")
             yield Static("Open  ", classes="kb-desc")
@@ -661,8 +662,8 @@ class MainScreen(Screen):
         self.query_one("#terminal-panel").display = False
         self.query_one("#divider-2").display = False
         self.query_one("#editor-panel").styles.width = "1fr"
-        # Focus the terminal input so all three panels are immediately usable
-        self.query_one("#term-input", Input).focus()
+        # Focus the editor (terminal panel is hidden at startup)
+        self.query_one("#editor", TextArea).focus()
 
 
 class TrixApp(App):
@@ -880,7 +881,7 @@ class TrixApp(App):
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
         ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
-        ("ctrl+`",           "toggle_terminal", "Toggle Terminal"),
+        ("ctrl+grave_accent", "toggle_terminal", "Toggle Terminal"),
         ("ctrl+g",           "show_git_history","Git History"),
         ("f2",               "rename_file",     "Rename"),
         ("f1",               "show_help",       "Help"),

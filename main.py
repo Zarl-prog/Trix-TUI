@@ -172,9 +172,11 @@ class ClickableDirectoryTree(DirectoryTree):
 
     def on_click(self, event: Click) -> None:
         self.focus()
+        super().on_click(event)
 
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
+        super().on_mouse_down(event)
 
     def on_mount(self) -> None:
         self._refresh_git_status()
@@ -205,9 +207,10 @@ class ClickableDirectoryTree(DirectoryTree):
         except Exception:
             self.__class__._git_status_cache = {}
 
-    def watch_path(self, path) -> None:
-        """Re-run git status when the tree path changes."""
+    def watch_path(self, path: Path) -> None:
+        """Reload tree and re-run git status when the tree path changes."""
         self._refresh_git_status()
+        self.reload()
 
     def render_label(self, node, base_style, style):
         from rich.text import Text

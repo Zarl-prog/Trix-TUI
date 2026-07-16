@@ -172,11 +172,9 @@ class ClickableDirectoryTree(DirectoryTree):
 
     def on_click(self, event: Click) -> None:
         self.focus()
-        super().on_click(event)
 
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
-        super().on_mouse_down(event)
 
     def on_mount(self) -> None:
         self._refresh_git_status()

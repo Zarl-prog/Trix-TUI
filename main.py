@@ -654,11 +654,6 @@ class MainScreen(Screen):
 
     def on_mount(self) -> None:
         self.app._refresh_ui()
-        # Hide panels by default — only editor is shown at startup
-        self.query_one("#files-panel").display = False
-        self.query_one("#divider-1").display = False
-        self.query_one("#editor-panel").styles.width = "1fr"
-        # Focus the editor
         self.query_one("#editor", TextArea).focus()
 
 
@@ -871,7 +866,7 @@ class TrixApp(App):
                 self._theme_index = i
                 break
         self._current_theme_dict = self._themes[self._theme_index]
-        self._filetree_visible = False
+        self._filetree_visible = True
         self._zen_mode = False
 
     async def on_mount(self) -> None:

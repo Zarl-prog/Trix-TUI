@@ -824,6 +824,8 @@ class TrixApp(App):
         layout: horizontal;
         padding: 0 1;
     }
+    .bb-item { width: auto; }
+    .bb-item:hover { background: #1f4a6e; }
     .kb-key  { width: auto; color: #5ac1fe; text-style: bold; }
     .kb-desc { width: auto; color: #8a8986; margin-right: 1; }
 

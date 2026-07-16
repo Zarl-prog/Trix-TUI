@@ -16,13 +16,12 @@ from textual.screen import Screen
 from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click, Key, MouseDown, MouseMove, MouseUp
 from textual.widget import Widget
-from textual.widgets import DirectoryTree, Input, ListView, ListItem, RichLog, Static, TextArea
+from textual.widgets import DirectoryTree, ListView, ListItem, Static, TextArea
 from textual.widgets.text_area import Selection
 from textual import work
 
 import json
 from themes import THEMES
-from terminal_widget import TerminalWidget
 from divider_widget import Divider
 from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
@@ -104,7 +103,6 @@ class TrixCommandProvider(Provider):
         ("Rename File",         "F2",      "action_rename_file"),
         ("Delete File",         "Del",     "action_delete_file"),
         ("Toggle File Tree",    "Ctrl+B",  "action_toggle_filetree"),
-        ("Toggle Terminal",    "Ctrl+`",  "action_toggle_terminal"),
         ("Zen Mode",            "Ctrl+\\", "action_zen_mode"),
         ("Search in File",      "Ctrl+F",  "action_search"),
         ("Search Across Files", "Ctrl+Shift+F", "action_global_search"),
@@ -620,11 +618,7 @@ class MainScreen(Screen):
                 yield EditorSearch(id="editor-search")
                 yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield WelcomePanel(id="editor-welcome-panel")
-            yield Divider("editor-panel", "terminal-panel", id="divider-2")
-            with LayoutContainer(id="terminal-panel"):
-                yield PanelHeader("Terminal", id="header-terminal")
-                yield TerminalWidget(id="terminal")
-                
+
         with Horizontal(id="bottom-bar"):
             # Left: keybinding hints (each pair clickable via app.on_click)
             with Horizontal(id="bb-quit", classes="bb-item"):
@@ -642,9 +636,6 @@ class MainScreen(Screen):
             with Horizontal(id="bb-files", classes="bb-item"):
                 yield Static(" ^b ", classes="kb-key")
                 yield Static("Files  ", classes="kb-desc")
-            with Horizontal(id="bb-term", classes="bb-item"):
-                yield Static(" ^` ", classes="kb-key")
-                yield Static("Terminal  ", classes="kb-desc")
             with Horizontal(id="bb-open", classes="bb-item"):
                 yield Static(" ^o ", classes="kb-key")
                 yield Static("Open  ", classes="kb-desc")
@@ -666,10 +657,8 @@ class MainScreen(Screen):
         # Hide panels by default — only editor is shown at startup
         self.query_one("#files-panel").display = False
         self.query_one("#divider-1").display = False
-        self.query_one("#terminal-panel").display = False
-        self.query_one("#divider-2").display = False
         self.query_one("#editor-panel").styles.width = "1fr"
-        # Focus the editor (terminal panel is hidden at startup)
+        # Focus the editor
         self.query_one("#editor", TextArea).focus()
 
 
@@ -698,7 +687,7 @@ class TrixApp(App):
         layout: horizontal;
     }
 
-    LayoutContainer, Container, #files-panel, #editor-panel, #terminal-panel {
+    LayoutContainer, Container, #files-panel, #editor-panel {
         border: none;
         background: #0d1016;
         padding: 0;
@@ -706,11 +695,9 @@ class TrixApp(App):
 
     #files-panel.--panel-active    { border-left: tall #5ac1fe; }
     #editor-panel.--panel-active   { border-left: tall #5ac1fe; }
-    #terminal-panel.--panel-active { border-left: tall #5ac1fe; }
 
     #files-panel    { width: 20%; min-width: 10%; transition: width 200ms, display 200ms; }
     #editor-panel   { width: 2fr; min-width: 20%; transition: width 200ms; }
-    #terminal-panel { width: 2fr; min-width: 20%; transition: width 200ms, display 200ms; }
 
     PanelHeader {
         height: 1;
@@ -790,33 +777,6 @@ class TrixApp(App):
         margin-top: 2;
     }
 
-    /* ── Terminal ── */
-    TerminalWidget { height: 1fr; layout: vertical; }
-    #term-output   { 
-        height: 1fr; 
-        background: #0d1016; 
-        color: #8a8986; 
-        scrollbar-size: 1 1;
-        scrollbar-color: #5ac1fe;
-        scrollbar-background: #0d1016;
-    }
-    #term-output:focus { border: none; }
-    #term-output .rich-log--highlight { background: #1f4a6e; }
-    #term-input {
-        height: 1;
-        dock: bottom;
-        background: #131721;
-        color: #bfbdb6;
-        border: none;
-        padding: 0 1;
-    }
-    #term-input:focus {
-        background: #131721;
-    }
-
-    Input { background: #131721; color: #bfbdb6; border: none; }
-    Input:focus { border: none; }
-
     /* ── Bottom Bar ── */
     #bottom-bar {
         height: 1;
@@ -890,7 +850,6 @@ class TrixApp(App):
         ("ctrl+shift+c",     "copy_selection",  "Copy"),
         ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
         ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
-        ("ctrl+grave_accent", "toggle_terminal", "Toggle Terminal"),
         ("ctrl+g",           "show_git_history","Git History"),
         ("f2",               "rename_file",     "Rename"),
         ("f1",               "show_help",       "Help"),
@@ -913,7 +872,6 @@ class TrixApp(App):
                 break
         self._current_theme_dict = self._themes[self._theme_index]
         self._filetree_visible = False
-        self._terminal_visible = False
         self._zen_mode = False
 
     async def on_mount(self) -> None:
@@ -1100,7 +1058,6 @@ class TrixApp(App):
             "bb-git": "action_show_git_history",
             "bb-theme": "action_cycle_theme",
             "bb-files": "action_toggle_filetree",
-            "bb-term": "action_toggle_terminal",
             "bb-open": "action_open_folder",
         }
         for w in [widget] + (list(widget.ancestors) if widget else []):
@@ -1123,39 +1080,15 @@ class TrixApp(App):
                 self.screen.query_one("#editor", TextArea).focus()
                 return
                 
-            # Check Terminal Panel
-            if (
-                isinstance(widget, TerminalWidget) 
-                or any(isinstance(a, TerminalWidget) for a in ancestors)
-                or (widget.id and widget.id in ("term-output", "term-input"))
-                or any(a.id and a.id in ("term-output", "term-input") for a in ancestors)
-            ):
-                term_output = self.screen.query_one("#term-output", RichLog)
-                term_input = self.screen.query_one("#term-input", Input)
-                if widget == term_output or any(a == term_output for a in ancestors):
-                    term_output.focus()
-                else:
-                    term_input.focus()
-                return
-
         # 2. Coordinate boundary check fallback (for clicks on empty padding, borders, headers)
         x, y = event.screen_x, event.screen_y
         files_panel = self.screen.query_one("#files-panel")
         editor_panel = self.screen.query_one("#editor-panel")
-        terminal_panel = self.screen.query_one("#terminal-panel")
 
         if files_panel.display and files_panel.region.contains(x, y):
             self.screen.query_one(DirectoryTree).focus()
         elif editor_panel.display and editor_panel.region.contains(x, y):
             self.screen.query_one("#editor", TextArea).focus()
-        elif terminal_panel.display and terminal_panel.region.contains(x, y):
-            # For terminal, check if click is on output or input area
-            term_output = self.screen.query_one("#term-output", RichLog)
-            term_input = self.screen.query_one("#term-input", Input)
-            if term_output.region.contains(x, y):
-                term_output.focus()
-            else:
-                term_input.focus()
 
     # ── Key routing ─────────────────────────────────────────────────────────
 
@@ -1268,21 +1201,16 @@ class TrixApp(App):
         
         tree = self.screen.query_one(DirectoryTree)
         editor = self.screen.query_one("#editor", TextArea)
-        term_output = self.screen.query_one("#term-output", RichLog)
-        term_input = self.screen.query_one("#term-input", Input)
 
         files_active = focused is tree
         editor_active = focused is editor
-        terminal_active = focused is term_output or focused is term_input
 
         cast(PanelHeader, self.screen.query_one("#header-files")).set_active(files_active)
         cast(PanelHeader, self.screen.query_one("#header-editor")).set_active(editor_active)
-        cast(PanelHeader, self.screen.query_one("#header-terminal")).set_active(terminal_active)
 
         # Panel glow: toggle --panel-active class
         self.screen.query_one("#files-panel").set_class(files_active, "--panel-active")
         self.screen.query_one("#editor-panel").set_class(editor_active, "--panel-active")
-        self.screen.query_one("#terminal-panel").set_class(terminal_active, "--panel-active")
 
     # ── Actions ───────────────────────────────────────────────────────────
 
@@ -1316,8 +1244,6 @@ class TrixApp(App):
         show = not self._zen_mode
         self.screen.query_one("#files-panel").display = show and self._filetree_visible
         self.screen.query_one("#divider-1").display = show and self._filetree_visible
-        self.screen.query_one("#terminal-panel").display = show and self._terminal_visible
-        self.screen.query_one("#divider-2").display = show and (self._terminal_visible or self._filetree_visible)
         self.screen.query_one("#bottom-bar").display = show
         self.screen.query_one("#header").display = show
         self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
@@ -1326,14 +1252,6 @@ class TrixApp(App):
         self._filetree_visible = not self._filetree_visible
         self.screen.query_one("#files-panel").display = self._filetree_visible
         self.screen.query_one("#divider-1").display = self._filetree_visible
-
-    def action_toggle_terminal(self) -> None:
-        """Toggle terminal panel visibility."""
-        self._terminal_visible = not self._terminal_visible
-        self.screen.query_one("#terminal-panel").display = self._terminal_visible
-        self.screen.query_one("#divider-2").display = (
-            self._terminal_visible or self._filetree_visible
-        )
 
     def action_save(self) -> None:
         if self._current_file is None:
@@ -1372,11 +1290,6 @@ class TrixApp(App):
         text = ""
         if isinstance(focused, TextArea):
             text = focused.selected_text
-        elif isinstance(focused, RichLog):
-            sel = focused.text_selection
-            if sel:
-                result = focused.get_selection(sel)
-                text = result[0] + result[1] if result else ""
         if text:
             self.copy_to_clipboard(text)
             self.notify("Copied to clipboard")
@@ -1499,18 +1412,15 @@ class TrixApp(App):
     # ── Private helpers ─────────────────────────────────────────────────────
 
     def _cycle_panels(self) -> None:
-        """Ctrl+] cycles: Files → Editor → Terminal → Files"""
+        """Ctrl+] cycles: Files → Editor → Files"""
         if self.screen.__class__.__name__ != "MainScreen":
             return
         focused = self.focused
         editor = self.screen.query_one("#editor", TextArea)
-        term_input = self.screen.query_one("#term-input", Input)
         file_tree = self.screen.query_one(DirectoryTree)
 
         if focused is file_tree:
             editor.focus()
-        elif focused is editor:
-            term_input.focus()
         else:
             file_tree.focus()
 

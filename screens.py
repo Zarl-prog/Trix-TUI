@@ -13,12 +13,11 @@ _HELP = """\
    [#bfbdb6]F2[/#bfbdb6]               Rename File
    [#bfbdb6]Delete[/#bfbdb6]           Delete File (focus file tree first)
 
- [bold #5ac1fe]Layout[/bold #5ac1fe]
-   [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels (Files→Editor→Terminal)
-   [#bfbdb6]Click[/#bfbdb6]            Focus any panel by clicking it
-   [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
-   [#bfbdb6]Ctrl+`[/#bfbdb6]           Toggle Terminal
-    [#bfbdb6]Ctrl+\\[/#bfbdb6]           Zen Mode (Editor only)
+  [bold #5ac1fe]Layout[/bold #5ac1fe]
+    [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels (Files↔Editor)
+    [#bfbdb6]Click[/#bfbdb6]            Focus any panel by clicking it
+    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
+     [#bfbdb6]Ctrl+\\[/#bfbdb6]           Zen Mode (Editor only)
 
  [bold #5ac1fe]Editor[/bold #5ac1fe]
    [#bfbdb6]Ctrl+Z[/#bfbdb6]           Undo
@@ -30,12 +29,6 @@ _HELP = """\
    [#bfbdb6]Ctrl+Shift+F[/#bfbdb6]     Search Across All Files
    [#bfbdb6]Ctrl+T[/#bfbdb6]           Cycle Theme
    [#bfbdb6]Ctrl+R[/#bfbdb6]           Reload File Tree
-
- [bold #5ac1fe]Terminal[/bold #5ac1fe]
-   [#bfbdb6]Ctrl+C[/#bfbdb6]           Copy selection / Interrupt
-   [#bfbdb6]Ctrl+Shift+C[/#bfbdb6]     Copy Selected Text
-   [#bfbdb6]↑ ↓[/#bfbdb6]              Command History
-   [#bfbdb6]cls[/#bfbdb6]              Clear Terminal
 
  [bold #5ac1fe]General[/bold #5ac1fe]
    [#bfbdb6]Ctrl+G[/#bfbdb6]           Git History
@@ -356,7 +349,6 @@ class SplashScreen(Screen):
         statuses = [
             "Initializing...",
             "Loading themes...",
-            "Starting terminal...",
             "Ready."
         ]
         status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)

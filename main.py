@@ -626,21 +626,28 @@ class MainScreen(Screen):
                 yield TerminalWidget(id="terminal")
                 
         with Horizontal(id="bottom-bar"):
-            # Left: keybinding hints (each pair is clickable via app.on_click)
-            yield Static(" ^q ", id="bb-quit", classes="kb-key")
-            yield Static("Quit  ", classes="kb-desc")
-            yield Static(" f1 ", id="bb-help", classes="kb-key")
-            yield Static("Help  ", classes="kb-desc")
-            yield Static(" ^g ", id="bb-git", classes="kb-key")
-            yield Static("Git  ", classes="kb-desc")
-            yield Static(" ^t ", id="bb-theme", classes="kb-key")
-            yield Static("Theme  ", classes="kb-desc")
-            yield Static(" ^b ", id="bb-files", classes="kb-key")
-            yield Static("Files  ", classes="kb-desc")
-            yield Static(" ^` ", id="bb-term", classes="kb-key")
-            yield Static("Terminal  ", classes="kb-desc")
-            yield Static(" ^o ", id="bb-open", classes="kb-key")
-            yield Static("Open  ", classes="kb-desc")
+            # Left: keybinding hints (each pair clickable via app.on_click)
+            with Horizontal(id="bb-quit", classes="bb-item"):
+                yield Static(" ^q ", classes="kb-key")
+                yield Static("Quit  ", classes="kb-desc")
+            with Horizontal(id="bb-help", classes="bb-item"):
+                yield Static(" f1 ", classes="kb-key")
+                yield Static("Help  ", classes="kb-desc")
+            with Horizontal(id="bb-git", classes="bb-item"):
+                yield Static(" ^g ", classes="kb-key")
+                yield Static("Git  ", classes="kb-desc")
+            with Horizontal(id="bb-theme", classes="bb-item"):
+                yield Static(" ^t ", classes="kb-key")
+                yield Static("Theme  ", classes="kb-desc")
+            with Horizontal(id="bb-files", classes="bb-item"):
+                yield Static(" ^b ", classes="kb-key")
+                yield Static("Files  ", classes="kb-desc")
+            with Horizontal(id="bb-term", classes="bb-item"):
+                yield Static(" ^` ", classes="kb-key")
+                yield Static("Terminal  ", classes="kb-desc")
+            with Horizontal(id="bb-open", classes="bb-item"):
+                yield Static(" ^o ", classes="kb-key")
+                yield Static("Open  ", classes="kb-desc")
             # Right: status info (spacer + status segments)
             yield Static("", id="sb-spacer")
             yield Static("", id="sb-unsaved")
@@ -1085,18 +1092,18 @@ class TrixApp(App):
 
         # Bottom bar clickable items
         widget = event.widget
-        if widget and widget.id:
-            bb_actions = {
-                "bb-quit": "action_quit_app",
-                "bb-help": "action_show_help",
-                "bb-git": "action_show_git_history",
-                "bb-theme": "action_cycle_theme",
-                "bb-files": "action_toggle_filetree",
-                "bb-term": "action_toggle_terminal",
-                "bb-open": "action_open_folder",
-            }
-            if widget.id in bb_actions:
-                self.run_action(bb_actions[widget.id])
+        bb_actions = {
+            "bb-quit": "action_quit_app",
+            "bb-help": "action_show_help",
+            "bb-git": "action_show_git_history",
+            "bb-theme": "action_cycle_theme",
+            "bb-files": "action_toggle_filetree",
+            "bb-term": "action_toggle_terminal",
+            "bb-open": "action_open_folder",
+        }
+        for w in [widget] + (list(widget.ancestors) if widget else []):
+            if w and w.id and w.id in bb_actions:
+                self.run_action(bb_actions[w.id])
                 return
 
         widget = event.widget

@@ -626,20 +626,20 @@ class MainScreen(Screen):
                 yield TerminalWidget(id="terminal")
                 
         with Horizontal(id="bottom-bar"):
-            # Left: keybinding hints
-            yield Static(" ^q ", classes="kb-key")
+            # Left: keybinding hints (each pair is clickable via app.on_click)
+            yield Static(" ^q ", id="bb-quit", classes="kb-key")
             yield Static("Quit  ", classes="kb-desc")
-            yield Static(" f1 ", classes="kb-key")
+            yield Static(" f1 ", id="bb-help", classes="kb-key")
             yield Static("Help  ", classes="kb-desc")
-            yield Static(" ^g ", classes="kb-key")
+            yield Static(" ^g ", id="bb-git", classes="kb-key")
             yield Static("Git  ", classes="kb-desc")
-            yield Static(" ^t ", classes="kb-key")
+            yield Static(" ^t ", id="bb-theme", classes="kb-key")
             yield Static("Theme  ", classes="kb-desc")
-            yield Static(" ^b ", classes="kb-key")
+            yield Static(" ^b ", id="bb-files", classes="kb-key")
             yield Static("Files  ", classes="kb-desc")
-            yield Static(" ^` ", classes="kb-key")
+            yield Static(" ^` ", id="bb-term", classes="kb-key")
             yield Static("Terminal  ", classes="kb-desc")
-            yield Static(" ^o ", classes="kb-key")
+            yield Static(" ^o ", id="bb-open", classes="kb-key")
             yield Static("Open  ", classes="kb-desc")
             # Right: status info (spacer + status segments)
             yield Static("", id="sb-spacer")
@@ -1082,6 +1082,23 @@ class TrixApp(App):
         """
         if self.screen.__class__.__name__ != "MainScreen":
             return
+
+        # Bottom bar clickable items
+        widget = event.widget
+        if widget and widget.id:
+            bb_actions = {
+                "bb-quit": "action_quit_app",
+                "bb-help": "action_show_help",
+                "bb-git": "action_show_git_history",
+                "bb-theme": "action_cycle_theme",
+                "bb-files": "action_toggle_filetree",
+                "bb-term": "action_toggle_terminal",
+                "bb-open": "action_open_folder",
+            }
+            if widget.id in bb_actions:
+                self.run_action(bb_actions[widget.id])
+                return
+
         widget = event.widget
         if widget:
             # 1. Widget hierarchy/ancestor check (100% reliable for direct clicks)

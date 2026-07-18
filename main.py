@@ -1236,6 +1236,8 @@ class TrixApp(App):
         self._refresh_status_bar()
         if self.screen.__class__.__name__ != "MainScreen":
             return
+
+        # Phase 1: toggle display states (must always succeed independently)
         try:
             welcome = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
             editor  = self.screen.query_one("#editor", TextArea)
@@ -1244,16 +1246,22 @@ class TrixApp(App):
             welcome.display   = not has_files
             editor.display    = has_files
             tab_strip.display = has_files
+        except Exception:
+            pass
 
+        # Phase 2: update header labels (may fail without breaking display)
+        try:
             tree = self.screen.query_one(DirectoryTree)
             cast(PanelHeader, self.screen.query_one("#header-files")).set_title(f"Explorer — {tree.path.name}")
-
             self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
+        except Exception:
+            pass
 
+        # Phase 3: update editor header title
+        try:
             if self._current_file is None:
                 cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
-                wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
-                wp.refresh_content(_load_recent_files())
+                self.screen.query_one("#editor-welcome-panel", WelcomePanel).refresh_content(_load_recent_files())
             else:
                 unsaved = " ●" if self._has_changes else ""
                 name = self._current_file.name

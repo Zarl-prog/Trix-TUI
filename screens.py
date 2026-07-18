@@ -1,3 +1,7 @@
+"""Screens module - all modal/dialog screens for the application."""
+
+from __future__ import annotations  # noqa: F401 - needed for forward refs
+
 from textual import on
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -41,14 +45,13 @@ _HELP = """\
     [#5ac1fe]Ctrl+Q[/#5ac1fe]          Quit\
 """
 
-# Import MainScreen at module level to avoid circular import issues
-try:
-    from main import MainScreen
-except ImportError:
-    MainScreen = None
-
-
 from themes import register_css_template
+
+
+def _get_main_screen_class():
+    """Lazy import to avoid circular dependency at module load time."""
+    from main import MainScreen
+    return MainScreen
 
 HELP_SCREEN_CSS = """
 HelpScreen {

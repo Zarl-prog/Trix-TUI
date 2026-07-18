@@ -1,5 +1,6 @@
 import subprocess
 from datetime import datetime, timezone
+import asyncio
 from rich.markup import escape
 from textual import work
 from textual.app import ComposeResult
@@ -427,7 +428,6 @@ class GitHistoryScreen(ModalScreen):
 
     @work(exclusive=True)
     async def _load_changed_files(self, commit: CommitDetail) -> None:
-        import asyncio
         loop = asyncio.get_running_loop()
         # Fetch changed files on a background thread pool executor to prevent event loop lag
         files = await loop.run_in_executor(None, commit.get_files, self.repo_path)

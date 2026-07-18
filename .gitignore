@@ -24,3 +24,7 @@ Thumbs.db
 
 # Private
 PromotingStrat.txt
+
+# Screenshots / debug
+*.png
+scratch_*.py

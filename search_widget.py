@@ -1,8 +1,9 @@
 from __future__ import annotations
 from pathlib import Path
 
+from textual import work
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.events import Key
 from textual.widget import Widget
 from textual.widgets import Input, Label, ListItem, ListView, Static, TextArea
@@ -288,18 +289,20 @@ class GlobalSearch(Widget):
             event.prevent_default()
 
     def on_input_changed(self, event: Input.Changed) -> None:
-        self._run_search(event.value)
-
-    def _run_search(self, query: str) -> None:
+        query = event.value
         lv = self.query_one("#global-results", ListView)
         lv.clear()
         self._results = []
         count_label = self.query_one("#gs-count", Static)
-        count_label.update("")
-
         if not query or len(query) < 2:
+            count_label.update("")
             return
+        count_label.update("[#5ac1fe]searching…[/#5ac1fe]")
+        self._run_search(query)
 
+    @work(thread=True, exclusive=True)
+    def _run_search(self, query: str) -> None:
+        """Search files in a background thread to prevent TUI blocking."""
         try:
             tree = self.app.query_one("DirectoryTree")
             root = Path(str(tree.path))
@@ -307,45 +310,71 @@ class GlobalSearch(Widget):
             return
 
         q_lower = query.lower()
+        results: list[tuple[Path, int, str]] = []
         hit_count = 0
 
         # Excluded dirs/files for performance
         _SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv", ".tox", "dist", "build"}
+        _BINARY_SUFFIXES = {
+            ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp",
+            ".mp4", ".mp3", ".wav", ".pdf", ".zip", ".tar", ".gz",
+            ".exe", ".so", ".dll", ".pyc",
+        }
 
         for fpath in sorted(root.rglob("*")):
             if any(part in _SKIP_DIRS for part in fpath.parts):
                 continue
             if not fpath.is_file():
                 continue
-            # Skip binary-looking files by extension
-            if fpath.suffix.lower() in {
-                ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".webp",
-                ".mp4", ".mp3", ".wav", ".pdf", ".zip", ".tar", ".gz",
-                ".exe", ".so", ".dll", ".pyc",
-            }:
+            if fpath.suffix.lower() in _BINARY_SUFFIXES:
                 continue
             try:
-                lines = fpath.read_text(encoding="utf-8", errors="ignore").splitlines()
+                text = fpath.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
+            lines = text.splitlines()
             for lineno, line in enumerate(lines):
                 if q_lower in line.lower():
-                    self._results.append((fpath, lineno, line.strip()))
-                    try:
-                        rel = fpath.relative_to(root)
-                    except ValueError:
-                        rel = fpath
-                    # Compact display: filename:line  content
-                    snippet = line.strip()[:50]
-                    label = f"[#5ac1fe]{rel}[/#5ac1fe][#3f4043]:{lineno + 1}[/#3f4043]  {snippet}"
-                    lv.append(ListItem(Static(label, markup=True)))
+                    results.append((fpath, lineno, line.strip()))
                     hit_count += 1
                     if hit_count >= 200:
-                        count_label.update(f"[#e6b450]200+ results[/#e6b450]")
-                        return
+                        break
+            if hit_count >= 200:
+                break
+
+        # Update UI on the main thread
+        self.app.call_from_thread(self._display_results, results, query, hit_count)
+
+    def _display_results(self, results: list, query: str, hit_count: int) -> None:
+        """Display search results (runs on main thread via call_from_thread)."""
+        try:
+            lv = self.query_one("#global-results", ListView)
+            count_label = self.query_one("#gs-count", Static)
+        except Exception:
+            return
+
+        try:
+            tree = self.app.query_one("DirectoryTree")
+            root = Path(str(tree.path))
+        except Exception:
+            root = Path(".")
+
+        lv.clear()
+        self._results = results
+
+        for fpath, lineno, line in results:
+            try:
+                rel = fpath.relative_to(root)
+            except ValueError:
+                rel = fpath
+            snippet = line[:50]
+            label = f"[#5ac1fe]{rel}[/#5ac1fe][#3f4043]:{lineno + 1}[/#3f4043]  {snippet}"
+            lv.append(ListItem(Static(label, markup=True)))
 
         if hit_count == 0:
             count_label.update("[#ef7177]no results[/#ef7177]")
+        elif hit_count >= 200:
+            count_label.update(f"[#e6b450]200+ results[/#e6b450]")
         else:
             count_label.update(f"[#5ac1fe]{hit_count}[/#5ac1fe]")
 

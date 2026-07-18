@@ -1,5 +1,6 @@
 import subprocess
 from datetime import datetime, timezone
+from textual import work
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
@@ -197,6 +198,7 @@ class GitHistoryScreen(ModalScreen):
         super().__init__(**kwargs)
         self.repo_path = repo_path
         self.commits: list[CommitDetail] = []
+        self._active_hash = None
 
     def compose(self) -> ComposeResult:
         with Vertical(id="git-popup"):
@@ -388,6 +390,7 @@ class GitHistoryScreen(ModalScreen):
             self._show_commit_detail(self.commits[event.list_view.index])
 
     def _show_commit_detail(self, commit: CommitDetail) -> None:
+        self._active_hash = commit.full_hash
         self.query_one("#gh-detail-hash",    Label).update(
             f"[#e6b450]{commit.hash7}[/#e6b450]  [dim]{commit.full_hash}[/dim]"
         )
@@ -401,8 +404,25 @@ class GitHistoryScreen(ModalScreen):
 
         files_container = self.query_one("#gh-files", ScrollableContainer)
         files_container.remove_children()
+        files_container.mount(Static("[dim]Loading changed files...[/dim]", markup=True, id="gh-files-loading"))
 
-        files = commit.get_files(self.repo_path)
+        self.query_one("#gh-detail-placeholder").display = False
+        self.query_one("#gh-detail").display = True
+
+        self._load_changed_files(commit)
+
+    @work(exclusive=True)
+    async def _load_changed_files(self, commit: CommitDetail) -> None:
+        import asyncio
+        loop = asyncio.get_running_loop()
+        # Fetch changed files on a background thread pool executor to prevent event loop lag
+        files = await loop.run_in_executor(None, commit.get_files, self.repo_path)
+        if self._active_hash == commit.full_hash:
+            self._update_files_ui(files)
+
+    def _update_files_ui(self, files: list) -> None:
+        files_container = self.query_one("#gh-files", ScrollableContainer)
+        files_container.remove_children()
         if files:
             import time
             unique = int(time.time() * 1000)
@@ -420,8 +440,6 @@ class GitHistoryScreen(ModalScreen):
         else:
             files_container.mount(Static("[dim]No file changes recorded[/dim]", markup=True, id="gh-empty-files"))
 
-        self.query_one("#gh-detail-placeholder").display = False
-        self.query_one("#gh-detail").display = True
 
     def action_copy_hash(self) -> None:
         list_view = self.query_one("#gh-commits", ListView)

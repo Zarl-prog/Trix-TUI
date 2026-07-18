@@ -1,7 +1,44 @@
 from pathlib import Path
-import json
 
 FAMOUS_THEMES = [
+    {
+        "name": "Ayu Dark",
+        "background": "#0d1016",
+        "surface": "#1f2127",
+        "panel": "#1f2127",
+        "border": "#3f4043",
+        "border_focused": "#5ac1fe",
+        "text": "#bfbdb6",
+        "text_muted": "#8a8986",
+        "accent": "#5ac1fe",
+        "accent_alt": "#39bae5",
+        "success": "#aad84c",
+        "warning": "#feb454",
+        "error": "#ef7177",
+        "line_number": "#4b4c4e",
+        "cursor_line": "#1f2127",
+        "scrollbar": "#3f4043",
+        "scrollbar_thumb": "#5ac1fe",
+    },
+    {
+        "name": "Ayu Mirage",
+        "background": "#242835",
+        "surface": "#1f232a",
+        "panel": "#1f232a",
+        "border": "#53565d",
+        "border_focused": "#72cffe",
+        "text": "#cccac2",
+        "text_muted": "#9a9a98",
+        "accent": "#72cffe",
+        "accent_alt": "#2b6c7b",
+        "success": "#d5fe80",
+        "warning": "#fecf72",
+        "error": "#f18779",
+        "line_number": "#575c6b",
+        "cursor_line": "#1f232a",
+        "scrollbar": "#53565d",
+        "scrollbar_thumb": "#72cffe",
+    },
     {
         "name": "Dracula",
         "background": "#282a36",
@@ -195,109 +232,8 @@ FAMOUS_THEMES = [
 ]
 
 
-def _safe_color(val, default: str = "#888888") -> str:
-    """Safely extract a 6-char hex color, handling None and 8-char #rrggbbaa."""
-    if val is None:
-        return default
-    s = str(val).strip()
-    if s.startswith("#"):
-        # Strip alpha channel: #rrggbbaa → #rrggbb
-        if len(s) == 9:
-            return s[:7]
-        if len(s) == 7:
-            return s
-    return default
-
-
-def load_custom_themes() -> list[dict]:
-    themes = []
-    p = Path.home() / ".trix" / "themes"
-    p.mkdir(parents=True, exist_ok=True)
-    for f in p.glob("*.json"):
-        try:
-            theme_dict = json.loads(f.read_text())
-            required_keys = [
-                "name", "background", "surface", "panel", "border",
-                "border_focused", "text", "text_muted", "accent", "accent_alt",
-                "success", "warning", "error", "line_number", "cursor_line",
-                "scrollbar", "scrollbar_thumb"
-            ]
-            for key in required_keys:
-                if key not in theme_dict:
-                    theme_dict[key] = theme_dict.get("background", "#1f2127")
-            themes.append(theme_dict)
-        except Exception as e:
-            import sys
-            print(f"Warning: Failed to load custom theme {f}: {e}", file=sys.stderr)
-    return themes
-
-
 def get_all_themes() -> list[dict]:
-    themes = []
-
-    # 1. Load Ayu themes from local JSON
-    try:
-        data = json.loads((Path(__file__).parent / "ayu.json").read_text())
-        for t in data["themes"]:
-            s = t["style"]
-            name = t["name"]
-
-            bg    = _safe_color(s.get("background"),                  "#313337")
-            surf  = _safe_color(s.get("surface.background"),          "#1f2127")
-            pan   = _safe_color(s.get("elevated_surface.background"), "#1f2127")
-            txt   = _safe_color(s.get("text"),                        "#bfbdb6")
-            txt_m = _safe_color(s.get("text.muted"),                  "#8a8986")
-            acc   = _safe_color(s.get("text.accent"),                 "#5ac1fe")
-            err   = _safe_color(s.get("error"),                       "#ef7177")
-            suc   = _safe_color(s.get("success"),                     "#aad84c")
-            war   = _safe_color(s.get("warning"),                     "#e6b450")
-            brd   = _safe_color(s.get("border"),                      "#3f4043")
-            brd_f = _safe_color(s.get("panel.focused_border"),        acc)
-            acc_a = _safe_color(s.get("terminal.ansi.bright_magenta"), "#39bae5")
-            ln    = _safe_color(s.get("editor.line_number"),          "#4b4c4e")
-            cl    = _safe_color(s.get("editor.active_line.background"), "#1f2127")
-            sb    = _safe_color(s.get("scrollbar.track.border"),      "#3f4043")
-            sbt   = _safe_color(s.get("scrollbar.thumb.background"),  "#5ac1fe")
-
-            theme_dict = {
-                "name":           name,
-                "background":     bg,
-                "surface":        surf,
-                "panel":          pan,
-                "border":         brd,
-                "border_focused": brd_f,
-                "text":           txt,
-                "text_muted":     txt_m,
-                "accent":         acc,
-                "accent_alt":     acc_a,
-                "success":        suc,
-                "warning":        war,
-                "error":          err,
-                "line_number":    ln,
-                "cursor_line":    cl,
-                "scrollbar":      sb,
-                "scrollbar_thumb": sbt,
-            }
-            themes.append(theme_dict)
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning(f"Failed to load Ayu themes: {e}")
-
-    # 2. Load famous themes
-    themes.extend(FAMOUS_THEMES)
-
-    # 3. Load custom themes
-    themes.extend(load_custom_themes())
-
-    # De-duplicate by name
-    seen = set()
-    unique_themes = []
-    for t in themes:
-        if t["name"] not in seen:
-            seen.add(t["name"])
-            unique_themes.append(t)
-
-    return unique_themes
+    return FAMOUS_THEMES
 
 
 THEMES: list[dict] = get_all_themes()

@@ -1,6 +1,5 @@
 import sys
 import subprocess
-from collections import defaultdict
 from functools import partial
 from pathlib import Path
 from typing import cast
@@ -13,8 +12,8 @@ if hasattr(sys.stderr, "reconfigure"):
 from textual.app import App, ComposeResult
 from textual.message import Message
 from textual.screen import Screen
-from textual.containers import Container, Horizontal, Vertical
-from textual.events import Click, Key, MouseDown, MouseMove, MouseUp
+from textual.containers import Container, Horizontal
+from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import DirectoryTree, ListView, ListItem, Static, TextArea
 from textual.widgets.text_area import Selection
@@ -28,14 +27,27 @@ from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, Rena
 from git_history_screen import GitHistoryScreen
 
 
+import time as _time
+
+_GIT_BRANCH_CACHE: str = ""
+_GIT_BRANCH_CACHE_TIME: float = 0
+_GIT_BRANCH_TTL: float = 2.0
+
+
 def _git_branch() -> str:
+    global _GIT_BRANCH_CACHE, _GIT_BRANCH_CACHE_TIME
+    now = _time.time()
+    if _GIT_BRANCH_CACHE and (now - _GIT_BRANCH_CACHE_TIME) < _GIT_BRANCH_TTL:
+        return _GIT_BRANCH_CACHE
     try:
         r = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             capture_output=True, text=True, timeout=1,
         )
         b = r.stdout.strip()
-        return f" 🌿 {b}" if b else ""
+        _GIT_BRANCH_CACHE = f" 🌿 {b}" if b else ""
+        _GIT_BRANCH_CACHE_TIME = now
+        return _GIT_BRANCH_CACHE
     except Exception:
         return ""
 
@@ -1067,6 +1079,7 @@ class TrixApp(App):
             return
 
         widget = event.widget
+        ancestors = list(widget.ancestors) if widget else []
         bb_actions = {
             "bb-quit":   "action_quit_app",
             "bb-help":   "action_show_help",
@@ -1077,14 +1090,12 @@ class TrixApp(App):
             "bb-save":   "action_save",
             "bb-search": "action_search",
         }
-        for w in [widget] + (list(widget.ancestors) if widget else []):
+        for w in [widget] + ancestors:
             if w and w.id and w.id in bb_actions:
                 self.run_action(bb_actions[w.id])
                 return
 
-        widget = event.widget
         if widget:
-            ancestors = list(widget.ancestors)
             if isinstance(widget, DirectoryTree) or any(isinstance(a, DirectoryTree) for a in ancestors):
                 self.screen.query_one(DirectoryTree).focus()
                 return
@@ -1189,19 +1200,10 @@ class TrixApp(App):
             ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
             self.screen.query_one("#sb-cursor", Static).update(f"Ln {row + 1}  Col {col + 1}")
-        except Exception:
-            pass
-        try:
             lang = self._lang_label(self._current_file) if self._current_file else ""
             self.screen.query_one("#sb-lang", Static).update(lang)
-        except Exception:
-            pass
-        try:
             unsaved = "● unsaved" if self._has_changes else ""
             self.screen.query_one("#sb-unsaved", Static).update(unsaved)
-        except Exception:
-            pass
-        try:
             branch = _git_branch()
             self.screen.query_one("#sb-branch", Static).update(branch)
         except Exception:
@@ -1233,43 +1235,34 @@ class TrixApp(App):
     def _refresh_ui(self) -> None:
         self._update_tab_strip()
         self._refresh_status_bar()
-        if self.screen.__class__.__name__ == "MainScreen":
-            try:
-                welcome = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
-                editor  = self.screen.query_one("#editor", TextArea)
-                tab_strip = self.screen.query_one("#tab-strip", TabStrip)
-                has_files = len(self._open_files) > 0
-                welcome.display   = not has_files
-                editor.display    = has_files
-                tab_strip.display = has_files
-            except Exception:
-                pass
+        if self.screen.__class__.__name__ != "MainScreen":
+            return
+        try:
+            welcome = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
+            editor  = self.screen.query_one("#editor", TextArea)
+            tab_strip = self.screen.query_one("#tab-strip", TabStrip)
+            has_files = len(self._open_files) > 0
+            welcome.display   = not has_files
+            editor.display    = has_files
+            tab_strip.display = has_files
 
-            try:
-                tree = self.screen.query_one(DirectoryTree)
-                self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
-            except Exception:
-                pass
+            tree = self.screen.query_one(DirectoryTree)
+            cast(PanelHeader, self.screen.query_one("#header-files")).set_title(f"Explorer — {tree.path.name}")
+
+            self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
 
             if self._current_file is None:
-                try:
-                    cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
-                except Exception:
-                    pass
-                try:
-                    wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
-                    wp.refresh_content(_load_recent_files())
-                except Exception:
-                    pass
+                cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
+                wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
+                wp.refresh_content(_load_recent_files())
             else:
                 unsaved = " ●" if self._has_changes else ""
                 name = self._current_file.name
-                try:
-                    cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(
-                        f"Editor — {name}{unsaved}"
-                    )
-                except Exception:
-                    pass
+                cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(
+                    f"Editor — {name}{unsaved}"
+                )
+        except Exception:
+            pass
 
     # ── Actions ───────────────────────────────────────────────────────────
 
@@ -1534,32 +1527,36 @@ class TrixApp(App):
         line = ta.document.get_line(row)
         ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
+    _LANG_MAP: dict[str, str] = {
+        ".py": "python",     ".js": "javascript", ".jsx": "javascript",
+        ".ts": "typescript", ".tsx": "typescript", ".json": "json",
+        ".html": "html",     ".htm": "html",       ".css": "css",
+        ".md": "markdown",   ".yaml": "yaml",      ".yml": "yaml",
+        ".toml": "toml",     ".sql": "sql",        ".rs": "rust",
+        ".go": "go",         ".c": "c",            ".cpp": "cpp",
+        ".h": "c",           ".hpp": "cpp",        ".java": "java",
+        ".sh": "bash",       ".bash": "bash",      ".rb": "ruby",
+        ".php": "php",       ".xml": "xml",        ".svg": "xml",
+        ".lua": "lua",
+    }
+
+    _LABEL_MAP: dict[str, str] = {
+        ".py": "Python",   ".js": "JavaScript", ".jsx": "JavaScript",
+        ".ts": "TypeScript", ".tsx": "TypeScript", ".json": "JSON",
+        ".html": "HTML",   ".htm": "HTML",      ".css": "CSS",
+        ".md": "Markdown", ".yaml": "YAML",     ".yml": "YAML",
+        ".toml": "TOML",   ".sql": "SQL",       ".rs": "Rust",
+        ".go": "Go",       ".c": "C",           ".cpp": "C++",
+        ".h": "C",         ".hpp": "C++",       ".java": "Java",
+        ".sh": "Bash",     ".bash": "Bash",     ".rb": "Ruby",
+        ".php": "PHP",     ".xml": "XML",       ".lua": "Lua",
+    }
+
     def _lang_label(self, path: Path) -> str:
-        return {
-            ".py": "Python",   ".js": "JavaScript", ".jsx": "JavaScript",
-            ".ts": "TypeScript", ".tsx": "TypeScript", ".json": "JSON",
-            ".html": "HTML",   ".htm": "HTML",      ".css": "CSS",
-            ".md": "Markdown", ".yaml": "YAML",     ".yml": "YAML",
-            ".toml": "TOML",   ".sql": "SQL",       ".rs": "Rust",
-            ".go": "Go",       ".c": "C",           ".cpp": "C++",
-            ".h": "C",         ".hpp": "C++",       ".java": "Java",
-            ".sh": "Bash",     ".bash": "Bash",     ".rb": "Ruby",
-            ".php": "PHP",     ".xml": "XML",       ".lua": "Lua",
-        }.get(path.suffix.lower(), path.suffix.upper().lstrip(".") or "Text")
+        return self._LABEL_MAP.get(path.suffix.lower(), path.suffix.upper().lstrip(".") or "Text")
 
     def _detect_language(self, path: Path) -> str | None:
-        return {
-            ".py":   "python",     ".js":   "javascript",  ".jsx": "javascript",
-            ".ts":   "typescript", ".tsx":  "typescript",  ".json": "json",
-            ".html": "html",       ".htm":  "html",        ".css": "css",
-            ".md":   "markdown",   ".yaml": "yaml",        ".yml": "yaml",
-            ".toml": "toml",       ".sql":  "sql",         ".rs":  "rust",
-            ".go":   "go",         ".c":    "c",           ".cpp": "cpp",
-            ".h":    "c",          ".hpp":  "cpp",         ".java": "java",
-            ".sh":   "bash",       ".bash": "bash",        ".rb":   "ruby",
-            ".php":  "php",        ".xml":  "xml",         ".svg":  "xml",
-            ".lua":  "lua",
-        }.get(path.suffix.lower())
+        return self._LANG_MAP.get(path.suffix.lower())
 
 
 def run():

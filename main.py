@@ -12,7 +12,7 @@ if hasattr(sys.stderr, "reconfigure"):
 from textual.app import App, ComposeResult
 from textual.message import Message
 from textual.screen import Screen
-from textual.containers import Container, Horizontal
+from textual.containers import Container, Horizontal, Vertical
 from textual.events import Click, Key, MouseDown
 from textual.widget import Widget
 from textual.widgets import DirectoryTree, ListView, ListItem, Static, TextArea
@@ -183,6 +183,9 @@ class ClickableDirectoryTree(DirectoryTree):
 
     def on_click(self, event: Click) -> None:
         self.focus()
+        # Call the parent's click handler to enable file selection
+        if hasattr(super(), 'on_click'):
+            super().on_click(event)
 
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
@@ -221,7 +224,7 @@ class ClickableDirectoryTree(DirectoryTree):
         self._refresh_git_status()
         self.reload()
 
-    def render_label(self, node, base_style, style):
+def render_label(self, node, base_style, style):
         from rich.text import Text
         from rich.style import Style
 
@@ -249,27 +252,38 @@ class ClickableDirectoryTree(DirectoryTree):
                 except Exception:
                     style = Style(color="#bfbdb6")
             else:
-                if git_code in ("M", "MM", "AM"):
-                    style = Style(color="#e6b450")
-                elif git_code in ("??",):
-                    style = Style(color="#aad84c")
-                elif git_code in ("D", "DD", " D"):
-                    style = Style(color="#ef7177")
-                elif git_code in ("A", "AM"):
-                    style = Style(color="#aad84c")
-                elif git_code in ("R", "C"):
-                    try:
-                        style = Style(color=self.app._current_theme_dict.get("accent", "#5ac1fe"))
-                    except Exception:
+                # Git status colors from theme
+                try:
+                    theme = self.app._current_theme_dict
+                    if git_code in ("M", "MM", "AM"):
+                        style = Style(color=theme.get("warning", "#e6b450"))
+                    elif git_code in ("??",):
+                        style = Style(color=theme.get("success", "#aad84c"))
+                    elif git_code in ("D", "DD", " D"):
+                        style = Style(color=theme.get("error", "#ef7177"))
+                    elif git_code in ("A", "AM"):
+                        style = Style(color=theme.get("success", "#aad84c"))
+                    elif git_code in ("R", "C"):
+                        style = Style(color=theme.get("accent", "#5ac1fe"))
+                    else:
+                        style = Style(color=theme.get("text_muted", "#8a8986"))
+                except Exception:
+                    if git_code in ("M", "MM", "AM"):
+                        style = Style(color="#e6b450")
+                    elif git_code in ("??",):
+                        style = Style(color="#aad84c")
+                    elif git_code in ("D", "DD", " D"):
+                        style = Style(color="#ef7177")
+                    elif git_code in ("A", "AM"):
+                        style = Style(color="#aad84c")
+                    elif git_code in ("R", "C"):
                         style = Style(color="#5ac1fe")
-                else:
-                    try:
-                        style = Style(color=self.app._current_theme_dict.get("text_muted", "#8a8986"))
-                    except Exception:
+                    else:
                         style = Style(color="#8a8986")
 
         node_label.stylize(style)
 
+        # Folder icons
         if path.is_dir():
             icon = "▼ 📂 " if node.is_expanded else "▶ 📁 "
             return Text(icon, style=style) + node_label
@@ -382,7 +396,11 @@ class ClickableDirectoryTree(DirectoryTree):
 
         result = Text(icon, style=style) + node_label
         if git_badge:
-            result.append(git_badge, style=Style(color="#4b4c4e", dim=True))
+            try:
+                muted = self.app._current_theme_dict.get("text_muted", "#4b4c4e")
+                result.append(git_badge, style=Style(color=muted, dim=True))
+            except Exception:
+                result.append(git_badge, style=Style(color="#4b4c4e", dim=True))
         return result
 
 
@@ -437,58 +455,32 @@ class PanelHeader(Static):
 class TabStrip(Widget):
     """Horizontal tab bar showing open files above the editor."""
 
-    DEFAULT_CSS = """
-    TabStrip {
-        height: 1;
-        layout: horizontal;
-        background: #0d1016;
-        overflow-x: auto;
-        scrollbar-size: 0 0;
-    }
-    .tab-item {
-        width: auto;
-        height: 1;
-        padding: 0 1;
-        color: #4b4c4e;
-        background: #0d1016;
-    }
-    .tab-item.--tab-active {
-        color: #bfbdb6;
-        background: #131721;
-        text-style: bold;
-    }
-    .tab-item.--tab-unsaved {
-        color: #e6b450;
-    }
-    .tab-item.--tab-active.--tab-unsaved {
-        color: #e6b450;
-        background: #131721;
-        text-style: bold;
-    }
-    """
-
-    class TabClicked(Message):
-        def __init__(self, index: int) -> None:
-            super().__init__()
-            self.index = index
-
-    class TabClosed(Message):
-        def __init__(self, index: int) -> None:
-            super().__init__()
-            self.index = index
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._tabs: list[tuple[Path, bool]] = []
         self._active: int = -1
 
-    def set_tabs(self, tabs: list[tuple[Path, bool]], active: int) -> None:
-        self._tabs = tabs
-        self._active = active
-        self._rebuild()
+    def _get_theme_colors(self) -> dict:
+        try:
+            theme = self.app._current_theme_dict
+            return {
+                "bg": theme.get("background", "#0d1016"),
+                "fg_muted": theme.get("text_muted", "#4b4c4e"),
+                "fg": theme.get("text", "#bfbdb6"),
+                "surface": theme.get("surface", "#131721"),
+                "accent": theme.get("accent", "#5ac1fe"),
+                "warning": theme.get("warning", "#e6b450"),
+            }
+        except Exception:
+            return {
+                "bg": "#0d1016", "fg_muted": "#4b4c4e", "fg": "#bfbdb6",
+                "surface": "#131721", "accent": "#5ac1fe", "warning": "#e6b450",
+            }
 
     def _rebuild(self) -> None:
         self.remove_children()
+        theme_colors = self._get_theme_colors()
+        # Apply dynamic styles via inline styles
         for i, (path, unsaved) in enumerate(self._tabs):
             dot = " ●" if unsaved else ""
             label = f" {path.name}{dot}  ✕ "
@@ -500,18 +492,33 @@ class TabStrip(Widget):
             tab = Static(label, classes=classes, id=f"tab-{i}")
             self.mount(tab)
 
-    def on_click(self, event: Click) -> None:
-        x = event.x
-        offset = 0
-        for i, child in enumerate(self.children):
-            w = child.size.width
-            if offset <= x < offset + w:
-                if x >= offset + w - 5:
-                    self.post_message(self.TabClosed(i))
+    def _update_tab_styles(self) -> None:
+        """Update tab styles based on current theme."""
+        theme_colors = self._get_theme_colors()
+        # Set styles on the widget directly
+        self.styles.background = theme_colors["bg"]
+        for child in self.children:
+            if isinstance(child, Static):
+                if "--tab-active" in child.classes:
+                    child.styles.color = theme_colors["fg"]
+                    child.styles.background = theme_colors["surface"]
+                    child.styles.text_style = "bold"
+                elif "--tab-unsaved" in child.classes:
+                    child.styles.color = theme_colors["warning"]
+                    if "--tab-active" in child.classes:
+                        child.styles.background = theme_colors["surface"]
+                        child.styles.text_style = "bold"
+                    else:
+                        child.styles.background = theme_colors["bg"]
                 else:
-                    self.post_message(self.TabClicked(i))
-                return
-            offset += w
+                    child.styles.color = theme_colors["fg_muted"]
+                    child.styles.background = theme_colors["bg"]
+
+    def set_tabs(self, tabs: list[tuple[Path, bool]], active: int) -> None:
+        self._tabs = tabs
+        self._active = active
+        self._rebuild()
+        self._update_tab_styles()
 
 
 class WelcomePanel(Widget):
@@ -522,91 +529,24 @@ class WelcomePanel(Widget):
             super().__init__()
             self.path = path
 
-    DEFAULT_CSS = """
-    WelcomePanel {
-        width: 100%;
-        height: 100%;
-        background: #0d1016;
-        align: center middle;
-        layout: vertical;
-        padding: 2 4;
-    }
-    #welcome-header {
-        width: 100%;
-        text-align: center;
-        color: #5ac1fe;
-        text-style: bold;
-        margin-bottom: 1;
-    }
-    #welcome-ascii {
-        width: 100%;
-        text-align: center;
-        color: #5ac1fe;
-        margin-bottom: 1;
-    }
-    #welcome-tagline {
-        width: 100%;
-        text-align: center;
-        color: #4b4c4e;
-        margin-bottom: 2;
-    }
-    #welcome-recent-label {
-        width: 100%;
-        color: #8a8986;
-        text-style: bold;
-        margin-bottom: 1;
-        padding: 0 2;
-    }
-    #welcome-recent-list {
-        width: 100%;
-        height: auto;
-        max-height: 16;
-        background: #0d1016;
-        border: none;
-    }
-    #welcome-recent-list > ListItem {
-        padding: 0 2;
-        background: #0d1016;
-        color: #bfbdb6;
-    }
-    #welcome-recent-list > ListItem:hover {
-        background: #1f2430;
-        color: #5ac1fe;
-    }
-    #welcome-recent-list > ListItem.--highlight {
-        background: #1f2430;
-    }
-    #welcome-hint {
-        width: 100%;
-        text-align: center;
-        color: #3f4043;
-        margin-top: 2;
-    }
-    #welcome-empty {
-        width: 100%;
-        text-align: center;
-        color: #4b4c4e;
-        margin-top: 1;
-    }
-    #welcome-shortcuts {
-        width: 100%;
-        text-align: center;
-        color: #3f4043;
-        margin-top: 1;
-    }
-    """
-
-    _LOGO = (
-        "  ████████╗██████╗ ██╗██╗  ██╗\n"
-        "  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
-        "     ██║   ██████╔╝██║ ╚███╔╝ \n"
-        "     ██║   ██╔══██╗██║ ██╔██╗ \n"
-        "     ██║   ██║  ██║██║██╔╝ ██╗\n"
-        "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
-    )
+    def _get_theme_colors(self) -> dict:
+        try:
+            theme = self.app._current_theme_dict
+            return {
+                "bg": theme.get("background", "#0d1016"),
+                "accent": theme.get("accent", "#5ac1fe"),
+                "fg": theme.get("text", "#bfbdb6"),
+                "text_muted": theme.get("text_muted", "#8a8986"),
+                "border": theme.get("border", "#3f4043"),
+            }
+        except Exception:
+            return {
+                "bg": "#0d1016", "accent": "#5ac1fe", "fg": "#bfbdb6",
+                "text_muted": "#8a8986", "border": "#3f4043",
+            }
 
     def compose(self) -> ComposeResult:
-        yield Static(self._LOGO, id="welcome-ascii", markup=False)
+        yield Static("T R I X", id="welcome-header")
         yield Static("Your Terminal. Reimagined.", id="welcome-tagline")
         yield Static("── Recent Files ──", id="welcome-recent-label")
         yield ListView(id="welcome-recent-list")
@@ -617,13 +557,62 @@ class WelcomePanel(Widget):
         )
 
     def on_mount(self) -> None:
+        self._apply_styles()
         self._recent: list[str] = []
         self.refresh_content(_load_recent_files())
+
+    def _apply_styles(self) -> None:
+        theme_colors = self._get_theme_colors()
+        self.styles.background = theme_colors["bg"]
+        self.styles.align = ("center", "middle")
+        self.styles.layout = "vertical"
+        self.styles.padding = (2, 4)
+        
+        # Apply styles to children
+        header = self.query_one("#welcome-header")
+        header.styles.color = theme_colors["accent"]
+        header.styles.text_style = "bold"
+        header.styles.text_align = "center"
+        header.styles.width = "100%"
+        header.styles.margin_bottom = 1
+
+        tagline = self.query_one("#welcome-tagline")
+        tagline.styles.color = theme_colors["text_muted"]
+        tagline.styles.text_align = "center"
+        tagline.styles.width = "100%"
+        tagline.styles.margin_bottom = 2
+
+        recent_label = self.query_one("#welcome-recent-label")
+        recent_label.styles.color = theme_colors["text_muted"]
+        recent_label.styles.text_style = "bold"
+        recent_label.styles.width = "100%"
+        recent_label.styles.margin_bottom = 1
+        recent_label.styles.padding = (0, 2)
+
+        recent_list = self.query_one("#welcome-recent-list")
+        recent_list.styles.width = "100%"
+        recent_list.styles.height = "auto"
+        recent_list.styles.max_height = 16
+        recent_list.styles.background = theme_colors["bg"]
+        # ListView border is not directly settable via styles
+
+        empty = self.query_one("#welcome-empty")
+        empty.styles.color = theme_colors["text_muted"]
+        empty.styles.text_align = "center"
+        empty.styles.width = "100%"
+        empty.styles.margin_top = 1
+
+        hint = self.query_one("#welcome-hint")
+        hint.styles.color = theme_colors["text_muted"]
+        hint.styles.text_align = "center"
+        hint.styles.width = "100%"
+        hint.styles.margin_top = 2
 
     def refresh_content(self, recent_files: list[str]) -> None:
         self._recent = recent_files
         lv = self.query_one("#welcome-recent-list", ListView)
         lv.clear()
+        theme_colors = self._get_theme_colors()
 
         valid = [r for r in recent_files[:8] if Path(r).exists()]
         stale = [r for r in recent_files[:8] if not Path(r).exists()]
@@ -634,10 +623,22 @@ class WelcomePanel(Widget):
             lv.display = True
             for path_str in valid:
                 p = Path(path_str)
-                lv.append(ListItem(Static(f"📄 {p.name}  [dim]{p.parent}[/dim]", markup=True)))
+                static = Static(
+                    f"📄 {p.name}  [dim]{p.parent}[/dim]", markup=True
+                )
+                static.styles.padding = (0, 2)
+                static.styles.background = theme_colors["bg"]
+                static.styles.color = theme_colors["fg"]
+                lv.append(ListItem(static))
             for path_str in stale:
                 p = Path(path_str)
-                lv.append(ListItem(Static(f"✗  [dim]{p.name}  {p.parent}[/dim]", markup=True)))
+                static = Static(
+                    f"✗  [dim]{p.name}  {p.parent}[/dim]", markup=True
+                )
+                static.styles.padding = (0, 2)
+                static.styles.background = theme_colors["bg"]
+                static.styles.color = theme_colors["fg"]
+                lv.append(ListItem(static))
         else:
             self.query_one("#welcome-empty").display = True
             self.query_one("#welcome-recent-label").display = False
@@ -651,6 +652,10 @@ class WelcomePanel(Widget):
         if idx < len(valid):
             self.post_message(self.FileClicked(Path(valid[idx])))
 
+    class FileClicked(Message):
+        def __init__(self, path: Path) -> None:
+            super().__init__()
+            self.path = path
 
 class MainScreen(Screen):
     """Main application screen."""
@@ -668,7 +673,7 @@ class MainScreen(Screen):
                 yield GlobalSearch(id="global-search")
                 yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
-            with LayoutContainer(id="editor-panel"):
+            with Vertical(id="editor-panel"):
                 yield PanelHeader("Editor", id="header-editor")
                 yield TabStrip(id="tab-strip")
                 yield EditorSearch(id="editor-search")
@@ -774,6 +779,31 @@ class TrixApp(App):
     DirectoryTree > .tree--highlight { background: #5ac1fe; color: #0d1016; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
 
+/* ── Editor Panel ── */
+    #editor-panel {
+        layout: vertical;
+        height: 1fr;
+    }
+    #editor-panel > PanelHeader {
+        height: 1;
+    }
+    #editor-panel > TabStrip {
+        height: 1;
+    }
+    #editor-panel > EditorSearch {
+        height: auto;
+    }
+    #editor-panel > ClickableTextArea {
+        height: 1fr;
+    }
+    #editor-panel > WelcomePanel {
+        display: none;
+    }
+    #editor-panel > WelcomePanel.-visible {
+        display: block;
+        height: 1fr;
+    }
+
     /* ── Editor ── */
     TextArea {
         height: 1fr;
@@ -852,6 +882,14 @@ class TrixApp(App):
         color: #e6b450;
         background: #131721;
         text-style: bold;
+    }
+
+    /* ── Welcome Panel (hidden when editor has content) ── */
+    #editor-welcome-panel {
+        height: 1fr;
+    }
+    #editor-welcome-panel.-hidden {
+        display: none;
     }
     """
 
@@ -959,6 +997,7 @@ class TrixApp(App):
         except Exception:
             pass
 
+        # Update header theme name
         if self.screen.__class__.__name__ == "MainScreen":
             try:
                 self.screen.query_one("#hdr-theme", Static).update(theme["name"])
@@ -970,9 +1009,14 @@ class TrixApp(App):
                 cast(PanelHeader, self.screen.query_one("#header-editor"))._update_display()
             except Exception:
                 pass
-            # Refresh tree render
+            # Refresh tree render to pick up git status colors
             try:
                 self.screen.query_one(DirectoryTree).refresh()
+            except Exception:
+                pass
+            # Refresh tab strip
+            try:
+                self._update_tab_strip()
             except Exception:
                 pass
 
@@ -1243,7 +1287,7 @@ class TrixApp(App):
             editor  = self.screen.query_one("#editor", TextArea)
             tab_strip = self.screen.query_one("#tab-strip", TabStrip)
             has_files = len(self._open_files) > 0
-            welcome.display   = not has_files
+            welcome.set_class(has_files, "-visible")
             editor.display    = has_files
             tab_strip.display = has_files
         except Exception:

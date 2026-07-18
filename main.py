@@ -753,8 +753,8 @@ class TrixApp(App):
     #files-panel.--panel-active    { border-left: tall #5ac1fe; }
     #editor-panel.--panel-active   { border-left: tall #5ac1fe; }
 
-    #files-panel    { width: 20%; min-width: 10%; transition: width 200ms, display 200ms; }
-    #editor-panel   { width: 2fr; min-width: 20%; transition: width 200ms; }
+    #files-panel    { width: 20%; min-width: 10%; }
+    #editor-panel   { width: 2fr; min-width: 20%; }
 
     PanelHeader {
         height: 1;
@@ -810,7 +810,6 @@ class TrixApp(App):
     /* ── Divider ── */
     Divider {
         background: #1a1d23;
-        transition: display 200ms;
     }
 
     /* ── Toast Notifications ── */

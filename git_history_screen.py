@@ -1,5 +1,6 @@
 import subprocess
 from datetime import datetime, timezone
+from rich.markup import escape
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, ScrollableContainer
@@ -250,6 +251,7 @@ class GitHistoryScreen(ModalScreen):
 
     def on_mount(self) -> None:
         self.query_one("#gh-detail").display = False
+        self._debounce_timer = None
         self._load_git_data()
 
     # ── Git helpers ──────────────────────────────────────────────────────────
@@ -346,22 +348,12 @@ class GitHistoryScreen(ModalScreen):
                     time_ago = self._format_time_ago(date)
                     # Truncate message to fit panel
                     short_msg = message[:38] if len(message) > 38 else message
+                    markup_text = (
+                        f"[#5ac1fe]●[/#5ac1fe] [#e6b450]{escape(hash7)}[/#e6b450]  {escape(short_msg)}\n"
+                        f"  [#aad84c]{escape(author)}[/#aad84c] [dim]·[/dim] [italic dim]{escape(time_ago)}[/italic dim]"
+                    )
                     list_view.append(ListItem(
-                        Vertical(
-                            Horizontal(
-                                Static("●", classes="gh-dot"),
-                                Static(hash7, classes="gh-hash"),
-                                Static(short_msg, classes="gh-msg"),
-                                classes="gh-row-top",
-                            ),
-                            Horizontal(
-                                Static(author, classes="gh-author"),
-                                Static("·", classes="gh-sep"),
-                                Static(time_ago, classes="gh-time"),
-                                classes="gh-row-bottom",
-                            ),
-                            classes="gh-row",
-                        )
+                        Static(markup_text, classes="gh-row")
                     ))
         except Exception as e:
             self.notify(f"Error loading git history: {e}", severity="error")
@@ -369,6 +361,11 @@ class GitHistoryScreen(ModalScreen):
     # ── Actions ──────────────────────────────────────────────────────────────
 
     def action_close(self) -> None:
+        if self._debounce_timer is not None:
+            try:
+                self._debounce_timer.stop()
+            except Exception:
+                pass
         self.dismiss()
 
     def action_refresh(self) -> None:
@@ -383,10 +380,27 @@ class GitHistoryScreen(ModalScreen):
 
     def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
         if event.list_view.index is not None and event.list_view.index < len(self.commits):
-            self._show_commit_detail(self.commits[event.list_view.index])
+            if self._debounce_timer is not None:
+                try:
+                    self._debounce_timer.stop()
+                except Exception:
+                    pass
+                self._debounce_timer = None
+            
+            commit = self.commits[event.list_view.index]
+            self._debounce_timer = self.set_timer(
+                0.15,
+                lambda: self._show_commit_detail(commit)
+            )
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         if event.list_view.index is not None and event.list_view.index < len(self.commits):
+            if self._debounce_timer is not None:
+                try:
+                    self._debounce_timer.stop()
+                except Exception:
+                    pass
+                self._debounce_timer = None
             self._show_commit_detail(self.commits[event.list_view.index])
 
     def _show_commit_detail(self, commit: CommitDetail) -> None:

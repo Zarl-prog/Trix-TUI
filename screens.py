@@ -5,36 +5,47 @@ from textual.screen import Screen
 from textual.widgets import Input, Label, Static, OptionList
 
 _HELP = """\
- [bold #5ac1fe]File[/bold #5ac1fe]
-   [#bfbdb6]Ctrl+N[/#bfbdb6]           New File
-   [#bfbdb6]Ctrl+S[/#bfbdb6]           Save File
-   [#bfbdb6]Ctrl+W[/#bfbdb6]           Close File
-   [#bfbdb6]Ctrl+O[/#bfbdb6]           Open Folder
-   [#bfbdb6]F2[/#bfbdb6]               Rename File
-   [#bfbdb6]Delete[/#bfbdb6]           Delete File (focus file tree first)
+  [bold #5ac1fe]── File ─────────────────────────[/bold #5ac1fe]
+    [#5ac1fe]Ctrl+N[/#5ac1fe]          New File
+    [#5ac1fe]Ctrl+S[/#5ac1fe]          Save File
+    [#5ac1fe]Ctrl+W[/#5ac1fe]          Close Tab
+    [#5ac1fe]Ctrl+O[/#5ac1fe]          Open Folder
+    [#5ac1fe]F2[/#5ac1fe]              Rename File
+    [#5ac1fe]Delete[/#5ac1fe]          Delete File
 
-  [bold #5ac1fe]Layout[/bold #5ac1fe]
-    [#bfbdb6]Ctrl+][/#bfbdb6]           Cycle Panels (Files↔Editor)
-    [#bfbdb6]Click[/#bfbdb6]            Focus any panel by clicking it
-    [#bfbdb6]Ctrl+B[/#bfbdb6]           Toggle File Tree
-     [#bfbdb6]Ctrl+\\[/#bfbdb6]           Zen Mode (Editor only)
+  [bold #5ac1fe]── Navigation ───────────────────[/bold #5ac1fe]
+    [#5ac1fe]Ctrl+][/#5ac1fe]          Cycle Panels
+    [#5ac1fe]Ctrl+Tab[/#5ac1fe]        Next Tab
+    [#5ac1fe]Ctrl+Shift+Tab[/#5ac1fe]  Prev Tab
+    [#5ac1fe]Ctrl+B[/#5ac1fe]          Toggle File Tree
+    [#5ac1fe]Ctrl+\\[/#5ac1fe]          Zen Mode
 
- [bold #5ac1fe]Editor[/bold #5ac1fe]
-   [#bfbdb6]Ctrl+Z[/#bfbdb6]           Undo
-   [#bfbdb6]Ctrl+Y[/#bfbdb6]           Redo
-   [#bfbdb6]Ctrl+A[/#bfbdb6]           Select All
-   [#bfbdb6]Ctrl+_[/#bfbdb6]           Toggle Comment
-   [#bfbdb6]Ctrl+D[/#bfbdb6]           Duplicate Line
-   [#bfbdb6]Ctrl+F[/#bfbdb6]           Search in File (Enter=next, Esc=close)
-   [#bfbdb6]Ctrl+Shift+F[/#bfbdb6]     Search Across All Files
-   [#bfbdb6]Ctrl+T[/#bfbdb6]           Cycle Theme
-   [#bfbdb6]Ctrl+R[/#bfbdb6]           Reload File Tree
+  [bold #5ac1fe]── Editor ───────────────────────[/bold #5ac1fe]
+    [#5ac1fe]Ctrl+Z[/#5ac1fe]          Undo
+    [#5ac1fe]Ctrl+Y[/#5ac1fe]          Redo
+    [#5ac1fe]Ctrl+A[/#5ac1fe]          Select All
+    [#5ac1fe]Ctrl+_[/#5ac1fe]          Toggle Comment
+    [#5ac1fe]Ctrl+D[/#5ac1fe]          Duplicate Line
+    [#5ac1fe]Ctrl+Shift+C[/#5ac1fe]    Copy Selection
 
- [bold #5ac1fe]General[/bold #5ac1fe]
-   [#bfbdb6]Ctrl+G[/#bfbdb6]           Git History
-   [#bfbdb6]Ctrl+Q[/#bfbdb6]           Quit (confirms if unsaved)
-   [#bfbdb6]F1[/#bfbdb6]               Show This Help\
+  [bold #5ac1fe]── Search ───────────────────────[/bold #5ac1fe]
+    [#5ac1fe]Ctrl+F[/#5ac1fe]          Search in File
+    [#5ac1fe]Ctrl+Shift+F[/#5ac1fe]    Search All Files
+    [#5ac1fe]Ctrl+P[/#5ac1fe]          Command Palette
+
+  [bold #5ac1fe]── Git & Theme ──────────────────[/bold #5ac1fe]
+    [#5ac1fe]Ctrl+G[/#5ac1fe]          Git History
+    [#5ac1fe]Ctrl+T[/#5ac1fe]          Cycle Theme
+    [#5ac1fe]Ctrl+Shift+T[/#5ac1fe]    Theme Picker
+    [#5ac1fe]Ctrl+R[/#5ac1fe]          Reload File Tree
+    [#5ac1fe]Ctrl+Q[/#5ac1fe]          Quit\
 """
+
+# Import MainScreen at module level to avoid circular import issues
+try:
+    from main import MainScreen
+except ImportError:
+    MainScreen = None
 
 
 from themes import register_css_template
@@ -42,31 +53,44 @@ from themes import register_css_template
 HELP_SCREEN_CSS = """
 HelpScreen {
     align: center middle;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.82);
 }
 #help-dialog {
-    width: 52;
+    width: 54;
     height: auto;
-    padding: 1 2;
-    background: #1f2127;
-    border: solid #5ac1fe;
+    max-height: 90%;
+    padding: 0 0 1 0;
+    background: #141820;
+    border: tall #5ac1fe;
+}
+#help-titlebar {
+    width: 100%;
+    height: 3;
+    background: #0d1016;
+    border-bottom: solid #1f2a3a;
+    padding: 0 2;
+    align: left middle;
 }
 #help-title {
-    width: 100%;
-    text-align: center;
+    width: 1fr;
     color: #5ac1fe;
     text-style: bold;
-    margin-bottom: 1;
+}
+#help-title-hint {
+    width: auto;
+    color: #3f4043;
 }
 #help-body {
     width: 100%;
     color: #bfbdb6;
+    padding: 1 2;
 }
 #help-close {
     width: 100%;
     text-align: center;
-    color: #4b4c4e;
+    color: #3f4043;
     margin-top: 1;
+    padding: 0 2;
 }
 """
 register_css_template("help_screen", HELP_SCREEN_CSS)
@@ -78,9 +102,15 @@ class HelpScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="help-dialog"):
-            yield Label("⌨  Keyboard Shortcuts", id="help-title")
+            with Horizontal(id="help-titlebar"):
+                yield Label("⌨  Keyboard Shortcuts", id="help-title")
+                yield Label("Esc to close", id="help-title-hint")
             yield Static(_HELP, id="help-body", markup=True)
-            yield Label("Press [bold]Escape[/bold] or [bold]F1[/bold] to close", id="help-close", markup=True)
+            yield Label(
+                "Press [bold #5ac1fe]Escape[/bold #5ac1fe] or [bold #5ac1fe]F1[/bold #5ac1fe] to close",
+                id="help-close",
+                markup=True,
+            )
 
     def action_dismiss(self) -> None:
         self.dismiss()
@@ -89,17 +119,26 @@ class HelpScreen(Screen):
 CONFIRM_SCREEN_CSS = """
 ConfirmScreen {
     align: center middle;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.80);
 }
 #cf-dialog {
-    width: 44;
+    width: 50;
     height: auto;
-    padding: 2;
-    background: #1f2127;
-    border: solid #ef7177;
+    padding: 0 0 1 0;
+    background: #141820;
+    border: tall #ef7177;
 }
-#cf-msg { width: 100%; color: #bfbdb6; margin-bottom: 1; }
-#cf-buttons { height: auto; layout: horizontal; }
+#cf-titlebar {
+    width: 100%;
+    height: 3;
+    background: #1a0f10;
+    border-bottom: solid #2a1518;
+    padding: 0 2;
+    align: left middle;
+}
+#cf-title { color: #ef7177; text-style: bold; }
+#cf-msg { width: 100%; color: #bfbdb6; margin: 1 2; }
+#cf-buttons { height: auto; layout: horizontal; margin: 0 2; }
 ConfirmScreen Button { margin: 0 1; }
 """
 register_css_template("confirm_screen", CONFIRM_SCREEN_CSS)
@@ -116,10 +155,12 @@ class ConfirmScreen(Screen):
     def compose(self) -> ComposeResult:
         from textual.widgets import Button
         with Vertical(id="cf-dialog"):
+            with Horizontal(id="cf-titlebar"):
+                yield Label("⚠  Confirm", id="cf-title")
             yield Label(self._message, id="cf-msg")
             with Horizontal(id="cf-buttons"):
                 yield Button("Yes", id="cf-yes", variant="error")
-                yield Button("No", id="cf-no")
+                yield Button("No", id="cf-no", variant="default")
 
     def on_button_pressed(self, event) -> None:
         self.dismiss(event.button.id == "cf-yes")
@@ -131,17 +172,26 @@ class ConfirmScreen(Screen):
 NEW_FILE_SCREEN_CSS = """
 NewFileScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.80);
 }
 #nf-dialog {
-    width: 50;
+    width: 54;
     height: auto;
-    padding: 2;
-    background: #1f2127;
-    border: solid #5ac1fe;
+    padding: 0 0 2 0;
+    background: #141820;
+    border: tall #5ac1fe;
 }
-NewFileScreen Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
-#nf-input { width: 100%; }
+#nf-titlebar {
+    width: 100%;
+    height: 3;
+    background: #0d1016;
+    border-bottom: solid #1f2a3a;
+    padding: 0 2;
+    align: left middle;
+}
+#nf-title { color: #5ac1fe; text-style: bold; }
+#nf-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
+#nf-input { width: 100%; margin: 0 2; }
 """
 register_css_template("new_file_screen", NEW_FILE_SCREEN_CSS)
 
@@ -152,8 +202,13 @@ class NewFileScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="nf-dialog"):
-            yield Label("New file name:")
+            with Horizontal(id="nf-titlebar"):
+                yield Label("✦  New File", id="nf-title")
+            yield Label("Enter a filename (use / for subdirectory):", id="nf-hint")
             yield Input(id="nf-input", placeholder="filename.txt")
+
+    def on_mount(self) -> None:
+        self.query_one("#nf-input", Input).focus()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self.dismiss(event.value)
@@ -165,17 +220,26 @@ class NewFileScreen(Screen):
 RENAME_SCREEN_CSS = """
 RenameScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.80);
 }
 #rn-dialog {
-    width: 50;
+    width: 54;
     height: auto;
-    padding: 2;
-    background: #1f2127;
-    border: solid #5ac1fe;
+    padding: 0 0 2 0;
+    background: #141820;
+    border: tall #5ac1fe;
 }
-RenameScreen Label { width: 100%; margin-bottom: 1; color: #bfbdb6; }
-#rn-input { width: 100%; }
+#rn-titlebar {
+    width: 100%;
+    height: 3;
+    background: #0d1016;
+    border-bottom: solid #1f2a3a;
+    padding: 0 2;
+    align: left middle;
+}
+#rn-title { color: #5ac1fe; text-style: bold; }
+#rn-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
+#rn-input { width: 100%; margin: 0 2; }
 """
 register_css_template("rename_screen", RENAME_SCREEN_CSS)
 
@@ -190,7 +254,9 @@ class RenameScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="rn-dialog"):
-            yield Label(f"Rename: {self._current_name}")
+            with Horizontal(id="rn-titlebar"):
+                yield Label(f"✏  Rename: {self._current_name}", id="rn-title")
+            yield Label("Enter new name:", id="rn-hint")
             yield Input(id="rn-input", value=self._current_name)
 
     def on_mount(self) -> None:
@@ -208,21 +274,26 @@ class RenameScreen(Screen):
 FOLDER_PICKER_CSS = """
 FolderPicker {
     align: center middle;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.80);
 }
 #dialog {
-    width: 50;
+    width: 60;
     height: auto;
-    padding: 2;
-    background: #1f2127;
-    border: solid #5ac1fe;
+    padding: 0 0 2 0;
+    background: #141820;
+    border: tall #5ac1fe;
 }
-FolderPicker Label {
+#fp-titlebar {
     width: 100%;
-    margin-bottom: 1;
-    color: #bfbdb6;
+    height: 3;
+    background: #0d1016;
+    border-bottom: solid #1f2a3a;
+    padding: 0 2;
+    align: left middle;
 }
-#folder-path { width: 100%; }
+#fp-title { color: #5ac1fe; text-style: bold; }
+#fp-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
+#folder-path { width: 100%; margin: 0 2; }
 """
 register_css_template("folder_picker", FOLDER_PICKER_CSS)
 
@@ -233,7 +304,9 @@ class FolderPicker(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label("Enter folder path:")
+            with Horizontal(id="fp-titlebar"):
+                yield Label("📂  Open Folder", id="fp-title")
+            yield Label("Enter folder path (~ supported):", id="fp-hint")
             yield Input(id="folder-path", placeholder="/path/to/folder")
 
     def on_mount(self) -> None:
@@ -253,6 +326,8 @@ SplashScreen {
 }
 #splash-container {
     align: center middle;
+    width: auto;
+    height: auto;
 }
 #splash-logo {
     text-align: center;
@@ -262,7 +337,7 @@ SplashScreen {
 }
 #splash-tagline {
     text-align: center;
-    color: #8a8986;
+    color: #4b4c4e;
     text-style: bold;
     margin-bottom: 0;
 }
@@ -271,29 +346,44 @@ SplashScreen {
     color: #3f4043;
     margin-bottom: 2;
 }
+#splash-bar-container {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 0;
+}
 #splash-bar {
     text-align: center;
     color: #5ac1fe;
-    margin-bottom: 0;
+    width: 100%;
 }
 #splash-status {
     text-align: center;
-    color: #8a8986;
+    color: #4b4c4e;
+    margin-top: 1;
 }
 """
 register_css_template("splash_screen", SPLASH_SCREEN_CSS)
 
 
 class SplashScreen(Screen):
-    """Splash screen shown for 2 seconds upon app startup."""
+    """Animated splash screen shown on startup."""
 
     CSS = SPLASH_SCREEN_CSS
+
+    _LOGO = (
+        "  ████████╗██████╗ ██╗██╗  ██╗\n"
+        "  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
+        "     ██║   ██████╔╝██║ ╚███╔╝ \n"
+        "     ██║   ██╔══██╗██║ ██╔██╗ \n"
+        "     ██║   ██║  ██║██║██╔╝ ██╗\n"
+        "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.progress = 0.0
-        self.duration = 2.0
-        self.steps = 40
+        self.duration = 2.2
+        self.steps = 44
         self.step_time = self.duration / self.steps
         self.timer = None
         self.version = self._get_version()
@@ -301,30 +391,25 @@ class SplashScreen(Screen):
     def _get_version(self) -> str:
         try:
             import os
-            if os.path.exists("pyproject.toml"):
-                with open("pyproject.toml", "r") as f:
+            toml_path = os.path.join(os.path.dirname(__file__), "pyproject.toml")
+            if not os.path.exists(toml_path):
+                toml_path = "pyproject.toml"
+            if os.path.exists(toml_path):
+                with open(toml_path, "r") as f:
                     for line in f:
                         if line.strip().startswith("version"):
                             return "v" + line.split("=")[1].strip().strip('"').strip("'")
         except Exception:
             pass
-        return "v0.1.0"
+        return "v0.2.0"
 
     def compose(self) -> ComposeResult:
-        logo = (
-            "████████╗██████╗ ██╗██╗  ██╗\n"
-            "╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
-            "   ██║   ██████╔╝██║ ╚███╔╝ \n"
-            "   ██║   ██╔══██╗██║ ██╔██╗ \n"
-            "   ██║   ██║  ██║██║██╔╝ ██╗\n"
-            "   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
-        )
         with Vertical(id="splash-container"):
-            yield Static(logo, id="splash-logo")
+            yield Static(self._LOGO, id="splash-logo", markup=False)
             yield Static("Your Terminal. Reimagined.", id="splash-tagline")
             yield Static(self.version, id="splash-version")
-            yield Static("░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░", id="splash-bar")
-            yield Static("Initializing...", id="splash-status")
+            yield Static("", id="splash-bar")
+            yield Static("Initializing…", id="splash-status")
 
     def on_mount(self) -> None:
         self.timer = self.set_interval(self.step_time, self.tick)
@@ -339,51 +424,74 @@ class SplashScreen(Screen):
             self.app.push_screen(MainScreen())
             return
 
-        # Update bar
-        bar_width = 30
+        bar_width = 32
         filled = int(self.progress * bar_width)
-        bar_str = "█" * filled + "░" * (bar_width - filled)
-        self.query_one("#splash-bar", Static).update(bar_str)
+        empty = bar_width - filled
 
-        # Update status text
+        # Animated bar using block chars
+        bar_str = "█" * filled + "▒" * empty
+
         statuses = [
-            "Initializing...",
-            "Loading themes...",
-            "Ready."
+            "Initializing…",
+            "Loading themes…",
+            "Parsing file icons…",
+            "Setting up editor…",
+            "Ready.",
         ]
+        pct_int = int(self.progress * 100)
         status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)
-        self.query_one("#splash-status", Static).update(statuses[status_idx])
+
+        try:
+            self.query_one("#splash-bar", Static).update(
+                f"[#5ac1fe]{bar_str}[/#5ac1fe] [#3f4043]{pct_int}%[/#3f4043]"
+            )
+            self.query_one("#splash-status", Static).update(statuses[status_idx])
+        except Exception:
+            pass
 
 
 THEME_PICKER_SCREEN_CSS = """
 ThemePickerScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.82);
 }
 #tp-dialog {
-    width: 36;
-    height: 18;
-    padding: 1 2;
-    background: #1f2127;
-    border: solid #5ac1fe;
+    width: 46;
+    height: 22;
+    padding: 0;
+    background: #141820;
+    border: tall #5ac1fe;
+}
+#tp-titlebar {
+    width: 100%;
+    height: 3;
+    background: #0d1016;
+    border-bottom: solid #1f2a3a;
+    padding: 0 2;
+    align: left middle;
 }
 #tp-title {
-    width: 100%;
-    text-align: center;
+    width: 1fr;
     color: #5ac1fe;
     text-style: bold;
-    margin-bottom: 1;
+}
+#tp-count {
+    width: auto;
+    color: #3f4043;
 }
 #tp-list {
     background: #0d1016;
     border: none;
     height: 1fr;
+    margin: 0;
 }
 #tp-hint {
     width: 100%;
     text-align: center;
-    color: #4b4c4e;
-    margin-top: 1;
+    color: #3f4043;
+    height: 1;
+    padding: 0 2;
+    border-top: solid #1f2a3a;
 }
 """
 register_css_template("theme_picker_screen", THEME_PICKER_SCREEN_CSS)
@@ -392,7 +500,7 @@ register_css_template("theme_picker_screen", THEME_PICKER_SCREEN_CSS)
 class ThemePickerScreen(Screen):
     BINDINGS = [
         ("escape", "cancel", "Cancel"),
-        ("enter", "confirm", "Confirm")
+        ("enter", "confirm", "Confirm"),
     ]
     CSS = THEME_PICKER_SCREEN_CSS
 
@@ -403,17 +511,22 @@ class ThemePickerScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="tp-dialog"):
-            yield Label("🎨 Choose Theme", id="tp-title")
+            with Horizontal(id="tp-titlebar"):
+                yield Label("🎨  Theme Picker", id="tp-title")
+                yield Label(f"{len(self._themes)} themes", id="tp-count")
             yield OptionList(id="tp-list")
-            yield Label("Enter Select • Esc Cancel", id="tp-hint")
+            yield Label("↑↓ Navigate  Enter Select  Esc Cancel", id="tp-hint")
 
     def on_mount(self) -> None:
         opt_list = self.query_one("#tp-list", OptionList)
         active_idx = 0
         for i, theme in enumerate(self._themes):
-            prefix = "✓ " if theme["name"] == self._initial_theme["name"] else "  "
-            opt_list.add_option(f"{prefix}{theme['name']}")
-            if theme["name"] == self._initial_theme["name"]:
+            # Build a colored swatch using accent color indicator
+            acc = theme.get("accent", "#888888")
+            is_active = theme["name"] == self._initial_theme["name"]
+            check = "✓ " if is_active else "  "
+            opt_list.add_option(f"{check}{theme['name']}")
+            if is_active:
                 active_idx = i
         opt_list.highlighted = active_idx
         opt_list.focus()

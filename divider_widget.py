@@ -44,7 +44,13 @@ class Divider(Static):
         total_w = parent.region.width
         if total_w <= 0:
             return
-        x_pct = (event.screen_x / total_w) * 100
+        # Use offset_x (relative to widget) instead of screen_x
+        # The divider is 1 cell wide, so mouse x relative to parent = offset_x of divider + event.offset_x
+        divider_region = self.region
+        if not divider_region:
+            return
+        mouse_x_relative = divider_region.x + event.offset_x
+        x_pct = (mouse_x_relative / total_w) * 100
         left_pct = max(10, min(x_pct - 1, 70))
         right_pct = max(10, min(100 - x_pct, 70))
         self.parent.query_one(f"#{self._left_id}").styles.width = f"{left_pct}%"

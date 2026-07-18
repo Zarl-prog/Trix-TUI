@@ -21,7 +21,7 @@ from textual.widgets.text_area import Selection
 from textual import work
 
 import json
-from themes import THEMES
+from themes import THEMES, build_theme_css
 from divider_widget import Divider
 from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
@@ -82,36 +82,36 @@ def _save_recent_file(path: Path) -> None:
     config = _load_config()
     recent = config.get("recent_files", [])
     path_str = str(path)
-    # Remove if already present, then prepend
     recent = [r for r in recent if r != path_str]
     recent.insert(0, path_str)
-    config["recent_files"] = recent[:15]  # keep last 15
+    config["recent_files"] = recent[:15]
     _save_config(config)
 
 
 from textual.command import Provider, Hit, Hits, DiscoveryHit
 from textual.types import IgnoreReturnCallbackType
 
+
 class TrixCommandProvider(Provider):
     """Provides Trix-specific commands to the command palette."""
 
     COMMANDS = [
-        ("Save File",           "Ctrl+S",  "action_save"),
-        ("New File",            "Ctrl+N",  "action_new_file"),
-        ("Open Folder",         "Ctrl+O",  "action_open_folder"),
-        ("Close File",          "Ctrl+W",  "action_close_file"),
-        ("Rename File",         "F2",      "action_rename_file"),
-        ("Delete File",         "Del",     "action_delete_file"),
-        ("Toggle File Tree",    "Ctrl+B",  "action_toggle_filetree"),
-        ("Zen Mode",            "Ctrl+\\", "action_zen_mode"),
-        ("Search in File",      "Ctrl+F",  "action_search"),
+        ("Save File",           "Ctrl+S",       "action_save"),
+        ("New File",            "Ctrl+N",       "action_new_file"),
+        ("Open Folder",         "Ctrl+O",       "action_open_folder"),
+        ("Close File",          "Ctrl+W",       "action_close_file"),
+        ("Rename File",         "F2",           "action_rename_file"),
+        ("Delete File",         "Del",          "action_delete_file"),
+        ("Toggle File Tree",    "Ctrl+B",       "action_toggle_filetree"),
+        ("Zen Mode",            "Ctrl+\\",      "action_zen_mode"),
+        ("Search in File",      "Ctrl+F",       "action_search"),
         ("Search Across Files", "Ctrl+Shift+F", "action_global_search"),
-        ("Git History",         "Ctrl+G",  "action_show_git_history"),
-        ("Cycle Theme",         "Ctrl+T",  "action_cycle_theme"),
+        ("Git History",         "Ctrl+G",       "action_show_git_history"),
+        ("Cycle Theme",         "Ctrl+T",       "action_cycle_theme"),
         ("Theme Picker",        "Ctrl+Shift+T", "action_pick_theme"),
-        ("Reload File Tree",    "Ctrl+R",  "action_reload_tree"),
-        ("Show Help",           "F1",      "action_show_help"),
-        ("Quit",                "Ctrl+Q",  "action_quit_app"),
+        ("Reload File Tree",    "Ctrl+R",       "action_reload_tree"),
+        ("Show Help",           "F1",           "action_show_help"),
+        ("Quit",                "Ctrl+Q",       "action_quit_app"),
     ]
 
     async def search(self, query: str) -> Hits:
@@ -135,7 +135,7 @@ class TrixCommandProvider(Provider):
             )
 
 
-
+class HorizontalContainer(Horizontal):
     """Horizontal container that doesn't steal focus and bubbles mouse events."""
     can_focus = False
     COMPONENT_CLASSES = set()
@@ -166,7 +166,6 @@ class ClickableTextArea(TextArea):
 class ClickableDirectoryTree(DirectoryTree):
     """DirectoryTree subclass that explicitly focuses itself when clicked."""
 
-    # Git status cache: maps absolute path string → git status code ('M', '?', 'D', 'A', etc.)
     _git_status_cache: dict[str, str] = {}
     _git_root: str | None = None
 
@@ -213,121 +212,141 @@ class ClickableDirectoryTree(DirectoryTree):
     def render_label(self, node, base_style, style):
         from rich.text import Text
         from rich.style import Style
-        
+
         if not node.data:
             return node._label.copy()
-            
+
         node_label = node._label.copy()
         path = node.data.path
 
-        # Git status color for files
         git_code = self.__class__._git_status_cache.get(str(path), "")
 
         if self.cursor_node == node:
-            style = Style(bgcolor="#5ac1fe", color="#0d1016", bold=True)
+            # Use app's current accent color for cursor
+            try:
+                acc = self.app._current_theme_dict.get("accent", "#5ac1fe")
+                bg  = self.app._current_theme_dict.get("background", "#0d1016")
+                style = Style(bgcolor=acc, color=bg, bold=True)
+            except Exception:
+                style = Style(bgcolor="#5ac1fe", color="#0d1016", bold=True)
         else:
             if path.is_dir():
-                style = Style(color="#bfbdb6")
+                try:
+                    txt = self.app._current_theme_dict.get("text", "#bfbdb6")
+                    style = Style(color=txt)
+                except Exception:
+                    style = Style(color="#bfbdb6")
             else:
-                # Color by git status
                 if git_code in ("M", "MM", "AM"):
-                    style = Style(color="#e6b450")   # modified → orange
+                    style = Style(color="#e6b450")
                 elif git_code in ("??",):
-                    style = Style(color="#aad84c")   # untracked → green
+                    style = Style(color="#aad84c")
                 elif git_code in ("D", "DD", " D"):
-                    style = Style(color="#ef7177")   # deleted → red
+                    style = Style(color="#ef7177")
                 elif git_code in ("A", "AM"):
-                    style = Style(color="#aad84c")   # added → green
+                    style = Style(color="#aad84c")
                 elif git_code in ("R", "C"):
-                    style = Style(color="#5ac1fe")   # renamed/copied → accent
+                    try:
+                        style = Style(color=self.app._current_theme_dict.get("accent", "#5ac1fe"))
+                    except Exception:
+                        style = Style(color="#5ac1fe")
                 else:
-                    style = Style(color="#8a8986")   # default
+                    try:
+                        style = Style(color=self.app._current_theme_dict.get("text_muted", "#8a8986"))
+                    except Exception:
+                        style = Style(color="#8a8986")
 
         node_label.stylize(style)
 
-        # Folder icons
         if path.is_dir():
             icon = "▼ 📂 " if node.is_expanded else "▶ 📁 "
             return Text(icon, style=style) + node_label
 
-        # File type icon map
         _EXT_ICONS: dict[str, str] = {
-            # Python
-            ".py": "🐍 ", ".pyw": "🐍 ", ".pyi": "🐍 ",
-            # JavaScript / TypeScript
+            ".py": "🐍 ", ".pyw": "🐍 ", ".pyi": "🐍 ", ".pyx": "🐍 ", ".pxd": "🐍 ",
             ".js": "🟨 ", ".mjs": "🟨 ", ".cjs": "🟨 ",
             ".jsx": "⚛️ ", ".tsx": "⚛️ ",
-            ".ts": "🔷 ",
-            # Web
-            ".html": "🌐 ", ".htm": "🌐 ",
+            ".ts": "🔷 ", ".cts": "🔷 ", ".mts": "🔷 ",
+            ".html": "🌐 ", ".htm": "🌐 ", ".xhtml": "🌐 ",
             ".css": "🎨 ", ".scss": "🎨 ", ".sass": "🎨 ", ".less": "🎨 ",
-            # Data / Config
-            ".json": "📋 ", ".jsonc": "📋 ",
+            ".vue": "💚 ", ".svelte": "🔥 ", ".astro": "🚀 ",
+            ".json": "📋 ", ".jsonc": "📋 ", ".json5": "📋 ",
             ".yaml": "⚙️ ", ".yml": "⚙️ ",
             ".toml": "⚙️ ", ".ini": "⚙️ ", ".cfg": "⚙️ ", ".conf": "⚙️ ",
             ".env": "🔒 ",
-            # Docs
             ".md": "📝 ", ".mdx": "📝 ", ".rst": "📝 ", ".txt": "📄 ",
-            # Systems
-            ".c": "⚡ ", ".h": "⚡ ",
-            ".cpp": "⚡ ", ".cc": "⚡ ", ".cxx": "⚡ ", ".hpp": "⚡ ",
+            ".c": "🔵 ", ".h": "🔵 ",
+            ".cpp": "🔵 ", ".cc": "🔵 ", ".cxx": "🔵 ", ".hpp": "🔵 ",
             ".rs": "🦀 ",
             ".go": "🐹 ",
-            ".java": "☕ ", ".kt": "☕ ", ".kts": "☕ ",
+            ".java": "☕ ", ".kt": "☕ ",
             ".cs": "🔵 ",
             ".swift": "🍎 ",
             ".rb": "💎 ",
             ".php": "🐘 ",
-            # Shell
+            ".scala": "🔴 ",
+            ".hs": "🟣 ",
+            ".ex": "💜 ", ".exs": "💜 ",
+            ".dart": "🎯 ",
+            ".zig": "⚡ ",
             ".sh": "🖥️ ", ".bash": "🖥️ ", ".zsh": "🖥️ ", ".fish": "🖥️ ",
-            ".ps1": "🖥️ ",
-            # Data
-            ".sql": "🗄️ ", ".db": "🗄️ ", ".sqlite": "🗄️ ",
-            ".csv": "📊 ", ".tsv": "📊 ",
-            # Media
+            ".ps1": "💙 ",
+            ".sql": "🗄️ ",
+            ".csv": "📊 ",
             ".png": "🖼️ ", ".jpg": "🖼️ ", ".jpeg": "🖼️ ", ".gif": "🖼️ ",
             ".svg": "🖼️ ", ".ico": "🖼️ ", ".webp": "🖼️ ",
-            ".mp4": "🎬 ", ".mov": "🎬 ", ".avi": "🎬 ",
-            ".mp3": "🎵 ", ".wav": "🎵 ", ".ogg": "🎵 ",
-            # Archives
-            ".zip": "📦 ", ".tar": "📦 ", ".gz": "📦 ", ".bz2": "📦 ",
-            ".7z": "📦 ", ".rar": "📦 ",
-            # Special files
-            ".git": "🌿 ", ".gitignore": "🙈 ", ".gitattributes": "🙈 ",
-            ".dockerfile": "🐳 ", ".lock": "🔒 ",
+            ".mp4": "🎬 ", ".mov": "🎬 ", ".avi": "🎬 ", ".mkv": "🎬 ",
+            ".mp3": "🎵 ", ".wav": "🎵 ", ".flac": "🎵 ",
+            ".ttf": "🔤 ", ".otf": "🔤 ", ".woff": "🔤 ", ".woff2": "🔤 ",
+            ".zip": "📦 ", ".tar": "📦 ", ".gz": "📦 ",
+            ".gitignore": "🙈 ", ".gitattributes": "🙈 ",
+            ".lock": "🔒 ",
             ".xml": "📰 ",
-            ".lua": "🌙 ", ".vim": "📗 ", ".nvim": "📗 ",
-            ".r": "📈 ", ".rmd": "📈 ",
+            ".lua": "🌙 ",
+            ".vim": "📗 ",
+            ".r": "📈 ",
+            ".proto": "📋 ",
+            ".graphql": "📊 ", ".gql": "📊 ",
+            ".tf": "🏗️ ", ".tfvars": "🏗️ ",
         }
-        # Special full-name matches
+
         _NAME_ICONS: dict[str, str] = {
-            "dockerfile":         "🐳 ",
-            "docker-compose.yml": "🐳 ",
-            "docker-compose.yaml":"🐳 ",
-            "makefile":           "🔧 ",
-            "cmake":              "🔧 ",
-            "justfile":           "🔧 ",
-            ".gitignore":         "🙈 ",
-            ".gitattributes":     "🙈 ",
-            ".env":               "🔒 ",
-            ".env.local":         "🔒 ",
-            "license":            "⚖️ ",
-            "licence":            "⚖️ ",
-            "readme.md":          "📖 ",
-            "readme":             "📖 ",
-            "changelog.md":       "📋 ",
-            "changelog":          "📋 ",
-            "pyproject.toml":     "🐍 ",
-            "setup.py":           "🐍 ",
-            "setup.cfg":          "🐍 ",
-            "requirements.txt":   "📦 ",
-            "package.json":       "📦 ",
-            "package-lock.json":  "🔒 ",
-            "yarn.lock":          "🔒 ",
-            "cargo.toml":         "🦀 ",
-            "cargo.lock":         "🦀 ",
-            "go.mod":             "🐹 ",
-            "go.sum":             "🐹 ",
+            "dockerfile":          "🐳 ",
+            "docker-compose.yml":  "🐳 ",
+            "docker-compose.yaml": "🐳 ",
+            "makefile":            "🔧 ",
+            "cmakelists.txt":      "🔧 ",
+            ".gitignore":          "🙈 ",
+            ".gitattributes":      "🙈 ",
+            ".env":                "🔒 ",
+            ".env.local":          "🔒 ",
+            ".env.production":     "🔒 ",
+            ".env.development":    "🔒 ",
+            ".env.example":        "🔒 ",
+            "license":             "⚖️ ",
+            "license.md":          "⚖️ ",
+            "license.txt":         "⚖️ ",
+            "readme.md":           "📖 ",
+            "readme.txt":          "📖 ",
+            "readme":              "📖 ",
+            "changelog.md":        "📋 ",
+            "changelog":           "📋 ",
+            "contributing.md":     "🤝 ",
+            "pyproject.toml":      "🐍 ",
+            "setup.py":            "🐍 ",
+            "requirements.txt":    "📦 ",
+            "package.json":        "📦 ",
+            "package-lock.json":   "🔒 ",
+            "yarn.lock":           "🔒 ",
+            "cargo.toml":          "🦀 ",
+            "cargo.lock":          "🦀 ",
+            "go.mod":              "🐹 ",
+            "go.sum":              "🐹 ",
+            "tsconfig.json":       "🔷 ",
+            "vite.config.js":      "⚡ ",
+            "vite.config.ts":      "⚡ ",
+            ".github":             "🐙 ",
+            ".vscode":             "💙 ",
         }
 
         name_lower = path.name.lower()
@@ -339,9 +358,8 @@ class ClickableDirectoryTree(DirectoryTree):
             or "📄 "
         )
 
-        # Append git badge
         git_badge = ""
-        if git_code == "??" :
+        if git_code == "??":
             git_badge = " [dim]?[/dim]"
         elif git_code in ("M", "MM", "AM"):
             git_badge = " [dim]M[/dim]"
@@ -358,7 +376,7 @@ class ClickableDirectoryTree(DirectoryTree):
 
 class PanelHeader(Static):
     """Harlequin-style panel header: ── Title ──────────────────"""
-    
+
     def __init__(self, title: str, id: str = None, classes: str = None):
         super().__init__("", id=id, classes=classes)
         self._title = title
@@ -383,15 +401,19 @@ class PanelHeader(Static):
         if width < 5:
             self.update("─" * width)
             return
-            
+
         label = f" {self._title} "
-        dash_color = "#3f4043"
-        text_color = "#5ac1fe" if self._is_active else "#bfbdb6"
-        
-        # Construct the string: ── Label ──────────────────
+        try:
+            theme = self.app._current_theme_dict
+            dash_color  = theme.get("border",         "#3f4043")
+            text_color  = theme.get("accent",         "#5ac1fe") if self._is_active else theme.get("text", "#bfbdb6")
+        except Exception:
+            dash_color = "#3f4043"
+            text_color = "#5ac1fe" if self._is_active else "#bfbdb6"
+
         left_dashes = 2
         right_dashes = max(0, width - left_dashes - len(label))
-        
+
         from rich.text import Text
         res = Text()
         res.append("─" * left_dashes, style=dash_color)
@@ -445,7 +467,7 @@ class TabStrip(Widget):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._tabs: list[tuple[Path, bool]] = []  # (path, has_unsaved_changes)
+        self._tabs: list[tuple[Path, bool]] = []
         self._active: int = -1
 
     def set_tabs(self, tabs: list[tuple[Path, bool]], active: int) -> None:
@@ -456,8 +478,8 @@ class TabStrip(Widget):
     def _rebuild(self) -> None:
         self.remove_children()
         for i, (path, unsaved) in enumerate(self._tabs):
-            dot = " ●" if unsaved else "  "
-            label = f" {path.name}{dot} ✕ "
+            dot = " ●" if unsaved else ""
+            label = f" {path.name}{dot}  ✕ "
             classes = "tab-item"
             if i == self._active:
                 classes += " --tab-active"
@@ -467,16 +489,12 @@ class TabStrip(Widget):
             self.mount(tab)
 
     def on_click(self, event: Click) -> None:
-        # Determine which tab was clicked
         x = event.x
         offset = 0
         for i, child in enumerate(self.children):
             w = child.size.width
             if offset <= x < offset + w:
-                label = child.renderable if hasattr(child, "renderable") else ""
-                raw = str(label)
-                # If click is near the ✕ (last 3 chars of label region)
-                if x >= offset + w - 3:
+                if x >= offset + w - 5:
                     self.post_message(self.TabClosed(i))
                 else:
                     self.post_message(self.TabClicked(i))
@@ -506,6 +524,12 @@ class WelcomePanel(Widget):
         text-align: center;
         color: #5ac1fe;
         text-style: bold;
+        margin-bottom: 1;
+    }
+    #welcome-ascii {
+        width: 100%;
+        text-align: center;
+        color: #5ac1fe;
         margin-bottom: 1;
     }
     #welcome-tagline {
@@ -552,15 +576,33 @@ class WelcomePanel(Widget):
         color: #4b4c4e;
         margin-top: 1;
     }
+    #welcome-shortcuts {
+        width: 100%;
+        text-align: center;
+        color: #3f4043;
+        margin-top: 1;
+    }
     """
 
+    _LOGO = (
+        "  ████████╗██████╗ ██╗██╗  ██╗\n"
+        "  ╚══██╔══╝██╔══██╗██║╚██╗██╔╝\n"
+        "     ██║   ██████╔╝██║ ╚███╔╝ \n"
+        "     ██║   ██╔══██╗██║ ██╔██╗ \n"
+        "     ██║   ██║  ██║██║██╔╝ ██╗\n"
+        "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+    )
+
     def compose(self) -> ComposeResult:
-        yield Static("T R I X", id="welcome-header")
+        yield Static(self._LOGO, id="welcome-ascii", markup=False)
         yield Static("Your Terminal. Reimagined.", id="welcome-tagline")
-        yield Static("Recent Files", id="welcome-recent-label")
+        yield Static("── Recent Files ──", id="welcome-recent-label")
         yield ListView(id="welcome-recent-list")
-        yield Static("Open a file to get started", id="welcome-empty")
-        yield Static("^O Open Folder   ^N New File   F1 Help", id="welcome-hint")
+        yield Static("No recent files", id="welcome-empty")
+        yield Static(
+            "^O Open Folder   ^N New File   ^P Command Palette   F1 Help",
+            id="welcome-hint"
+        )
 
     def on_mount(self) -> None:
         self._recent: list[str] = []
@@ -599,17 +641,18 @@ class WelcomePanel(Widget):
 
 
 class MainScreen(Screen):
-    """Main application screen that routes its click events to the app click handler."""
+    """Main application screen."""
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="header"):
-            yield Static("TRIX", id="hdr-brand")
+            yield Static("✦ TRIX", id="hdr-brand")
             yield Static("", id="hdr-folder")
+            yield Static("", id="hdr-sep1", classes="hdr-sep")
             yield Static(self.app._current_theme_dict["name"], id="hdr-theme")
-            
+
         with Horizontal(id="main-area"):
             with LayoutContainer(id="files-panel"):
-                yield PanelHeader("Files", id="header-files")
+                yield PanelHeader("Explorer", id="header-files")
                 yield GlobalSearch(id="global-search")
                 yield ClickableDirectoryTree(".", id="file-tree")
             yield Divider("files-panel", "editor-panel", id="divider-1")
@@ -621,26 +664,30 @@ class MainScreen(Screen):
                 yield WelcomePanel(id="editor-welcome-panel")
 
         with Horizontal(id="bottom-bar"):
-            # Left: keybinding hints (each pair clickable via app.on_click)
             with Horizontal(id="bb-quit", classes="bb-item"):
-                yield Static(" ^q ", classes="kb-key")
-                yield Static("Quit  ", classes="kb-desc")
+                yield Static(" ^Q ", classes="kb-key")
+                yield Static("Quit ", classes="kb-desc")
             with Horizontal(id="bb-help", classes="bb-item"):
-                yield Static(" f1 ", classes="kb-key")
-                yield Static("Help  ", classes="kb-desc")
+                yield Static(" F1 ", classes="kb-key")
+                yield Static("Help ", classes="kb-desc")
             with Horizontal(id="bb-git", classes="bb-item"):
-                yield Static(" ^g ", classes="kb-key")
-                yield Static("Git  ", classes="kb-desc")
+                yield Static(" ^G ", classes="kb-key")
+                yield Static("Git ", classes="kb-desc")
             with Horizontal(id="bb-theme", classes="bb-item"):
-                yield Static(" ^t ", classes="kb-key")
-                yield Static("Theme  ", classes="kb-desc")
+                yield Static(" ^T ", classes="kb-key")
+                yield Static("Theme ", classes="kb-desc")
             with Horizontal(id="bb-files", classes="bb-item"):
-                yield Static(" ^b ", classes="kb-key")
-                yield Static("Files  ", classes="kb-desc")
+                yield Static(" ^B ", classes="kb-key")
+                yield Static("Files ", classes="kb-desc")
             with Horizontal(id="bb-open", classes="bb-item"):
-                yield Static(" ^o ", classes="kb-key")
-                yield Static("Open  ", classes="kb-desc")
-            # Right: status info (spacer + status segments)
+                yield Static(" ^O ", classes="kb-key")
+                yield Static("Open ", classes="kb-desc")
+            with Horizontal(id="bb-save", classes="bb-item"):
+                yield Static(" ^S ", classes="kb-key")
+                yield Static("Save ", classes="kb-desc")
+            with Horizontal(id="bb-search", classes="bb-item"):
+                yield Static(" ^F ", classes="kb-key")
+                yield Static("Search ", classes="kb-desc")
             yield Static("", id="sb-spacer")
             yield Static("", id="sb-unsaved")
             yield Static("", id="sb-lang")
@@ -661,6 +708,7 @@ class MainScreen(Screen):
 class TrixApp(App):
     ENABLE_COMMAND_PALETTE = True
     COMMANDS = App.COMMANDS | {TrixCommandProvider}
+
     CSS = """
     Screen {
         layout: vertical;
@@ -674,8 +722,9 @@ class TrixApp(App):
         layout: horizontal;
         padding: 0 1;
     }
-    #hdr-brand  { width: auto; color: #5ac1fe; text-style: bold; }
+    #hdr-brand  { width: auto; color: #5ac1fe; text-style: bold; margin-right: 1; }
     #hdr-folder { width: 1fr; color: #4b4c4e; text-align: center; }
+    #hdr-sep1   { width: auto; color: #3f4043; margin-right: 1; }
     #hdr-theme  { width: auto; color: #4b4c4e; }
 
     #main-area {
@@ -702,9 +751,9 @@ class TrixApp(App):
     }
 
     /* ── File Tree ── */
-    DirectoryTree { 
-        height: 1fr; 
-        background: #0d1016; 
+    DirectoryTree {
+        height: 1fr;
+        background: #0d1016;
         scrollbar-size: 1 1;
         scrollbar-color: #5ac1fe;
         scrollbar-background: #0d1016;
@@ -712,13 +761,12 @@ class TrixApp(App):
     DirectoryTree > .tree--cursor    { background: #5ac1fe; color: #0d1016; text-style: bold; }
     DirectoryTree > .tree--highlight { background: #5ac1fe; color: #0d1016; }
     DirectoryTree > .tree--guides    { color: #3f4043; }
-    DirectoryTree:hover > .tree--cursor { background: #5ac1fe; color: #0d1016; }
 
     /* ── Editor ── */
-    TextArea { 
-        height: 1fr; 
-        background: #0d1016; 
-        color: #bfbdb6; 
+    TextArea {
+        height: 1fr;
+        background: #0d1016;
+        color: #bfbdb6;
         scrollbar-size: 1 1;
         scrollbar-color: #5ac1fe;
         scrollbar-background: #0d1016;
@@ -728,50 +776,6 @@ class TrixApp(App):
     TextArea .text-area--cursor        { background: #5ac1fe; }
     TextArea .text-area--cursor-line   { background: #131721; }
     TextArea .text-area--selection     { background: #1f4a6e; }
-
-    #editor-welcome {
-        width: 100%;
-        height: 100%;
-        content-align: center middle;
-        text-align: center;
-        color: #4b4c4e;
-        background: #0d1016;
-    }
-    .welcome-title {
-        text-align: center;
-        color: #5ac1fe;
-        text-style: bold;
-        width: 100%;
-        margin-bottom: 1;
-    }
-    .welcome-subtitle {
-        text-align: center;
-        color: #4b4c4e;
-        width: 100%;
-        margin-bottom: 2;
-    }
-    .welcome-section {
-        text-align: left;
-        color: #8a8986;
-        width: 100%;
-        margin-bottom: 1;
-        text-style: bold;
-    }
-    .recent-file-item {
-        width: 100%;
-        color: #bfbdb6;
-        padding: 0 2;
-    }
-    .recent-file-item:hover {
-        background: #1f2430;
-        color: #5ac1fe;
-    }
-    .welcome-hint {
-        text-align: center;
-        color: #3f4043;
-        width: 100%;
-        margin-top: 2;
-    }
 
     /* ── Bottom Bar ── */
     #bottom-bar {
@@ -783,12 +787,11 @@ class TrixApp(App):
     .bb-item { width: auto; }
     .bb-item:hover { background: #1f4a6e; }
     .kb-key  { width: auto; color: #5ac1fe; text-style: bold; }
-    .kb-desc { width: auto; color: #8a8986; margin-right: 1; }
+    .kb-desc { width: auto; color: #4b4c4e; margin-right: 1; }
 
-    /* Status bar right-side segments */
     #sb-spacer  { width: 1fr; }
     #sb-unsaved { width: auto; color: #e6b450; margin-right: 1; }
-    #sb-lang    { width: auto; color: #8a8986; margin-right: 2; }
+    #sb-lang    { width: auto; color: #4b4c4e; margin-right: 2; }
     #sb-cursor  { width: auto; color: #4b4c4e; margin-right: 2; }
     #sb-branch  { width: auto; color: #aad84c; margin-right: 1; }
 
@@ -798,66 +801,75 @@ class TrixApp(App):
         transition: display 200ms;
     }
 
-    /* ── Notification Toasts ── */
+    /* ── Toast Notifications ── */
     Toast {
         background: #1f2430;
         border-left: tall #5ac1fe;
         color: #bfbdb6;
         padding: 0 1;
     }
-    Toast.-information {
-        border-left: tall #5ac1fe;
+    Toast.-information { border-left: tall #5ac1fe; }
+    Toast.-warning     { border-left: tall #e6b450; background: #1f1e2a; }
+    Toast.-error       { border-left: tall #ef7177; background: #2a1f20; }
+    Toast .toast--title        { color: #5ac1fe; text-style: bold; }
+    Toast.-warning .toast--title { color: #e6b450; }
+    Toast.-error   .toast--title { color: #ef7177; }
+    ToastRack { align: right bottom; padding: 1 2; }
+
+    /* ── Tab Strip ── */
+    TabStrip {
+        height: 1;
+        layout: horizontal;
+        background: #0d1016;
+        overflow-x: auto;
+        scrollbar-size: 0 0;
     }
-    Toast.-warning {
-        border-left: tall #e6b450;
-        background: #1f1e2a;
+    .tab-item {
+        width: auto;
+        height: 1;
+        padding: 0 1;
+        color: #4b4c4e;
+        background: #0d1016;
     }
-    Toast.-error {
-        border-left: tall #ef7177;
-        background: #2a1f20;
-    }
-    Toast .toast--title {
-        color: #5ac1fe;
+    .tab-item.--tab-active {
+        color: #bfbdb6;
+        background: #131721;
         text-style: bold;
     }
-    Toast.-warning .toast--title {
+    .tab-item.--tab-unsaved  { color: #e6b450; }
+    .tab-item.--tab-active.--tab-unsaved {
         color: #e6b450;
-    }
-    Toast.-error .toast--title {
-        color: #ef7177;
-    }
-    ToastRack {
-        align: right bottom;
-        padding: 1 2;
+        background: #131721;
+        text-style: bold;
     }
     """
 
     BINDINGS = [
-        ("ctrl+q",           "quit_app",        "Quit"),
-        ("ctrl+s",           "save",            "Save"),
-        ("ctrl+n",           "new_file",        "New File"),
-        ("ctrl+w",           "close_file",      "Close File"),
-        ("ctrl+o",           "open_folder",     "Open Folder"),
-        ("ctrl+r",           "reload_tree",     "Reload Tree"),
-        ("ctrl+f",           "search",          "Search in File"),
-        ("ctrl+shift+f",     "global_search",   "Global Search"),
-        ("ctrl+t",           "cycle_theme",     "Cycle Theme"),
-        ("ctrl+shift+t",     "pick_theme",      "Theme Picker"),
-        ("ctrl+shift+c",     "copy_selection",  "Copy"),
-        ("ctrl+b",           "toggle_filetree", "Toggle File Tree"),
-        ("ctrl+backslash",   "zen_mode",        "Zen Mode"),
-        ("ctrl+g",           "show_git_history","Git History"),
-        ("f2",               "rename_file",     "Rename"),
-        ("f1",               "show_help",       "Help"),
+        ("ctrl+q",          "quit_app",         "Quit"),
+        ("ctrl+s",          "save",             "Save"),
+        ("ctrl+n",          "new_file",         "New File"),
+        ("ctrl+w",          "close_file",       "Close File"),
+        ("ctrl+o",          "open_folder",      "Open Folder"),
+        ("ctrl+r",          "reload_tree",      "Reload Tree"),
+        ("ctrl+f",          "search",           "Search in File"),
+        ("ctrl+shift+f",    "global_search",    "Global Search"),
+        ("ctrl+t",          "cycle_theme",      "Cycle Theme"),
+        ("ctrl+shift+t",    "pick_theme",       "Theme Picker"),
+        ("ctrl+shift+c",    "copy_selection",   "Copy"),
+        ("ctrl+b",          "toggle_filetree",  "Toggle File Tree"),
+        ("ctrl+backslash",  "zen_mode",         "Zen Mode"),
+        ("ctrl+g",          "show_git_history", "Git History"),
+        ("f2",              "rename_file",      "Rename"),
+        ("f1",              "show_help",        "Help"),
     ]
 
     def __init__(self):
         super().__init__()
         self._current_file: Path | None = None
         self._has_changes = False
-        self._open_files: list[Path] = []          # all open tabs
-        self._open_files_dirty: dict[Path, bool] = {}  # unsaved state per file
-        self._open_files_content: dict[Path, str] = {} # cached content per file
+        self._open_files: list[Path] = []
+        self._open_files_dirty: dict[Path, bool] = {}
+        self._open_files_content: dict[Path, str] = {}
         self._active_tab: int = -1
         self._themes = THEMES
         persisted_theme_name = _load_theme_persistence()
@@ -892,7 +904,7 @@ class TrixApp(App):
                     error=theme["error"],
                     success=theme["success"],
                     warning=theme["warning"],
-                    dark=True
+                    dark=True,
                 )
                 self.register_theme(t)
             except Exception:
@@ -915,7 +927,7 @@ class TrixApp(App):
                 error=theme["error"],
                 success=theme["success"],
                 warning=theme["warning"],
-                dark=True
+                dark=True,
             )
             self.register_theme(t)
         except Exception:
@@ -923,33 +935,49 @@ class TrixApp(App):
 
         self.theme = slug
         _save_theme_persistence(theme["name"])
-        
+
         for i, tm in enumerate(self._themes):
             if tm["name"] == theme["name"]:
                 self._theme_index = i
                 break
-                
+
+        # Apply dynamic CSS overrides so widget colors reflect the new theme
+        try:
+            self.stylesheet.add_source(build_theme_css(theme))
+            self.refresh_css(animate=False)
+        except Exception:
+            pass
+
         if self.screen.__class__.__name__ == "MainScreen":
             try:
                 self.screen.query_one("#hdr-theme", Static).update(theme["name"])
+            except Exception:
+                pass
+            # Refresh panel headers to pick up new accent color
+            try:
+                cast(PanelHeader, self.screen.query_one("#header-files"))._update_display()
+                cast(PanelHeader, self.screen.query_one("#header-editor"))._update_display()
+            except Exception:
+                pass
+            # Refresh tree render
+            try:
+                self.screen.query_one(DirectoryTree).refresh()
             except Exception:
                 pass
 
     # ── Tab management ───────────────────────────────────────────────────────
 
     def _open_in_tab(self, path: Path, content: str) -> None:
-        """Open a file in a tab, switching to it if already open."""
         _save_recent_file(path)
+        if self._current_file and self._current_file in self._open_files:
+            try:
+                ta = self.screen.query_one("#editor", TextArea)
+                self._open_files_content[self._current_file] = ta.text
+            except Exception:
+                pass
         if path in self._open_files:
             idx = self._open_files.index(path)
         else:
-            # Save current editor content before switching
-            if self._current_file and self._current_file in self._open_files:
-                try:
-                    ta = self.screen.query_one("#editor", TextArea)
-                    self._open_files_content[self._current_file] = ta.text
-                except Exception:
-                    pass
             self._open_files.append(path)
             self._open_files_dirty[path] = False
             self._open_files_content[path] = content
@@ -957,12 +985,10 @@ class TrixApp(App):
         self._switch_tab(idx)
 
     def _switch_tab(self, idx: int) -> None:
-        """Switch to tab at index, saving current state first."""
         if not self._open_files:
             return
         idx = max(0, min(idx, len(self._open_files) - 1))
 
-        # Save current editor content
         if self._current_file and self._current_file in self._open_files:
             try:
                 ta = self.screen.query_one("#editor", TextArea)
@@ -970,7 +996,6 @@ class TrixApp(App):
             except Exception:
                 pass
 
-        # Switch
         self._active_tab = idx
         self._current_file = self._open_files[idx]
         self._has_changes = self._open_files_dirty.get(self._current_file, False)
@@ -986,7 +1011,6 @@ class TrixApp(App):
         self._refresh_ui()
 
     def _close_tab(self, idx: int) -> None:
-        """Close tab at index, switching to adjacent tab."""
         if not self._open_files or idx >= len(self._open_files):
             return
         closing = self._open_files[idx]
@@ -1003,7 +1027,6 @@ class TrixApp(App):
             self._refresh_ui()
         else:
             new_idx = min(idx, len(self._open_files) - 1)
-            self._active_tab = -1  # force switch
             self._switch_tab(new_idx)
 
     def _update_tab_strip(self) -> None:
@@ -1023,15 +1046,16 @@ class TrixApp(App):
     def on_tab_strip_tab_closed(self, event: TabStrip.TabClosed) -> None:
         closing = self._open_files[event.index] if event.index < len(self._open_files) else None
         if closing and self._open_files_dirty.get(closing):
-            self.call_later(self._confirm_close_tab, event.index)
+            self.call_later(self._confirm_close_tab, closing)
         else:
             self._close_tab(event.index)
 
     @work
-    async def _confirm_close_tab(self, idx: int) -> None:
-        if idx >= len(self._open_files):
+    async def _confirm_close_tab(self, path: Path) -> None:
+        if path not in self._open_files:
             return
-        name = self._open_files[idx].name
+        idx = self._open_files.index(path)
+        name = path.name
         confirmed = await self.push_screen_wait(ConfirmScreen(f"Close {name} with unsaved changes?"))
         if confirmed:
             self._close_tab(idx)
@@ -1039,22 +1063,19 @@ class TrixApp(App):
     # ── Mouse click handling ─────────────────────────────────────────────────
 
     def on_click(self, event: Click | MouseDown) -> None:
-        """
-        Handle mouse clicks to focus the appropriate widget in each panel.
-        This enables mouse interaction across all panels.
-        """
         if self.screen.__class__.__name__ != "MainScreen":
             return
 
-        # Bottom bar clickable items
         widget = event.widget
         bb_actions = {
-            "bb-quit": "action_quit_app",
-            "bb-help": "action_show_help",
-            "bb-git": "action_show_git_history",
-            "bb-theme": "action_cycle_theme",
-            "bb-files": "action_toggle_filetree",
-            "bb-open": "action_open_folder",
+            "bb-quit":   "action_quit_app",
+            "bb-help":   "action_show_help",
+            "bb-git":    "action_show_git_history",
+            "bb-theme":  "action_cycle_theme",
+            "bb-files":  "action_toggle_filetree",
+            "bb-open":   "action_open_folder",
+            "bb-save":   "action_save",
+            "bb-search": "action_search",
         }
         for w in [widget] + (list(widget.ancestors) if widget else []):
             if w and w.id and w.id in bb_actions:
@@ -1063,20 +1084,14 @@ class TrixApp(App):
 
         widget = event.widget
         if widget:
-            # 1. Widget hierarchy/ancestor check (100% reliable for direct clicks)
             ancestors = list(widget.ancestors)
-            
-            # Check Files Panel
             if isinstance(widget, DirectoryTree) or any(isinstance(a, DirectoryTree) for a in ancestors):
                 self.screen.query_one(DirectoryTree).focus()
                 return
-                
-            # Check Editor Panel
             if isinstance(widget, TextArea) or any(isinstance(a, TextArea) for a in ancestors):
                 self.screen.query_one("#editor", TextArea).focus()
                 return
-                
-        # 2. Coordinate boundary check fallback (for clicks on empty padding, borders, headers)
+
         x, y = event.screen_x, event.screen_y
         files_panel = self.screen.query_one("#files-panel")
         editor_panel = self.screen.query_one("#editor-panel")
@@ -1089,23 +1104,34 @@ class TrixApp(App):
     # ── Key routing ─────────────────────────────────────────────────────────
 
     def on_key(self, event: Key) -> None:
-        """Handle keys that must be scoped to a specific focused widget."""
         focused = self.focused
         key = event.key
 
-        # Ctrl+] cycles panels
         if key == "ctrl+right_square_bracket":
             self._cycle_panels()
             event.prevent_default()
             return
 
-        # Delete only when file tree is focused
+        # Tab navigation with Ctrl+Tab / Ctrl+Shift+Tab
+        if key == "ctrl+tab":
+            if self._open_files:
+                new_idx = (self._active_tab + 1) % len(self._open_files)
+                self._switch_tab(new_idx)
+            event.prevent_default()
+            return
+
+        if key == "ctrl+shift+tab":
+            if self._open_files:
+                new_idx = (self._active_tab - 1) % len(self._open_files)
+                self._switch_tab(new_idx)
+            event.prevent_default()
+            return
+
         if key == "delete" and isinstance(focused, DirectoryTree):
             self.call_later(self.action_delete_file)
             event.prevent_default()
             return
 
-        # Editor-only shortcuts
         if isinstance(focused, TextArea):
             if key == "ctrl+z":
                 focused.action_undo()
@@ -1141,6 +1167,7 @@ class TrixApp(App):
         try:
             content = path.read_text(encoding="utf-8")
         except Exception:
+            self.notify(f"Cannot open {path.name}", severity="error")
             return
         self._open_in_tab(path, content)
 
@@ -1159,26 +1186,22 @@ class TrixApp(App):
         if self.screen.__class__.__name__ != "MainScreen":
             return
         try:
-            # Cursor position
             ta = self.screen.query_one("#editor", TextArea)
             row, col = ta.cursor_location
-            self.screen.query_one("#sb-cursor", Static).update(f"Ln {row + 1}, Col {col + 1}")
+            self.screen.query_one("#sb-cursor", Static).update(f"Ln {row + 1}  Col {col + 1}")
         except Exception:
             pass
         try:
-            # Language
             lang = self._lang_label(self._current_file) if self._current_file else ""
             self.screen.query_one("#sb-lang", Static).update(lang)
         except Exception:
             pass
         try:
-            # Unsaved indicator
             unsaved = "● unsaved" if self._has_changes else ""
             self.screen.query_one("#sb-unsaved", Static).update(unsaved)
         except Exception:
             pass
         try:
-            # Git branch (cached — only refresh when file changes)
             branch = _git_branch()
             self.screen.query_one("#sb-branch", Static).update(branch)
         except Exception:
@@ -1194,7 +1217,7 @@ class TrixApp(App):
         if self.screen.__class__.__name__ != "MainScreen":
             return
         focused = self.focused
-        
+
         tree = self.screen.query_one(DirectoryTree)
         editor = self.screen.query_one("#editor", TextArea)
 
@@ -1204,9 +1227,49 @@ class TrixApp(App):
         cast(PanelHeader, self.screen.query_one("#header-files")).set_active(files_active)
         cast(PanelHeader, self.screen.query_one("#header-editor")).set_active(editor_active)
 
-        # Panel glow: toggle --panel-active class
         self.screen.query_one("#files-panel").set_class(files_active, "--panel-active")
         self.screen.query_one("#editor-panel").set_class(editor_active, "--panel-active")
+
+    def _refresh_ui(self) -> None:
+        self._update_tab_strip()
+        self._refresh_status_bar()
+        if self.screen.__class__.__name__ == "MainScreen":
+            try:
+                welcome = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
+                editor  = self.screen.query_one("#editor", TextArea)
+                tab_strip = self.screen.query_one("#tab-strip", TabStrip)
+                has_files = len(self._open_files) > 0
+                welcome.display   = not has_files
+                editor.display    = has_files
+                tab_strip.display = has_files
+            except Exception:
+                pass
+
+            try:
+                tree = self.screen.query_one(DirectoryTree)
+                self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
+            except Exception:
+                pass
+
+            if self._current_file is None:
+                try:
+                    cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
+                except Exception:
+                    pass
+                try:
+                    wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
+                    wp.refresh_content(_load_recent_files())
+                except Exception:
+                    pass
+            else:
+                unsaved = " ●" if self._has_changes else ""
+                name = self._current_file.name
+                try:
+                    cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(
+                        f"Editor — {name}{unsaved}"
+                    )
+                except Exception:
+                    pass
 
     # ── Actions ───────────────────────────────────────────────────────────
 
@@ -1214,7 +1277,6 @@ class TrixApp(App):
         self.push_screen(HelpScreen())
 
     def action_search(self) -> None:
-        """Ctrl+F — inline search inside the editor."""
         if self.screen.__class__.__name__ != "MainScreen":
             return
         if self._current_file is None:
@@ -1223,7 +1285,6 @@ class TrixApp(App):
         self.screen.query_one("#editor-search", EditorSearch).open()
 
     def action_global_search(self) -> None:
-        """Ctrl+Shift+F — search across all files."""
         if self.screen.__class__.__name__ != "MainScreen":
             return
         self.screen.query_one("#global-search", GlobalSearch).open()
@@ -1243,34 +1304,42 @@ class TrixApp(App):
         self.screen.query_one("#bottom-bar").display = show
         self.screen.query_one("#header").display = show
         self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
+        if not show:
+            self.notify("Zen Mode — Press Ctrl+\\ to exit", timeout=2)
 
     def action_toggle_filetree(self) -> None:
         self._filetree_visible = not self._filetree_visible
-        self.screen.query_one("#files-panel").display = self._filetree_visible
-        self.screen.query_one("#divider-1").display = self._filetree_visible
+        if not self._zen_mode:
+            self.screen.query_one("#files-panel").display = self._filetree_visible
+            self.screen.query_one("#divider-1").display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:
             self.notify("No file open", severity="warning")
             return
-        self._current_file.write_text(
-            self.screen.query_one("#editor", TextArea).text, encoding="utf-8"
-        )
+        try:
+            self._current_file.write_text(
+                self.screen.query_one("#editor", TextArea).text, encoding="utf-8"
+            )
+        except Exception as e:
+            self.notify(f"Save failed: {e}", severity="error")
+            return
         self._has_changes = False
         if self._current_file in self._open_files_dirty:
             self._open_files_dirty[self._current_file] = False
-        # Refresh git status to reflect the save
         try:
             self.screen.query_one(DirectoryTree)._refresh_git_status()
             self.screen.query_one(DirectoryTree).refresh()
         except Exception:
             pass
         self._refresh_ui()
+        self.notify(f"Saved {self._current_file.name}", timeout=1)
 
     def action_cycle_theme(self) -> None:
         self._theme_index = (self._theme_index + 1) % len(self._themes)
         t = self._themes[self._theme_index]
         self.apply_theme(t)
+        self.notify(f"Theme: {t['name']}", timeout=1)
 
     @work
     async def action_pick_theme(self) -> None:
@@ -1288,7 +1357,7 @@ class TrixApp(App):
             text = focused.selected_text
         if text:
             self.copy_to_clipboard(text)
-            self.notify("Copied to clipboard")
+            self.notify("Copied to clipboard", timeout=1)
 
     @work
     async def action_open_folder(self) -> None:
@@ -1299,16 +1368,22 @@ class TrixApp(App):
         if not cleaned.is_dir():
             self.notify(f"Invalid path: {cleaned}", severity="error")
             return
-        tree = self.screen.query_one(DirectoryTree)
-        tree.path = cleaned
+        self._open_files.clear()
+        self._open_files_dirty.clear()
+        self._open_files_content.clear()
+        self._active_tab = -1
         self._current_file = None
         self._has_changes = False
+        tree = self.screen.query_one(DirectoryTree)
+        tree.path = cleaned
         self.screen.query_one("#editor", TextArea).load_text("")
         self.screen.query_one("#hdr-folder", Static).update(cleaned.name)
         self._refresh_ui()
+        self.notify(f"Opened: {cleaned.name}", timeout=2)
 
     async def action_reload_tree(self) -> None:
         await self.screen.query_one(DirectoryTree).reload()
+        self.notify("File tree reloaded", timeout=1)
 
     @work
     async def action_new_file(self) -> None:
@@ -1324,14 +1399,16 @@ class TrixApp(App):
             self.notify(f"Error: {e}", severity="error")
             return
         await tree.reload()
-        self.screen.query_one("#editor", TextArea).load_text("")
-        self._current_file = new_path
-        self._has_changes = False
-        self._refresh_ui()
+        self._open_in_tab(new_path, "")
+        self.notify(f"Created: {new_path.name}", timeout=2)
 
     def action_close_file(self) -> None:
-        if self._active_tab >= 0:
-            self.on_tab_strip_tab_closed(TabStrip.TabClosed(self._active_tab))
+        if self._active_tab >= 0 and self._active_tab < len(self._open_files):
+            closing = self._open_files[self._active_tab]
+            if self._open_files_dirty.get(closing) or self._has_changes:
+                self.call_later(self._confirm_close_tab, closing)
+            else:
+                self._close_tab(self._active_tab)
         else:
             self.screen.query_one("#editor", TextArea).load_text("")
             self._current_file = None
@@ -1339,7 +1416,6 @@ class TrixApp(App):
             self._refresh_ui()
 
     def _get_target_path(self) -> "Path | None":
-        """Return the file to operate on: open file first, then tree selection."""
         if self._current_file is not None:
             return self._current_file
         try:
@@ -1366,11 +1442,19 @@ class TrixApp(App):
         except Exception as e:
             self.notify(f"Rename failed: {e}", severity="error")
             return
+        if target in self._open_files:
+            idx = self._open_files.index(target)
+            self._open_files[idx] = new_path
+            if target in self._open_files_dirty:
+                self._open_files_dirty[new_path] = self._open_files_dirty.pop(target)
+            if target in self._open_files_content:
+                self._open_files_content[new_path] = self._open_files_content.pop(target)
         if self._current_file == target:
             self._current_file = new_path
         self._has_changes = False
-        self._refresh_ui()
         await self.screen.query_one(DirectoryTree).reload()
+        self._refresh_ui()
+        self.notify(f"Renamed to {new_path.name}", timeout=2)
 
     @work
     async def action_delete_file(self) -> None:
@@ -1388,18 +1472,25 @@ class TrixApp(App):
         except Exception as e:
             self.notify(f"Delete failed: {e}", severity="error")
             return
-        if self._current_file == target:
+        if target in self._open_files:
+            idx = self._open_files.index(target)
+            self._close_tab(idx)
+        elif self._current_file == target:
             self.screen.query_one("#editor", TextArea).load_text("")
             self._current_file = None
             self._has_changes = False
             self._refresh_ui()
         await self.screen.query_one(DirectoryTree).reload()
+        self.notify(f"Deleted {target.name}", timeout=2)
 
     @work
     async def action_quit_app(self) -> None:
-        if self._has_changes:
+        dirty_files = [p for p, dirty in self._open_files_dirty.items() if dirty]
+        if self._has_changes and self._current_file and self._current_file not in dirty_files:
+            dirty_files.append(self._current_file)
+        if dirty_files:
             confirmed = await self.push_screen_wait(
-                ConfirmScreen("Unsaved changes. Quit anyway?")
+                ConfirmScreen(f"Unsaved changes in {len(dirty_files)} file(s). Quit anyway?")
             )
             if not confirmed:
                 return
@@ -1408,7 +1499,6 @@ class TrixApp(App):
     # ── Private helpers ─────────────────────────────────────────────────────
 
     def _cycle_panels(self) -> None:
-        """Ctrl+] cycles: Files → Editor → Files"""
         if self.screen.__class__.__name__ != "MainScreen":
             return
         focused = self.focused
@@ -1444,59 +1534,31 @@ class TrixApp(App):
         line = ta.document.get_line(row)
         ta.replace(line + "\n" + line, (row, 0), (row, len(line)))
 
-    def _refresh_ui(self) -> None:
-        if self.screen.__class__.__name__ != "MainScreen":
-            return
-        
-        try:
-            tree = self.screen.query_one(DirectoryTree)
-            self.screen.query_one("#hdr-folder", Static).update(str(tree.path))
-        except Exception:
-            pass
-            
-        if self._current_file is None:
-            cast(PanelHeader, self.screen.query_one("#header-editor")).set_title("Editor")
-            self.screen.query_one("#editor").display = False
-            try:
-                wp = self.screen.query_one("#editor-welcome-panel", WelcomePanel)
-                wp.display = True
-                wp.refresh_content(_load_recent_files())
-            except Exception:
-                pass
-        else:
-            unsaved = " ●" if self._has_changes else ""
-            name = self._current_file.name
-            title = f"Editor — {name}{unsaved}"
-            cast(PanelHeader, self.screen.query_one("#header-editor")).set_title(title)
-            self.screen.query_one("#editor").display = True
-            try:
-                self.screen.query_one("#editor-welcome-panel", WelcomePanel).display = False
-            except Exception:
-                pass
-        self._update_tab_strip()
-        self._refresh_status_bar()
-
     def _lang_label(self, path: Path) -> str:
         return {
-            ".py": "Python", ".js": "JavaScript", ".jsx": "JavaScript",
+            ".py": "Python",   ".js": "JavaScript", ".jsx": "JavaScript",
             ".ts": "TypeScript", ".tsx": "TypeScript", ".json": "JSON",
-            ".html": "HTML", ".htm": "HTML", ".css": "CSS", ".md": "Markdown",
-            ".yaml": "YAML", ".yml": "YAML", ".toml": "TOML", ".sql": "SQL",
-            ".rs": "Rust", ".go": "Go", ".c": "C", ".cpp": "C++",
-            ".h": "C", ".hpp": "C++", ".java": "Java", ".sh": "Bash",
-            ".rb": "Ruby", ".php": "PHP", ".xml": "XML",
+            ".html": "HTML",   ".htm": "HTML",      ".css": "CSS",
+            ".md": "Markdown", ".yaml": "YAML",     ".yml": "YAML",
+            ".toml": "TOML",   ".sql": "SQL",       ".rs": "Rust",
+            ".go": "Go",       ".c": "C",           ".cpp": "C++",
+            ".h": "C",         ".hpp": "C++",       ".java": "Java",
+            ".sh": "Bash",     ".bash": "Bash",     ".rb": "Ruby",
+            ".php": "PHP",     ".xml": "XML",       ".lua": "Lua",
         }.get(path.suffix.lower(), path.suffix.upper().lstrip(".") or "Text")
 
     def _detect_language(self, path: Path) -> str | None:
         return {
-            ".py": "python", ".js": "javascript", ".jsx": "javascript",
-            ".ts": "typescript", ".tsx": "typescript", ".json": "json",
-            ".html": "html", ".htm": "html", ".css": "css", ".md": "markdown",
-            ".yaml": "yaml", ".yml": "yaml", ".toml": "toml", ".sql": "sql",
-            ".rs": "rust", ".go": "go", ".c": "c", ".cpp": "cpp",
-            ".h": "c", ".hpp": "cpp", ".java": "java", ".sh": "bash",
-            ".bash": "bash", ".rb": "ruby", ".php": "php",
-            ".xml": "xml", ".svg": "xml",
+            ".py":   "python",     ".js":   "javascript",  ".jsx": "javascript",
+            ".ts":   "typescript", ".tsx":  "typescript",  ".json": "json",
+            ".html": "html",       ".htm":  "html",        ".css": "css",
+            ".md":   "markdown",   ".yaml": "yaml",        ".yml": "yaml",
+            ".toml": "toml",       ".sql":  "sql",         ".rs":  "rust",
+            ".go":   "go",         ".c":    "c",           ".cpp": "cpp",
+            ".h":    "c",          ".hpp":  "cpp",         ".java": "java",
+            ".sh":   "bash",       ".bash": "bash",        ".rb":   "ruby",
+            ".php":  "php",        ".xml":  "xml",         ".svg":  "xml",
+            ".lua":  "lua",
         }.get(path.suffix.lower())
 
 
@@ -1505,16 +1567,16 @@ def run():
         try:
             import ctypes
             kernel32 = ctypes.windll.kernel32
-            h_stdin = kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+            h_stdin = kernel32.GetStdHandle(-10)
             if h_stdin != -1:
                 mode = ctypes.c_uint()
                 if kernel32.GetConsoleMode(h_stdin, ctypes.byref(mode)):
-                    # Clear ENABLE_QUICK_EDIT_MODE (0x0040) and set ENABLE_EXTENDED_FLAGS (0x0080)
                     new_mode = (mode.value & ~0x0040) | 0x0080
                     kernel32.SetConsoleMode(h_stdin, new_mode)
         except Exception:
             pass
     TrixApp().run()
+
 
 if __name__ == "__main__":
     run()

@@ -134,8 +134,79 @@ FAMOUS_THEMES = [
         "cursor_line": "#313244",
         "scrollbar": "#313244",
         "scrollbar_thumb": "#cba6f7",
-    }
+    },
+    {
+        "name": "Solarized Dark",
+        "background": "#002b36",
+        "surface": "#073642",
+        "panel": "#073642",
+        "border": "#586e75",
+        "border_focused": "#268bd2",
+        "text": "#839496",
+        "text_muted": "#586e75",
+        "accent": "#268bd2",
+        "accent_alt": "#2aa198",
+        "success": "#859900",
+        "warning": "#b58900",
+        "error": "#dc322f",
+        "line_number": "#586e75",
+        "cursor_line": "#073642",
+        "scrollbar": "#586e75",
+        "scrollbar_thumb": "#268bd2",
+    },
+    {
+        "name": "Midnight Blue",
+        "background": "#0d1117",
+        "surface": "#090d14",
+        "panel": "#090d14",
+        "border": "#1e2a3a",
+        "border_focused": "#58a6ff",
+        "text": "#c9d1d9",
+        "text_muted": "#484f58",
+        "accent": "#58a6ff",
+        "accent_alt": "#79c0ff",
+        "success": "#3fb950",
+        "warning": "#d29922",
+        "error": "#f85149",
+        "line_number": "#484f58",
+        "cursor_line": "#161b22",
+        "scrollbar": "#1e2a3a",
+        "scrollbar_thumb": "#58a6ff",
+    },
+    {
+        "name": "Rosé Pine",
+        "background": "#191724",
+        "surface": "#1f1d2e",
+        "panel": "#1f1d2e",
+        "border": "#403d52",
+        "border_focused": "#c4a7e7",
+        "text": "#e0def4",
+        "text_muted": "#6e6a86",
+        "accent": "#c4a7e7",
+        "accent_alt": "#ebbcba",
+        "success": "#31748f",
+        "warning": "#f6c177",
+        "error": "#eb6f92",
+        "line_number": "#6e6a86",
+        "cursor_line": "#26233a",
+        "scrollbar": "#403d52",
+        "scrollbar_thumb": "#c4a7e7",
+    },
 ]
+
+
+def _safe_color(val, default: str = "#888888") -> str:
+    """Safely extract a 6-char hex color, handling None and 8-char #rrggbbaa."""
+    if val is None:
+        return default
+    s = str(val).strip()
+    if s.startswith("#"):
+        # Strip alpha channel: #rrggbbaa → #rrggbb
+        if len(s) == 9:
+            return s[:7]
+        if len(s) == 7:
+            return s
+    return default
 
 
 def load_custom_themes() -> list[dict]:
@@ -155,53 +226,62 @@ def load_custom_themes() -> list[dict]:
                 if key not in theme_dict:
                     theme_dict[key] = theme_dict.get("background", "#1f2127")
             themes.append(theme_dict)
-        except Exception:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Warning: Failed to load custom theme {f}: {e}", file=sys.stderr)
     return themes
 
 
 def get_all_themes() -> list[dict]:
     themes = []
-    
+
     # 1. Load Ayu themes from local JSON
     try:
         data = json.loads((Path(__file__).parent / "ayu.json").read_text())
         for t in data["themes"]:
             s = t["style"]
             name = t["name"]
-            
-            bg = s.get("background", "#313337")[:7]
-            surf = s.get("surface.background", "#1f2127")[:7]
-            pan = s.get("elevated_surface.background", "#1f2127")[:7]
-            txt = s.get("text", "#bfbdb6")[:7]
-            txt_mut = s.get("text.muted", "#8a8986")[:7]
-            acc = s.get("text.accent", "#5ac1fe")[:7]
-            err = s.get("error", "#ef7177")[:7]
-            suc = s.get("success", "#aad84c")[:7]
-            war = s.get("warning", "#e6b450")[:7]
-            
+
+            bg    = _safe_color(s.get("background"),                  "#313337")
+            surf  = _safe_color(s.get("surface.background"),          "#1f2127")
+            pan   = _safe_color(s.get("elevated_surface.background"), "#1f2127")
+            txt   = _safe_color(s.get("text"),                        "#bfbdb6")
+            txt_m = _safe_color(s.get("text.muted"),                  "#8a8986")
+            acc   = _safe_color(s.get("text.accent"),                 "#5ac1fe")
+            err   = _safe_color(s.get("error"),                       "#ef7177")
+            suc   = _safe_color(s.get("success"),                     "#aad84c")
+            war   = _safe_color(s.get("warning"),                     "#e6b450")
+            brd   = _safe_color(s.get("border"),                      "#3f4043")
+            brd_f = _safe_color(s.get("panel.focused_border"),        acc)
+            acc_a = _safe_color(s.get("terminal.ansi.bright_magenta"), "#39bae5")
+            ln    = _safe_color(s.get("editor.line_number"),          "#4b4c4e")
+            cl    = _safe_color(s.get("editor.active_line.background"), "#1f2127")
+            sb    = _safe_color(s.get("scrollbar.track.border"),      "#3f4043")
+            sbt   = _safe_color(s.get("scrollbar.thumb.background"),  "#5ac1fe")
+
             theme_dict = {
-                "name": name,
-                "background": bg,
-                "surface": surf,
-                "panel": pan,
-                "border": s.get("border", "#3f4043")[:7],
-                "border_focused": s.get("panel.focused_border", "#5ac1fe")[:7],
-                "text": txt,
-                "text_muted": txt_mut,
-                "accent": acc,
-                "accent_alt": s.get("terminal.ansi.bright_magenta", "#39bae5")[:7],
-                "success": suc,
-                "warning": war,
-                "error": err,
-                "line_number": s.get("editor.line_number", "#4b4c4e")[:7],
-                "cursor_line": s.get("editor.active_line.background", "#1f2127")[:7],
-                "scrollbar": s.get("scrollbar.track.border", "#3f4043")[:7],
-                "scrollbar_thumb": s.get("scrollbar.thumb.background", "#5ac1fe")[:7],
+                "name":           name,
+                "background":     bg,
+                "surface":        surf,
+                "panel":          pan,
+                "border":         brd,
+                "border_focused": brd_f,
+                "text":           txt,
+                "text_muted":     txt_m,
+                "accent":         acc,
+                "accent_alt":     acc_a,
+                "success":        suc,
+                "warning":        war,
+                "error":          err,
+                "line_number":    ln,
+                "cursor_line":    cl,
+                "scrollbar":      sb,
+                "scrollbar_thumb": sbt,
             }
             themes.append(theme_dict)
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to load Ayu themes: {e}")
 
     # 2. Load famous themes
     themes.extend(FAMOUS_THEMES)
@@ -225,7 +305,75 @@ THEMES: list[dict] = get_all_themes()
 
 CSS_TEMPLATES: dict[str, str] = {}
 
+
 def register_css_template(name: str, css: str) -> None:
     CSS_TEMPLATES[name] = css
 
 
+def build_theme_css(theme: dict) -> str:
+    """Generate dynamic CSS overrides for a given theme dict."""
+    bg     = theme.get("background",     "#0d1016")
+    surf   = theme.get("surface",        "#1f2127")
+    panel  = theme.get("panel",          "#1f2127")
+    brd    = theme.get("border",         "#3f4043")
+    brd_f  = theme.get("border_focused", "#5ac1fe")
+    txt    = theme.get("text",           "#bfbdb6")
+    txt_m  = theme.get("text_muted",     "#8a8986")
+    acc    = theme.get("accent",         "#5ac1fe")
+    acc_a  = theme.get("accent_alt",     "#39bae5")
+    succ   = theme.get("success",        "#aad84c")
+    warn   = theme.get("warning",        "#e6b450")
+    err    = theme.get("error",          "#ef7177")
+    ln     = theme.get("line_number",    "#4b4c4e")
+    cl     = theme.get("cursor_line",    "#1f2127")
+    sb     = theme.get("scrollbar",      "#3f4043")
+    sbt    = theme.get("scrollbar_thumb", "#5ac1fe")
+
+    return f"""
+    Screen {{ background: {bg}; }}
+    #header {{ background: {bg}; }}
+    #hdr-brand {{ color: {acc}; }}
+    #hdr-folder {{ color: {txt_m}; }}
+    #hdr-theme {{ color: {txt_m}; }}
+    #main-area {{ background: {bg}; }}
+    LayoutContainer, Container, #files-panel, #editor-panel {{ background: {bg}; }}
+    #files-panel.--panel-active {{ border-left: tall {acc}; }}
+    #editor-panel.--panel-active {{ border-left: tall {acc}; }}
+    DirectoryTree {{ background: {bg}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
+    DirectoryTree > .tree--cursor {{ background: {acc}; color: {bg}; }}
+    DirectoryTree > .tree--highlight {{ background: {acc}; color: {bg}; }}
+    DirectoryTree > .tree--guides {{ color: {brd}; }}
+    TextArea {{ background: {bg}; color: {txt}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
+    TextArea .text-area--gutter {{ background: {bg}; color: {ln}; }}
+    TextArea .text-area--gutter-active {{ background: {bg}; color: {acc}; }}
+    TextArea .text-area--cursor {{ background: {acc}; }}
+    TextArea .text-area--cursor-line {{ background: {cl}; }}
+    #bottom-bar {{ background: {surf}; }}
+    .kb-key {{ color: {acc}; }}
+    .kb-desc {{ color: {txt_m}; }}
+    #sb-unsaved {{ color: {warn}; }}
+    #sb-lang {{ color: {txt_m}; }}
+    #sb-cursor {{ color: {txt_m}; }}
+    #sb-branch {{ color: {succ}; }}
+    Divider {{ background: {brd}; }}
+    Divider:hover {{ background: {acc}; }}
+    TabStrip {{ background: {bg}; }}
+    .tab-item {{ color: {txt_m}; background: {bg}; }}
+    .tab-item.--tab-active {{ color: {txt}; background: {surf}; }}
+    .tab-item.--tab-unsaved {{ color: {warn}; }}
+    WelcomePanel {{ background: {bg}; }}
+    #welcome-header {{ color: {acc}; }}
+    #welcome-tagline {{ color: {txt_m}; }}
+    #welcome-recent-label {{ color: {txt_m}; }}
+    #welcome-recent-list {{ background: {bg}; }}
+    #welcome-recent-list > ListItem {{ background: {bg}; color: {txt}; }}
+    #welcome-recent-list > ListItem:hover {{ background: {surf}; color: {acc}; }}
+    #welcome-hint {{ color: {brd}; }}
+    Toast {{ background: {surf}; border-left: tall {acc}; color: {txt}; }}
+    Toast.-information {{ border-left: tall {acc}; }}
+    Toast.-warning {{ border-left: tall {warn}; background: {surf}; }}
+    Toast.-error {{ border-left: tall {err}; background: {surf}; }}
+    Toast .toast--title {{ color: {acc}; }}
+    Toast.-warning .toast--title {{ color: {warn}; }}
+    Toast.-error .toast--title {{ color: {err}; }}
+    """

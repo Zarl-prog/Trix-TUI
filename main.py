@@ -20,7 +20,7 @@ from textual.widgets.text_area import Selection
 from textual import work
 
 import json
-from themes import THEMES, build_theme_css
+from themes import THEMES, build_theme_css, build_text_area_theme
 from divider_widget import Divider
 from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
@@ -998,6 +998,15 @@ class TrixApp(App):
                 read_from=("trix_theme", ""),
             )
             self.refresh_css(animate=False)
+        except Exception:
+            pass
+
+        # Apply matching TextAreaTheme for syntax highlighting
+        try:
+            ta = self.screen.query_one("#editor", TextArea)
+            ta_theme = build_text_area_theme(theme)
+            ta.register_theme(ta_theme)
+            ta.theme = ta_theme.name
         except Exception:
             pass
 

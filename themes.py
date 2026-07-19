@@ -171,6 +171,80 @@ def register_css_template(name: str, css: str) -> None:
     CSS_TEMPLATES[name] = css
 
 
+def build_text_area_theme(theme: dict) -> "TextAreaTheme":
+    """Build a TextAreaTheme from an app theme dict, mapping syntax tokens
+    to the theme's palette colors."""
+    from rich.style import Style
+    from textual.widgets.text_area import TextAreaTheme
+
+    acc    = theme.get("accent", "#5ac1fe")
+    acc_a  = theme.get("accent_alt", "#39bae5") or acc
+    succ   = theme.get("success", "#aad84c")
+    warn   = theme.get("warning", "#e6b450")
+    err    = theme.get("error", "#ef7177")
+    txt    = theme.get("text", "#bfbdb6")
+    txt_m  = theme.get("text_muted", "#8a8986")
+    bg     = theme.get("background", "#0d1016")
+    surf   = theme.get("surface", "#1f2127")
+    cl     = theme.get("cursor_line", "#1f2127")
+    brd    = theme.get("border", "#3f4043")
+
+    def s(c: str) -> Style:
+        return Style(color=c)
+
+    def b(c: str) -> Style:
+        return Style(color=c, bold=True)
+
+    slug = theme["name"].lower().replace(" ", "-")
+    name = f"trix-{slug}"
+
+    return TextAreaTheme(
+        name=name,
+        base_style=s(txt),
+        gutter_style=s(txt_m),
+        cursor_style=s(acc),
+        cursor_line_style=Style(bgcolor=cl),
+        cursor_line_gutter_style=Style(bgcolor=cl),
+        selection_style=Style(bgcolor=surf),
+        bracket_matching_style=Style(bgcolor=brd),
+        syntax_styles={
+            "keyword":               s(acc_a),
+            "keyword.function":      s(acc),
+            "keyword.return":        s(acc),
+            "keyword.operator":      s(acc),
+            "string":                s(warn),
+            "string.documentation":  s(warn),
+            "comment":               s(txt_m),
+            "number":                s(acc),
+            "float":                 s(acc),
+            "boolean":               s(succ),
+            "function":              s(succ),
+            "function.call":         s(succ),
+            "class":                 s(succ),
+            "type":                  s(acc_a),
+            "type.builtin":          s(acc),
+            "type.class":            s(succ),
+            "method":                s(succ),
+            "method.call":           s(succ),
+            "operator":              s(txt),
+            "conditional":           s(acc_a),
+            "repeat":                s(acc_a),
+            "include":               s(acc_a),
+            "exception":             s(err),
+            "tag":                   s(acc_a),
+            "constant.builtin":      s(acc),
+            "variable.builtin":      s(txt),
+            "punctuation.bracket":   s(txt),
+            "punctuation.delimiter": s(txt),
+            "punctuation.special":   s(acc_a),
+            "heading":               b(acc_a),
+            "bold":                  Style(bold=True),
+            "italic":                Style(italic=True),
+            "strikethrough":         Style(strike=True),
+        },
+    )
+
+
 def build_theme_css(theme: dict) -> str:
     """Generate dynamic CSS overrides for a given theme dict."""
     bg     = theme.get("background",     "#0d1016")

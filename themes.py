@@ -134,6 +134,26 @@ FAMOUS_THEMES = [
         "scrollbar": "#1e2a3a",
         "scrollbar_thumb": "#58a6ff",
     },
+    {
+        "name": "Ayu Light",
+        "dark": False,
+        "background": "#fafafa",
+        "surface": "#ffffff",
+        "panel": "#ffffff",
+        "border": "#e0e0e0",
+        "border_focused": "#399ef4",
+        "text": "#575c61",
+        "text_muted": "#a0a0a0",
+        "accent": "#399ef4",
+        "accent_alt": "#f07171",
+        "success": "#86b300",
+        "warning": "#f2ae49",
+        "error": "#f07171",
+        "line_number": "#b8b8b8",
+        "cursor_line": "#f0f0f0",
+        "scrollbar": "#e0e0e0",
+        "scrollbar_thumb": "#399ef4",
+    },
     ]
 
 

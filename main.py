@@ -953,7 +953,7 @@ class TrixApp(App):
                     error=theme["error"],
                     success=theme["success"],
                     warning=theme["warning"],
-                    dark=True,
+                    dark=theme.get("dark", True),
                 )
                 self.register_theme(t)
             except Exception:
@@ -976,7 +976,7 @@ class TrixApp(App):
                 error=theme["error"],
                 success=theme["success"],
                 warning=theme["warning"],
-                dark=True,
+                dark=theme.get("dark", True),
             )
             self.register_theme(t)
         except Exception:

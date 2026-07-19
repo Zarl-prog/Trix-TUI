@@ -144,7 +144,7 @@ class EditorSearch(Widget):
             event.prevent_default()
 
     def _get_editor(self) -> TextArea:
-        return self.app.query_one("#editor", TextArea)
+        return self.screen.query_one("#editor", TextArea)
 
     def _run_search(self, query: str) -> None:
         self._matches = []
@@ -304,7 +304,7 @@ class GlobalSearch(Widget):
     def _run_search(self, query: str) -> None:
         """Search files in a background thread to prevent TUI blocking."""
         try:
-            tree = self.app.query_one("DirectoryTree")
+            tree = self.screen.query_one("DirectoryTree")
             root = Path(str(tree.path))
         except Exception:
             return
@@ -354,7 +354,7 @@ class GlobalSearch(Widget):
             return
 
         try:
-            tree = self.app.query_one("DirectoryTree")
+            tree = self.screen.query_one("DirectoryTree")
             root = Path(str(tree.path))
         except Exception:
             root = Path(".")
@@ -393,7 +393,7 @@ class GlobalSearch(Widget):
             app._open_in_tab(fpath, content)
         except Exception:
             pass
-        ta = self.app.query_one("#editor", TextArea)
+        ta = self.screen.query_one("#editor", TextArea)
         try:
             line_text = ta.document.get_line(lineno)
             ta.selection = Selection((lineno, 0), (lineno, len(line_text)))

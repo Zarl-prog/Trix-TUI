@@ -1075,6 +1075,13 @@ class TrixApp(App):
             ta.language = self._detect_language(self._current_file)
         except Exception:
             ta.language = None
+        # Apply current theme's syntax highlighting
+        try:
+            ta_theme = build_text_area_theme(self._current_theme_dict)
+            ta.register_theme(ta_theme)
+            ta.theme = ta_theme.name
+        except Exception:
+            pass
         ta.focus()
         self._refresh_ui()
 

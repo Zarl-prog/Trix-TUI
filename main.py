@@ -109,21 +109,21 @@ class TrixCommandProvider(Provider):
 
     COMMANDS = [
         ("Save File",           "Ctrl+S",       "action_save"),
-        ("New File",            "Ctrl+N",       "action_new_file"),
-        ("Open Folder",         "Ctrl+O",       "action_open_folder"),
-        ("Close File",          "Ctrl+W",       "action_close_file"),
-        ("Rename File",         "F2",           "action_rename_file"),
-        ("Delete File",         "Del",          "action_delete_file"),
-        ("Toggle File Tree",    "Ctrl+B",       "action_toggle_filetree"),
-        ("Zen Mode",            "Ctrl+\\",      "action_zen_mode"),
-        ("Search in File",      "Ctrl+F",       "action_search"),
-        ("Search Across Files", "Ctrl+Shift+F", "action_global_search"),
-        ("Git History",         "Ctrl+G",       "action_show_git_history"),
-        ("Cycle Theme",         "Ctrl+T",       "action_cycle_theme"),
-        ("Theme Picker",        "Ctrl+Shift+T", "action_pick_theme"),
-        ("Reload File Tree",    "Ctrl+R",       "action_reload_tree"),
-        ("Show Help",           "F1",           "action_show_help"),
-        ("Quit",                "Ctrl+Q",       "action_quit_app"),
+        ("New File",            "Ctrl+N",       "new_file"),
+        ("Open Folder",         "Ctrl+O",       "open_folder"),
+        ("Close File",          "Ctrl+W",       "close_file"),
+        ("Rename File",         "F2",           "rename_file"),
+        ("Delete File",         "Del",          "delete_file"),
+        ("Toggle File Tree",    "Ctrl+B",       "toggle_filetree"),
+        ("Zen Mode",            "Ctrl+\\",      "zen_mode"),
+        ("Search in File",      "Ctrl+F",       "search"),
+        ("Search Across Files", "Ctrl+Shift+F", "global_search"),
+        ("Git History",         "Ctrl+G",       "show_git_history"),
+        ("Cycle Theme",         "Ctrl+T",       "cycle_theme"),
+        ("Theme Picker",        "Ctrl+Shift+T", "pick_theme"),
+        ("Reload File Tree",    "Ctrl+R",       "reload_tree"),
+        ("Show Help",           "F1",           "show_help"),
+        ("Quit",                "Ctrl+Q",       "quit_app"),
     ]
 
     async def search(self, query: str) -> Hits:
@@ -154,6 +154,18 @@ class HorizontalContainer(Horizontal):
 
     def on_mouse_down(self, event: MouseDown) -> None:
         event.bubble = True
+
+
+class BottomBarItem(Horizontal):
+    can_focus = False
+    COMPONENT_CLASSES = set()
+
+    async def on_click(self, event: Click) -> None:
+        event.stop()
+        await self.app.on_click(event)
+
+    def on_mouse_down(self, event: MouseDown) -> None:
+        event.stop()
 
 
 class LayoutContainer(Container):
@@ -677,32 +689,32 @@ class MainScreen(Screen):
                 yield PanelHeader("Editor", id="header-editor")
                 yield TabStrip(id="tab-strip")
                 yield EditorSearch(id="editor-search")
-                yield ClickableTextArea(id="editor", show_line_numbers=True)
+                yield ClickableTextArea(id="editor", show_line_numbers=True, cursor_type="bar")
                 yield WelcomePanel(id="editor-welcome-panel")
 
         with Horizontal(id="bottom-bar"):
-            with Horizontal(id="bb-quit", classes="bb-item"):
+            with BottomBarItem(id="bb-quit", classes="bb-item"):
                 yield Static(" ^Q ", classes="kb-key")
                 yield Static("Quit ", classes="kb-desc")
-            with Horizontal(id="bb-help", classes="bb-item"):
+            with BottomBarItem(id="bb-help", classes="bb-item"):
                 yield Static(" F1 ", classes="kb-key")
                 yield Static("Help ", classes="kb-desc")
-            with Horizontal(id="bb-git", classes="bb-item"):
+            with BottomBarItem(id="bb-git", classes="bb-item"):
                 yield Static(" ^G ", classes="kb-key")
                 yield Static("Git ", classes="kb-desc")
-            with Horizontal(id="bb-theme", classes="bb-item"):
+            with BottomBarItem(id="bb-theme", classes="bb-item"):
                 yield Static(" ^T ", classes="kb-key")
                 yield Static("Theme ", classes="kb-desc")
-            with Horizontal(id="bb-files", classes="bb-item"):
+            with BottomBarItem(id="bb-files", classes="bb-item"):
                 yield Static(" ^B ", classes="kb-key")
                 yield Static("Files ", classes="kb-desc")
-            with Horizontal(id="bb-open", classes="bb-item"):
+            with BottomBarItem(id="bb-open", classes="bb-item"):
                 yield Static(" ^O ", classes="kb-key")
                 yield Static("Open ", classes="kb-desc")
-            with Horizontal(id="bb-save", classes="bb-item"):
+            with BottomBarItem(id="bb-save", classes="bb-item"):
                 yield Static(" ^S ", classes="kb-key")
                 yield Static("Save ", classes="kb-desc")
-            with Horizontal(id="bb-search", classes="bb-item"):
+            with BottomBarItem(id="bb-search", classes="bb-item"):
                 yield Static(" ^F ", classes="kb-key")
                 yield Static("Search ", classes="kb-desc")
             yield Static("", id="sb-spacer")
@@ -711,13 +723,15 @@ class MainScreen(Screen):
             yield Static("", id="sb-cursor")
             yield Static("", id="sb-branch")
 
-    def on_click(self, event: Click) -> None:
-        self.app.on_click(event)
+    async def on_click(self, event: Click) -> None:
+        await self.app.on_click(event)
 
-    def on_mouse_down(self, event: MouseDown) -> None:
-        self.app.on_click(event)
+    async def on_mouse_down(self, event: MouseDown) -> None:
+        await self.app.on_click(event)
 
     def on_mount(self) -> None:
+        from syntax_setup import register_extra_languages
+        register_extra_languages(self.query_one("#editor", TextArea))
         self.app._refresh_ui()
         self.query_one("#editor", TextArea).focus()
 
@@ -1137,25 +1151,25 @@ class TrixApp(App):
 
     # ── Mouse click handling ─────────────────────────────────────────────────
 
-    def on_click(self, event: Click | MouseDown) -> None:
+    async def on_click(self, event: Click | MouseDown) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
             return
 
         widget = event.widget
         ancestors = list(widget.ancestors) if widget else []
         bb_actions = {
-            "bb-quit":   "action_quit_app",
-            "bb-help":   "action_show_help",
-            "bb-git":    "action_show_git_history",
-            "bb-theme":  "action_cycle_theme",
-            "bb-files":  "action_toggle_filetree",
-            "bb-open":   "action_open_folder",
-            "bb-save":   "action_save",
-            "bb-search": "action_search",
+            "bb-quit":   "quit_app",
+            "bb-help":   "show_help",
+            "bb-git":    "show_git_history",
+            "bb-theme":  "cycle_theme",
+            "bb-files":  "toggle_filetree",
+            "bb-open":   "open_folder",
+            "bb-save":   "save",
+            "bb-search": "search",
         }
         for w in [widget] + ancestors:
             if w and w.id and w.id in bb_actions:
-                self.run_action(bb_actions[w.id])
+                await self.run_action(bb_actions[w.id])
                 return
 
         if widget:
@@ -1337,8 +1351,8 @@ class TrixApp(App):
 
     # ── Actions ───────────────────────────────────────────────────────────
 
-    def action_show_help(self) -> None:
-        self.push_screen(HelpScreen())
+    async def action_show_help(self) -> None:
+        await self.push_screen(HelpScreen())
 
     def action_search(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
@@ -1353,12 +1367,12 @@ class TrixApp(App):
             return
         self.screen.query_one("#global-search", GlobalSearch).open()
 
-    def action_show_git_history(self) -> None:
+    async def action_show_git_history(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
             return
         tree = self.screen.query_one(DirectoryTree)
         repo_path = str(tree.path)
-        self.push_screen(GitHistoryScreen(repo_path))
+        await self.push_screen(GitHistoryScreen(repo_path))
 
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode
@@ -1600,7 +1614,7 @@ class TrixApp(App):
 
     _LANG_MAP: dict[str, str] = {
         ".py": "python",     ".js": "javascript", ".jsx": "javascript",
-        ".ts": "typescript", ".tsx": "typescript", ".json": "json",
+        ".ts": "typescript", ".tsx": "tsx",         ".json": "json",
         ".html": "html",     ".htm": "html",       ".css": "css",
         ".md": "markdown",   ".yaml": "yaml",      ".yml": "yaml",
         ".toml": "toml",     ".sql": "sql",        ".rs": "rust",

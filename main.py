@@ -689,7 +689,7 @@ class MainScreen(Screen):
                 yield PanelHeader("Editor", id="header-editor")
                 yield TabStrip(id="tab-strip")
                 yield EditorSearch(id="editor-search")
-                yield ClickableTextArea(id="editor", show_line_numbers=True, cursor_type="bar")
+                yield ClickableTextArea(id="editor", show_line_numbers=True)
                 yield WelcomePanel(id="editor-welcome-panel")
 
         with Horizontal(id="bottom-bar"):

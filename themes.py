@@ -203,7 +203,51 @@ GitHistoryScreen {{
 #gh-title  {{ width: auto; color: {acc}; text-style: bold; }}
 #gh-meta   {{ width: 1fr; content-align: right middle; color: {txt_m}; }}
 #gh-body   {{ height: 1fr; layout: horizontal; }}
-#gh-left   {{ width: 42%; height: 100%; border-right: solid {brd}; }}
+#gh-left   {{ width: 42%; height: 100%; border-right: solid {brd}; layout: vertical; }}
+#gh-changes {{
+    height: auto; max-height: 50%;
+    background: {bg};
+    border-bottom: solid {brd};
+}}
+#gh-changes-header {{
+    height: 2; padding: 0 2;
+    color: {txt_m}; text-style: bold;
+    background: {bg}; align: left middle;
+}}
+#gh-changes-list {{
+    height: auto; max-height: 12;
+    margin: 0 1; background: {surf};
+    border: none;
+}}
+#gh-changes-list > ListItem {{
+    height: 3; padding: 0 0; background: {surf};
+}}
+#gh-changes-list > ListItem:hover {{ background: {bg}; }}
+#gh-changes-list > ListItem > Checkbox {{
+    width: 100%; height: 3; padding: 0 1; color: {txt};
+}}
+#gh-commit-msg {{
+    margin: 1 1 0 1;
+}}
+#gh-commit-msg Input {{
+    width: 100%; height: 3;
+    border: solid {brd}; background: {surf}; color: {txt};
+}}
+#gh-commit-msg Input:focus {{ border: solid {acc}; }}
+#gh-commit-buttons {{
+    height: auto; margin: 1; layout: horizontal;
+}}
+#gh-commit-buttons Button {{ margin: 0 1; }}
+#gh-commit-error {{
+    height: 1; color: {err}; padding: 0 2; text-align: center;
+}}
+#gh-changes-empty {{
+    width: 100%; height: 100%;
+    content-align: center middle; text-align: center; color: {txt_m};
+}}
+.ghc-row {{ height: 1; padding: 0 1; }}
+.ghc-label {{ width: auto; }}
+.ghc-path  {{ width: 1fr; }}
 #gh-commits {{
     height: 1fr; background: {panel};
     scrollbar-color: {acc}; scrollbar-size: 1 1;

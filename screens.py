@@ -38,7 +38,7 @@ _HELP = """\
     [#5ac1fe]Ctrl+P[/#5ac1fe]          Command Palette
 
   [bold #5ac1fe]── Git & Theme ──────────────────[/bold #5ac1fe]
-    [#5ac1fe]Ctrl+G[/#5ac1fe]          Git History
+    [#5ac1fe]Ctrl+G[/#5ac1fe]          Git History & Commit
     [#5ac1fe]Ctrl+T[/#5ac1fe]          Cycle Theme
     [#5ac1fe]Ctrl+Shift+T[/#5ac1fe]    Theme Picker
     [#5ac1fe]Ctrl+R[/#5ac1fe]          Reload File Tree

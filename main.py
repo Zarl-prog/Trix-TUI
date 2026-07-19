@@ -52,6 +52,137 @@ def _git_branch() -> str:
         return ""
 
 
+def _get_current_branch(cwd: str) -> str:
+    """Return the current branch name for the repo at *cwd*, or empty string."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=cwd, capture_output=True, text=True, timeout=2,
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+
+# ── Status code → display mappings (shared by tree badges and GitHistoryScreen) ──
+
+_STATUS_COLORS: dict[str, str] = {
+    "M":   "#e6b450",
+    "MM":  "#e6b450",
+    "AM":  "#e6b450",
+    "??":  "#aad84c",
+    "A":   "#aad84c",
+    "D":   "#ef7177",
+    "DD":  "#ef7177",
+    " R":  "#ef7177",
+    "R":   "#5ac1fe",
+    "C":   "#5ac1fe",
+}
+
+_STATUS_LABELS: dict[str, str] = {
+    "M":   "modified",
+    "MM":  "modified (staged & unstaged)",
+    "AM":  "added, modified",
+    "??":  "untracked",
+    "A":   "added",
+    "D":   "deleted",
+    "DD":  "deleted (staged & unstaged)",
+    " R":  "deleted (unstaged)",
+    "R":   "renamed",
+    "C":   "copied",
+}
+
+
+def _git_status_style(code: str) -> str:
+    """Return a Rich markup hex color for a git status code."""
+    return _STATUS_COLORS.get(code, "#8a8986")
+
+
+def _parse_git_status(cwd: str) -> list[tuple[str, str]]:
+    """Run `git status --porcelain` and return [(rel_path, code), ...]."""
+    try:
+        r = subprocess.run(
+            ["git", "status", "--porcelain", "-u"],
+            cwd=cwd, capture_output=True, text=True, timeout=3,
+        )
+        if r.returncode != 0:
+            return []
+        files: list[tuple[str, str]] = []
+        for line in r.stdout.splitlines():
+            if len(line) < 3:
+                continue
+            code = line[:2].strip()
+            fpath = line[3:].strip()
+            files.append((fpath, code))
+        return files
+    except Exception:
+        return []
+
+
+def _get_repo_root(cwd: str) -> str | None:
+    """Return the absolute git repo root, or None."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd, capture_output=True, text=True, timeout=2,
+        )
+        return r.stdout.strip() if r.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def _run_git(cwd: str, args: list[str]) -> tuple[bool, str]:
+    """Run `git <args>` in cwd.  Returns (success, message).
+
+    All errors (git not found, not a repo, timeout, etc.) are captured
+    in *message* — never raises, never silent.
+    """
+    try:
+        r = subprocess.run(
+            ["git", *args],
+            cwd=cwd, capture_output=True, text=True, timeout=30,
+        )
+        if r.returncode == 0:
+            return True, r.stdout.strip()
+        return False, (r.stderr or r.stdout or "unknown git error").strip()
+    except FileNotFoundError:
+        return False, "git: command not found — is Git installed?"
+    except subprocess.TimeoutExpired:
+        return False, "git command timed out (30s limit)"
+    except Exception as e:
+        return False, str(e).strip()
+
+
+def _git_stage(paths: list[str], cwd: str) -> tuple[bool, str]:
+    """Stage paths with `git add`.  Returns (success, message)."""
+    return _run_git(cwd, ["add", "--"] + paths)
+
+
+def _git_commit(message: str, cwd: str) -> tuple[bool, str]:
+    """Commit staged changes.  Returns (success, message)."""
+    return _run_git(cwd, ["commit", "-m", message])
+
+
+def _git_push(cwd: str) -> tuple[bool, str]:
+    """Push the current branch.
+
+    If no upstream is configured, auto-sets it with
+    `git push -u origin <branch>`.
+    Returns (success, message).
+    """
+    branch = _get_current_branch(cwd)
+    if not branch:
+        return False, "not on any branch (detached HEAD?)"
+
+    # Check if upstream exists
+    ok, _ = _run_git(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+    if ok:
+        return _run_git(cwd, ["push"])
+    else:
+        # No upstream → push -u origin <branch>
+        return _run_git(cwd, ["push", "-u", "origin", branch])
+
+
 def _init_config_dir() -> Path:
     p = Path.home() / ".trix"
     p.mkdir(parents=True, exist_ok=True)
@@ -208,25 +339,14 @@ class ClickableDirectoryTree(DirectoryTree):
     def _refresh_git_status(self) -> None:
         """Run git status --porcelain and cache results."""
         try:
-            result = subprocess.run(
-                ["git", "status", "--porcelain", "-u"],
-                cwd=str(self.path),
-                capture_output=True, text=True, timeout=3
-            )
-            root_result = subprocess.run(
-                ["git", "rev-parse", "--show-toplevel"],
-                cwd=str(self.path),
-                capture_output=True, text=True, timeout=2
-            )
-            self.__class__._git_root = root_result.stdout.strip()
+            root = _get_repo_root(str(self.path))
+            self.__class__._git_root = root or ""
+            files = _parse_git_status(str(self.path))
             cache: dict[str, str] = {}
-            for line in result.stdout.splitlines():
-                if len(line) >= 3:
-                    code = line[:2].strip()
-                    fpath = line[3:].strip()
-                    if self.__class__._git_root:
-                        abs_path = str(Path(self.__class__._git_root) / fpath)
-                        cache[abs_path] = code
+            if root:
+                for rel_path, code in files:
+                    abs_path = str(Path(root) / rel_path)
+                    cache[abs_path] = code
             self.__class__._git_status_cache = cache
         except Exception:
             self.__class__._git_status_cache = {}
@@ -266,34 +386,8 @@ class ClickableDirectoryTree(DirectoryTree):
                 except Exception:
                     style = Style(color="#bfbdb6")
             else:
-                # Git status colors from theme
-                try:
-                    theme = self.app._current_theme_dict
-                    if git_code in ("M", "MM", "AM"):
-                        style = Style(color=theme.get("warning", "#e6b450"))
-                    elif git_code in ("??",):
-                        style = Style(color=theme.get("success", "#aad84c"))
-                    elif git_code in ("D", "DD", " D"):
-                        style = Style(color=theme.get("error", "#ef7177"))
-                    elif git_code in ("A", "AM"):
-                        style = Style(color=theme.get("success", "#aad84c"))
-                    elif git_code in ("R", "C"):
-                        style = Style(color=theme.get("accent", "#5ac1fe"))
-                    else:
-                        style = Style(color=theme.get("text_muted", "#8a8986"))
-                except Exception:
-                    if git_code in ("M", "MM", "AM"):
-                        style = Style(color="#e6b450")
-                    elif git_code in ("??",):
-                        style = Style(color="#aad84c")
-                    elif git_code in ("D", "DD", " D"):
-                        style = Style(color="#ef7177")
-                    elif git_code in ("A", "AM"):
-                        style = Style(color="#aad84c")
-                    elif git_code in ("R", "C"):
-                        style = Style(color="#5ac1fe")
-                    else:
-                        style = Style(color="#8a8986")
+                color = _git_status_style(git_code)
+                style = Style(color=color)
 
         node_label.stylize(style)
 

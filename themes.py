@@ -171,6 +171,109 @@ def register_css_template(name: str, css: str) -> None:
     CSS_TEMPLATES[name] = css
 
 
+def build_git_history_css(theme: dict) -> str:
+    bg     = theme.get("background",     "#0d1016")
+    surf   = theme.get("surface",        "#1f2127")
+    panel  = theme.get("panel",          "#1f2127")
+    brd    = theme.get("border",         "#3f4043")
+    txt    = theme.get("text",           "#bfbdb6")
+    txt_m  = theme.get("text_muted",     "#8a8986")
+    acc    = theme.get("accent",         "#5ac1fe")
+    succ   = theme.get("success",        "#aad84c")
+    warn   = theme.get("warning",        "#e6b450")
+    err    = theme.get("error",          "#ef7177")
+    return f"""
+GitHistoryScreen {{
+    align: center middle;
+    background: rgba(0,0,0,0.82);
+}}
+#git-popup {{
+    width: 88%;
+    height: 85%;
+    background: {panel};
+    border: tall {acc};
+    layout: vertical;
+}}
+#gh-header {{
+    height: 3; dock: top;
+    background: {bg};
+    border-bottom: solid {brd};
+    padding: 0 2; align: left middle;
+}}
+#gh-title  {{ width: auto; color: {acc}; text-style: bold; }}
+#gh-meta   {{ width: 1fr; content-align: right middle; color: {txt_m}; }}
+#gh-body   {{ height: 1fr; layout: horizontal; }}
+#gh-left   {{ width: 42%; height: 100%; border-right: solid {brd}; }}
+#gh-commits {{
+    height: 1fr; background: {panel};
+    scrollbar-color: {acc}; scrollbar-size: 1 1;
+}}
+#gh-commits > ListItem {{
+    height: auto; padding: 0;
+    background: {panel};
+    border-bottom: solid {surf};
+}}
+#gh-commits > ListItem:hover {{ background: {surf}; }}
+#gh-commits > ListItem.--highlight {{
+    background: {bg};
+    border-left: tall {acc};
+}}
+.gh-row        {{ height: auto; padding: 1 2; }}
+.gh-row-top    {{ height: auto; layout: horizontal; }}
+.gh-dot        {{ width: 2; color: {acc}; }}
+.gh-hash       {{ width: 8; color: {warn}; text-style: bold; }}
+.gh-msg        {{ width: 1fr; color: {txt}; padding: 0 1; }}
+.gh-row-bottom {{ height: auto; padding: 0 2; layout: horizontal; }}
+.gh-author     {{ width: auto; color: {succ}; }}
+.gh-sep        {{ width: auto; color: {brd}; padding: 0 1; }}
+.gh-time       {{ width: auto; color: {txt_m}; text-style: italic; }}
+#gh-right   {{ width: 1fr; height: 100%; layout: vertical; }}
+#gh-detail-placeholder {{
+    width: 100%; height: 100%;
+    content-align: center middle; text-align: center;
+    color: {brd};
+}}
+#gh-detail-titlebar {{
+    height: 3; background: {bg};
+    border-bottom: solid {brd};
+    padding: 0 2; color: {acc};
+    text-style: bold; content-align: left middle;
+}}
+#gh-detail-body {{ height: auto; padding: 1 2; }}
+.gh-field-row   {{ height: 1; layout: horizontal; margin-bottom: 1; }}
+.gh-field-label {{ width: 10; color: {txt_m}; text-style: bold; }}
+.gh-field-value {{ width: 1fr; color: {txt}; }}
+#gh-detail-divider {{ height: 1; border-top: solid {brd}; margin: 0 2 1 2; }}
+#gh-files-title {{
+    height: 1; padding: 0 2;
+    color: {txt_m}; text-style: bold; margin-bottom: 1;
+}}
+#gh-files {{
+    height: 1fr; padding: 0 2;
+    scrollbar-color: {acc}; scrollbar-size: 1 1;
+}}
+.gh-file-row  {{ height: 1; layout: horizontal; margin-bottom: 1; }}
+.gh-file-dot  {{ width: 2; color: {brd}; }}
+.gh-file-name {{ width: 1fr; color: {txt}; }}
+.gh-file-add  {{ width: 7; color: {succ}; text-align: right; }}
+.gh-file-del  {{ width: 7; color: {err}; text-align: right; }}
+#gh-footer {{
+    height: 1; dock: bottom;
+    background: {bg};
+    border-top: solid {brd};
+    padding: 0 2; align: left middle;
+}}
+.gh-key      {{ width: auto; color: {acc}; text-style: bold; margin-right: 1; }}
+.gh-sep-f    {{ width: auto; color: {brd}; margin-right: 2; }}
+.gh-key-desc {{ width: auto; color: {txt_m}; margin-right: 2; }}
+#gh-empty {{
+    width: 100%; height: 100%;
+    content-align: center middle; text-align: center;
+    color: {txt_m};
+}}
+"""
+
+
 def build_text_area_theme(theme: dict) -> "TextAreaTheme":
     """Build a TextAreaTheme from an app theme dict, mapping syntax tokens
     to the theme's palette colors."""

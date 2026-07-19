@@ -9,146 +9,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Label, ListItem, ListView, Static
 
 
-GIT_HISTORY_CSS = """
-GitHistoryScreen {
-    align: center middle;
-    background: rgba(0,0,0,0.82);
-}
-
-#git-popup {
-    width: 88%;
-    height: 85%;
-    background: #141820;
-    border: tall #5ac1fe;
-    layout: vertical;
-}
-
-/* ── Header ── */
-#gh-header {
-    height: 3;
-    dock: top;
-    background: #0d1016;
-    border-bottom: solid #1f2a3a;
-    padding: 0 2;
-    align: left middle;
-}
-#gh-title  { width: auto; color: #5ac1fe; text-style: bold; }
-#gh-meta   { width: 1fr; content-align: right middle; color: #4b4c4e; }
-
-/* ── Two-column body ── */
-#gh-body {
-    height: 1fr;
-    layout: horizontal;
-}
-
-/* ── Left: commit list ── */
-#gh-left {
-    width: 42%;
-    height: 100%;
-    border-right: solid #1f2a3a;
-}
-#gh-commits {
-    height: 1fr;
-    background: #141820;
-    scrollbar-color: #5ac1fe;
-    scrollbar-size: 1 1;
-}
-#gh-commits > ListItem {
-    height: auto;
-    padding: 0;
-    background: #141820;
-    border-bottom: solid #1a1e26;
-}
-#gh-commits > ListItem:hover { background: #1a1f2b; }
-#gh-commits > ListItem.--highlight {
-    background: #1a2540;
-    border-left: tall #5ac1fe;
-}
-
-.gh-row        { height: auto; padding: 1 2; }
-.gh-row-top    { height: auto; layout: horizontal; }
-.gh-dot        { width: 2; color: #5ac1fe; }
-.gh-hash       { width: 8; color: #e6b450; text-style: bold; }
-.gh-msg        { width: 1fr; color: #bfbdb6; padding: 0 1; }
-.gh-row-bottom { height: auto; padding: 0 2; layout: horizontal; }
-.gh-author     { width: auto; color: #aad84c; }
-.gh-sep        { width: auto; color: #3f4043; padding: 0 1; }
-.gh-time       { width: auto; color: #4b4c4e; text-style: italic; }
-
-/* ── Right: detail panel ── */
-#gh-right {
-    width: 1fr;
-    height: 100%;
-    layout: vertical;
-}
-#gh-detail-placeholder {
-    width: 100%;
-    height: 100%;
-    content-align: center middle;
-    text-align: center;
-    color: #3f4043;
-}
-#gh-detail-titlebar {
-    height: 3;
-    background: #0d1016;
-    border-bottom: solid #1f2a3a;
-    padding: 0 2;
-    color: #5ac1fe;
-    text-style: bold;
-    content-align: left middle;
-}
-#gh-detail-body {
-    height: auto;
-    padding: 1 2;
-}
-.gh-field-row   { height: 1; layout: horizontal; margin-bottom: 1; }
-.gh-field-label { width: 10; color: #4b4c4e; text-style: bold; }
-.gh-field-value { width: 1fr; color: #bfbdb6; }
-#gh-detail-divider {
-    height: 1;
-    border-top: solid #1f2a3a;
-    margin: 0 2 1 2;
-}
-#gh-files-title {
-    height: 1;
-    padding: 0 2;
-    color: #4b4c4e;
-    text-style: bold;
-    margin-bottom: 1;
-}
-#gh-files {
-    height: 1fr;
-    padding: 0 2;
-    scrollbar-color: #5ac1fe;
-    scrollbar-size: 1 1;
-}
-.gh-file-row  { height: 1; layout: horizontal; margin-bottom: 1; }
-.gh-file-dot  { width: 2; color: #3f4043; }
-.gh-file-name { width: 1fr; color: #bfbdb6; }
-.gh-file-add  { width: 7; color: #aad84c; text-align: right; }
-.gh-file-del  { width: 7; color: #ef7177; text-align: right; }
-
-/* ── Footer ── */
-#gh-footer {
-    height: 1;
-    dock: bottom;
-    background: #0d1016;
-    border-top: solid #1f2a3a;
-    padding: 0 2;
-    align: left middle;
-}
-.gh-key      { width: auto; color: #5ac1fe; text-style: bold; margin-right: 1; }
-.gh-sep-f    { width: auto; color: #3f4043; margin-right: 2; }
-.gh-key-desc { width: auto; color: #4b4c4e; margin-right: 2; }
-
-#gh-empty {
-    width: 100%;
-    height: 100%;
-    content-align: center middle;
-    text-align: center;
-    color: #4b4c4e;
-}
-"""
+_GIT_HISTORY_CSS_SOURCE = "trix_git_history"
 
 
 class CommitDetail:
@@ -187,7 +48,7 @@ class CommitDetail:
 
 
 class GitHistoryScreen(ModalScreen):
-    CSS = GIT_HISTORY_CSS
+    CSS = ""
     BINDINGS = [
         ("escape", "close",       "Close"),
         ("enter",  "show_detail", "Detail"),
@@ -251,6 +112,14 @@ class GitHistoryScreen(ModalScreen):
                 yield Label("Close",    classes="gh-key-desc")
 
     def on_mount(self) -> None:
+        from themes import build_git_history_css
+        try:
+            theme = self.app._current_theme_dict  # type: ignore[attr-defined]
+            css = build_git_history_css(theme)
+            self.stylesheet.add_source(css, read_from=(_GIT_HISTORY_CSS_SOURCE, ""))
+            self.refresh_css(animate=False)
+        except Exception:
+            pass
         self.query_one("#gh-detail").display = False
         self._debounce_timer = None
         self._load_git_data()

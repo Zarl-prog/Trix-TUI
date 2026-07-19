@@ -1017,6 +1017,19 @@ class TrixApp(App):
         except Exception:
             pass
 
+        # Refresh GitHistoryScreen CSS if it is the active screen
+        try:
+            from git_history_screen import GitHistoryScreen
+            if isinstance(self.screen, GitHistoryScreen):
+                from themes import build_git_history_css
+                css = build_git_history_css(theme)
+                self.stylesheet.add_source(
+                    css, read_from=("trix_git_history", ""),
+                )
+                self.refresh_css(animate=False)
+        except Exception:
+            pass
+
         # Apply matching TextAreaTheme for syntax highlighting
         try:
             ta = self.screen.query_one("#editor", TextArea)

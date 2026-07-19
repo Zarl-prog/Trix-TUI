@@ -281,7 +281,7 @@ def build_theme_css(theme: dict) -> str:
     TextArea {{ background: {bg}; color: {txt}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
     TextArea .text-area--gutter {{ background: {bg}; color: {ln}; }}
     TextArea .text-area--gutter-active {{ background: {bg}; color: {acc}; }}
-    TextArea .text-area--cursor {{ background: {brd}; text-style: underline; color: {acc}; }}
+    TextArea .text-area--cursor {{ background: {acc}; }}
     TextArea .text-area--cursor-line {{ background: {cl}; }}
     #bottom-bar {{ background: {surf}; }}
     .kb-key {{ color: {acc}; }}

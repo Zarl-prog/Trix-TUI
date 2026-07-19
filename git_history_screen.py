@@ -6,7 +6,7 @@ from textual import work, on
 from textual.app import ComposeResult
 from textual.containers import Vertical, Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
-from textual.widgets import Checkbox, Input, Label, ListItem, ListView, Static, Button
+from textual.widgets import Input, Label, ListItem, ListView, Static, Button
 
 
 _GIT_HISTORY_CSS_SOURCE = "trix_git_history"
@@ -64,6 +64,7 @@ class GitHistoryScreen(ModalScreen):
         self.commits: list[CommitDetail] = []
         self._active_hash = None
         self._git_status_files: list[tuple[str, str]] = []
+        self._selected_paths: set[str] = set()
 
     def compose(self) -> ComposeResult:
         with Vertical(id="git-popup"):
@@ -78,17 +79,17 @@ class GitHistoryScreen(ModalScreen):
                         with Horizontal(id="gh-commit-msg"):
                             yield Input(
                                 id="gh-commit-message",
-                                placeholder="commit message (required)",
+                                placeholder="Commit message...",
                             )
                         with Horizontal(id="gh-commit-buttons"):
                             yield Button("Commit", id="gh-commit-btn", variant="primary")
                             yield Button("Commit && Push", id="gh-commit-push-btn", variant="primary")
                         yield Static("", id="gh-commit-error")
+                    yield Label("  Git History", id="gh-history-header")
                     yield ListView(id="gh-commits")
                 with Vertical(id="gh-right"):
                     yield Static(
-                        "Select a commit to view details\n\n"
-                        "[dim]↑↓ Navigate   Enter View   C Copy hash[/dim]",
+                        "[dim]⎇[/dim]\n\nSelect a commit to view details",
                         id="gh-detail-placeholder",
                         markup=True,
                     )
@@ -203,11 +204,19 @@ class GitHistoryScreen(ModalScreen):
     # ── Changes panel ────────────────────────────────────────────────────────
 
     def _load_changes_panel(self) -> None:
-        from main import _parse_git_status, _STATUS_LABELS
+        from main import _parse_git_status, _STATUS_LABELS, _git_status_style
 
         self._git_status_files = _parse_git_status(self.repo_path)
         changes_list = self.query_one("#gh-changes-list", ListView)
         changes_list.clear()
+
+        # Pre-select all files when first loading, keep existing selections on refresh
+        if not self._selected_paths:
+            self._selected_paths = {p for p, _ in self._git_status_files}
+        else:
+            # Remove paths no longer in the file list
+            current = {p for p, _ in self._git_status_files}
+            self._selected_paths &= current
 
         if not self._is_git_repo() or not self._git_status_files:
             changes_list.mount(
@@ -218,32 +227,38 @@ class GitHistoryScreen(ModalScreen):
             return
 
         n = len(self._git_status_files)
+        # Use theme success color for count
+        try:
+            succ_color = self.app._current_theme_dict.get("success", "#aad84c")
+        except Exception:
+            succ_color = "#aad84c"
         self.query_one("#gh-changes-header", Label).update(
-            f"  Changes to commit  [#aad84c]({n} file{'s' if n != 1 else ''})[/#aad84c]"
+            f"  Changes to commit  [{succ_color}]({n} file{'s' if n != 1 else ''})[/{succ_color}]"
         )
 
         for rel_path, code in self._git_status_files:
             label = _STATUS_LABELS.get(code, code)
-            cb = Checkbox(f" {label}  {rel_path}", value=True)
-            changes_list.mount(ListItem(cb))
+            color = _git_status_style(code)
+            checked = rel_path in self._selected_paths
+            mark = "✓" if checked else " "
+            icon = f"  [bold {color}]●[/bold {color}]"
+            row = Horizontal(
+                Static(f"{mark}", classes="ghc-check", markup=True),
+                Static(icon, markup=True, classes="ghc-dot"),
+                Static(f" {label}", markup=True, classes="ghc-label"),
+                Static(f"  {rel_path}", markup=True, classes="ghc-path"),
+                classes="ghc-row",
+            )
+            changes_list.mount(ListItem(row))
 
         self._update_commit_buttons()
 
     def _update_commit_buttons(self) -> None:
         msg = self.query_one("#gh-commit-message", Input).value.strip()
-        lv = self.query_one("#gh-changes-list", ListView)
-        has_checked = any(
-            item.query_one(Checkbox) and item.query_one(Checkbox).value
-            for item in lv.children
-            if isinstance(item, ListItem) and item.query_one(Checkbox)
-        )
+        has_checked = len(self._selected_paths) > 0
         disabled = not msg or not has_checked or not self._git_status_files
         self.query_one("#gh-commit-btn", Button).disabled = disabled
         self.query_one("#gh-commit-push-btn", Button).disabled = disabled
-
-    @on(Checkbox.Changed)
-    def _on_checkbox_changed(self, event: Checkbox.Changed) -> None:
-        self._update_commit_buttons()
 
     @on(Input.Changed)
     def _on_input_changed(self, event: Input.Changed) -> None:
@@ -252,10 +267,25 @@ class GitHistoryScreen(ModalScreen):
 
     @on(ListView.Selected, "#gh-changes-list")
     def _on_changes_selected(self, event: ListView.Selected) -> None:
-        if event.item:
-            cb = event.item.query_one(Checkbox)
-            if cb:
-                cb.value = not cb.value
+        if event.item and self._git_status_files:
+            idx = list(event.list_view.children).index(event.item)
+            if 0 <= idx < len(self._git_status_files):
+                rel_path = self._git_status_files[idx][0]
+                if rel_path in self._selected_paths:
+                    self._selected_paths.discard(rel_path)
+                else:
+                    self._selected_paths.add(rel_path)
+                # Update the toggle indicator
+                from main import _git_status_style, _STATUS_LABELS
+                code = self._git_status_files[idx][1]
+                color = _git_status_style(code)
+                label = _STATUS_LABELS.get(code, code)
+                checked = rel_path in self._selected_paths
+                mark = "✓" if checked else " "
+                ghc_check = event.item.query_one(".ghc-check", Static)
+                if ghc_check:
+                    ghc_check.update(f"{mark}")
+                self._update_commit_buttons()
 
     @on(Button.Pressed, "#gh-commit-btn")
     def _on_commit_pressed(self) -> None:
@@ -273,17 +303,7 @@ class GitHistoryScreen(ModalScreen):
             self.query_one("#gh-commit-error", Static).update("Message is required")
             return
 
-        lv = self.query_one("#gh-changes-list", ListView)
-        selected: list[str] = []
-        for item in lv.children:
-            if not isinstance(item, ListItem):
-                continue
-            cb = item.query_one(Checkbox)
-            if cb and cb.value:
-                parts = cb.label.plain.split("  ", 1)
-                path_part = parts[-1] if len(parts) > 1 else cb.label.plain
-                selected.append(path_part)
-
+        selected = list(self._selected_paths)
         if not selected:
             self.query_one("#gh-commit-error", Static).update(
                 "No files selected — check at least one file"
@@ -500,11 +520,17 @@ class GitHistoryScreen(ModalScreen):
 
     def _show_commit_detail(self, commit: CommitDetail) -> None:
         self._active_hash = commit.full_hash
+        # Get theme colors
+        try:
+            warn = self.app._current_theme_dict.get("warning", "#e6b450")
+            succ = self.app._current_theme_dict.get("success", "#aad84c")
+        except Exception:
+            warn, succ = "#e6b450", "#aad84c"
         self.query_one("#gh-detail-hash",    Label).update(
-            f"[#e6b450]{commit.hash7}[/#e6b450]  [dim]{commit.full_hash}[/dim]"
+            f"[{warn}]{commit.hash7}[/{warn}]  [dim]{commit.full_hash}[/dim]"
         )
         self.query_one("#gh-detail-author",  Label).update(
-            f"[#aad84c]{commit.author}[/#aad84c] [dim]<{commit.author_email}>[/dim]"
+            f"[{succ}]{commit.author}[/{succ}] [dim]<{commit.author_email}>[/dim]"
         )
         self.query_one("#gh-detail-date",    Label).update(
             f"{commit.date}  [dim]({self._format_time_ago(commit.date)})[/dim]"
@@ -530,12 +556,18 @@ class GitHistoryScreen(ModalScreen):
     def _update_files_ui(self, files: list) -> None:
         files_container = self.query_one("#gh-files", ScrollableContainer)
         files_container.remove_children()
+        # Get theme colors
+        try:
+            succ = self.app._current_theme_dict.get("success", "#aad84c")
+            err = self.app._current_theme_dict.get("error", "#ef7177")
+        except Exception:
+            succ, err = "#aad84c", "#ef7177"
         if files:
             import time
             unique = int(time.time() * 1000)
             for i, (filename, adds, dels) in enumerate(files):
-                add_str = f"[#aad84c]+{adds}[/#aad84c]" if adds else ""
-                del_str = f"[#ef7177]-{dels}[/#ef7177]" if dels else ""
+                add_str = f"[{succ}]+{adds}[/{succ}]" if adds else ""
+                del_str = f"[{err}]-{dels}[/{err}]" if dels else ""
                 files_container.mount(Horizontal(
                     Static("▸", classes="gh-file-dot"),
                     Static(filename, classes="gh-file-name"),

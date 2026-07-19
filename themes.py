@@ -176,12 +176,16 @@ def build_git_history_css(theme: dict) -> str:
     surf   = theme.get("surface",        "#1f2127")
     panel  = theme.get("panel",          "#1f2127")
     brd    = theme.get("border",         "#3f4043")
+    brd_f  = theme.get("border_focused", "#5ac1fe")
     txt    = theme.get("text",           "#bfbdb6")
     txt_m  = theme.get("text_muted",     "#8a8986")
     acc    = theme.get("accent",         "#5ac1fe")
+    acc_a  = theme.get("accent_alt",     "#39bae5") or acc
     succ   = theme.get("success",        "#aad84c")
     warn   = theme.get("warning",        "#e6b450")
     err    = theme.get("error",          "#ef7177")
+    sb     = theme.get("scrollbar",      "#3f4043")
+    sbt    = theme.get("scrollbar_thumb","#5ac1fe")
     return f"""
 GitHistoryScreen {{
     align: center middle;
@@ -204,40 +208,82 @@ GitHistoryScreen {{
 #gh-meta   {{ width: 1fr; content-align: right middle; color: {txt_m}; }}
 #gh-body   {{ height: 1fr; layout: horizontal; }}
 #gh-left   {{ width: 42%; height: 100%; border-right: solid {brd}; layout: vertical; }}
+
+/* ── Changes panel ── */
 #gh-changes {{
     height: auto; max-height: 50%;
     background: {bg};
-    border-bottom: solid {brd};
+    padding: 0 0 1 0;
 }}
 #gh-changes-header {{
-    height: 2; padding: 0 2;
+    height: 3; padding: 0 2;
     color: {txt_m}; text-style: bold;
     background: {bg}; align: left middle;
+    border-bottom: none;
 }}
 #gh-changes-list {{
     height: auto; max-height: 12;
-    margin: 0 1; background: {surf};
-    border: none;
+    margin: 0 2; background: {surf};
+    border: solid {brd};
+    scrollbar-color: {sbt}; scrollbar-background: {sb};
+    scrollbar-size: 1 1;
 }}
 #gh-changes-list > ListItem {{
-    height: 3; padding: 0 0; background: {surf};
+    height: 3; padding: 0; background: {surf};
 }}
 #gh-changes-list > ListItem:hover {{ background: {bg}; }}
-#gh-changes-list > ListItem > Checkbox {{
-    width: 100%; height: 3; padding: 0 1; color: {txt};
+#gh-changes-list > ListItem:focus {{ background: {bg}; }}
+.ghc-row {{
+    height: 3; padding: 0 1;
+    layout: horizontal;
+    align: left middle;
+    background: {surf};
 }}
+.ghc-row:hover {{ background: {bg}; }}
+.ghc-check {{
+    width: 4; color: {txt}; text-style: bold;
+    background: {surf};
+}}
+.ghc-dot {{
+    width: 4;
+    background: {surf};
+}}
+.ghc-label {{
+    width: auto; color: {txt_m}; min-width: 14;
+    background: {surf};
+}}
+.ghc-path {{
+    width: 1fr; color: {txt};
+    background: {surf};
+}}
+
 #gh-commit-msg {{
-    margin: 1 1 0 1;
+    margin: 1 2 0 2;
 }}
 #gh-commit-msg Input {{
     width: 100%; height: 3;
     border: solid {brd}; background: {surf}; color: {txt};
+    padding: 0 1;
 }}
-#gh-commit-msg Input:focus {{ border: solid {acc}; }}
+#gh-commit-msg Input:focus {{ border: solid {brd_f}; }}
+#gh-commit-msg Input::placeholder {{ color: {txt_m}; text-style: italic; }}
+
 #gh-commit-buttons {{
-    height: auto; margin: 1; layout: horizontal;
+    height: auto; margin: 1 2; layout: horizontal;
+    align: left middle;
+    border: solid {brd}; background: {surf};
 }}
-#gh-commit-buttons Button {{ margin: 0 1; }}
+#gh-commit-buttons Button {{
+    margin: 0 1; padding: 0 2;
+}}
+#gh-commit-btn {{
+    background: {acc}; color: {bg}; text-style: bold;
+    border: none; min-width: 12;
+}}
+#gh-commit-push-btn {{
+    background: {surf}; color: {acc_a}; text-style: bold;
+    border: solid {acc_a}; min-width: 18;
+}}
 #gh-commit-error {{
     height: 1; color: {err}; padding: 0 2; text-align: center;
 }}
@@ -245,19 +291,27 @@ GitHistoryScreen {{
     width: 100%; height: 100%;
     content-align: center middle; text-align: center; color: {txt_m};
 }}
-.ghc-row {{ height: 1; padding: 0 1; }}
-.ghc-label {{ width: auto; }}
-.ghc-path  {{ width: 1fr; }}
+
+/* ── History list ── */
+#gh-history-header {{
+    height: 3; padding: 0 2;
+    color: {txt_m}; text-style: bold;
+    background: {bg}; align: left middle;
+    border-top: solid {brd};
+    margin-top: 1;
+    margin-bottom: 1;
+}}
 #gh-commits {{
     height: 1fr; background: {panel};
-    scrollbar-color: {acc}; scrollbar-size: 1 1;
+    scrollbar-color: {sbt}; scrollbar-background: {sb};
+    scrollbar-size: 1 1;
 }}
 #gh-commits > ListItem {{
     height: auto; padding: 0;
     background: {panel};
-    border-bottom: solid {surf};
+    border-bottom: solid {brd};
 }}
-#gh-commits > ListItem:hover {{ background: {surf}; }}
+#gh-commits > ListItem:hover {{ background: {bg}; }}
 #gh-commits > ListItem.--highlight {{
     background: {bg};
     border-left: tall {acc};
@@ -271,11 +325,11 @@ GitHistoryScreen {{
 .gh-author     {{ width: auto; color: {succ}; }}
 .gh-sep        {{ width: auto; color: {brd}; padding: 0 1; }}
 .gh-time       {{ width: auto; color: {txt_m}; text-style: italic; }}
-#gh-right   {{ width: 1fr; height: 100%; layout: vertical; }}
+#gh-right   {{ width: 1fr; height: 100%; layout: vertical; padding: 2; }}
 #gh-detail-placeholder {{
     width: 100%; height: 100%;
     content-align: center middle; text-align: center;
-    color: {brd};
+    color: {txt_m}; text-style: italic; padding: 2;
 }}
 #gh-detail-titlebar {{
     height: 3; background: {bg};
@@ -294,7 +348,8 @@ GitHistoryScreen {{
 }}
 #gh-files {{
     height: 1fr; padding: 0 2;
-    scrollbar-color: {acc}; scrollbar-size: 1 1;
+    scrollbar-color: {sbt}; scrollbar-background: {sb};
+    scrollbar-size: 1 1;
 }}
 .gh-file-row  {{ height: 1; layout: horizontal; margin-bottom: 1; }}
 .gh-file-dot  {{ width: 2; color: {brd}; }}
@@ -302,14 +357,24 @@ GitHistoryScreen {{
 .gh-file-add  {{ width: 7; color: {succ}; text-align: right; }}
 .gh-file-del  {{ width: 7; color: {err}; text-align: right; }}
 #gh-footer {{
-    height: 1; dock: bottom;
+    height: auto; min-height: 3; dock: bottom;
     background: {bg};
     border-top: solid {brd};
-    padding: 0 2; align: left middle;
+    padding: 1 2;
+    layout: horizontal;
+    align: left middle;
 }}
-.gh-key      {{ width: auto; color: {acc}; text-style: bold; margin-right: 1; }}
-.gh-sep-f    {{ width: auto; color: {brd}; margin-right: 2; }}
-.gh-key-desc {{ width: auto; color: {txt_m}; margin-right: 2; }}
+#gh-footer > .gh-key {{
+    width: auto; color: {acc}; text-style: bold;
+    margin-right: 1;
+}}
+#gh-footer > .gh-key-desc {{
+    width: auto; color: {txt_m};
+    margin-right: 2;
+}}
+#gh-footer > .gh-key-desc:last-of-type {{
+    margin-right: 0;
+}}
 #gh-empty {{
     width: 100%; height: 100%;
     content-align: center middle; text-align: center;

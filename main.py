@@ -233,10 +233,12 @@ class ClickableDirectoryTree(DirectoryTree):
 
     def watch_path(self, path: Path) -> None:
         """Reload tree and re-run git status when the tree path changes."""
+        from textual.widgets._tree import DirEntry
+        self.reset_node(self.root, str(path), DirEntry(self.PATH(path)))
         self._refresh_git_status()
         self.reload()
 
-def render_label(self, node, base_style, style):
+    def render_label(self, node, base_style, style):
         from rich.text import Text
         from rich.style import Style
 

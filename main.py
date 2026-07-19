@@ -991,8 +991,12 @@ class TrixApp(App):
                 break
 
         # Apply dynamic CSS overrides so widget colors reflect the new theme
+        # Use fixed read_from so the source REPLACES the previous theme CSS instead of accumulating
         try:
-            self.stylesheet.add_source(build_theme_css(theme))
+            self.stylesheet.add_source(
+                build_theme_css(theme),
+                read_from=("trix_theme", ""),
+            )
             self.refresh_css(animate=False)
         except Exception:
             pass

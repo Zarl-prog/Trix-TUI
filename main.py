@@ -392,95 +392,248 @@ class ClickableDirectoryTree(DirectoryTree):
 
         # Folder icons
         if path.is_dir():
-            icon = "▼ 📂 " if node.is_expanded else "▶ 📁 "
+            icon = "\ue612 " if node.is_expanded else "\ue611 "
             return Text(icon, style=style) + node_label
 
         _EXT_ICONS: dict[str, str] = {
-            ".py": "🐍 ", ".pyw": "🐍 ", ".pyi": "🐍 ", ".pyx": "🐍 ", ".pxd": "🐍 ",
-            ".js": "🟨 ", ".mjs": "🟨 ", ".cjs": "🟨 ",
-            ".jsx": "⚛️ ", ".tsx": "⚛️ ",
-            ".ts": "🔷 ", ".cts": "🔷 ", ".mts": "🔷 ",
-            ".html": "🌐 ", ".htm": "🌐 ", ".xhtml": "🌐 ",
-            ".css": "🎨 ", ".scss": "🎨 ", ".sass": "🎨 ", ".less": "🎨 ",
-            ".vue": "💚 ", ".svelte": "🔥 ", ".astro": "🚀 ",
-            ".json": "📋 ", ".jsonc": "📋 ", ".json5": "📋 ",
-            ".yaml": "⚙️ ", ".yml": "⚙️ ",
-            ".toml": "⚙️ ", ".ini": "⚙️ ", ".cfg": "⚙️ ", ".conf": "⚙️ ",
-            ".env": "🔒 ",
-            ".md": "📝 ", ".mdx": "📝 ", ".rst": "📝 ", ".txt": "📄 ",
-            ".c": "🔵 ", ".h": "🔵 ",
-            ".cpp": "🔵 ", ".cc": "🔵 ", ".cxx": "🔵 ", ".hpp": "🔵 ",
-            ".rs": "🦀 ",
-            ".go": "🐹 ",
-            ".java": "☕ ", ".kt": "☕ ",
-            ".cs": "🔵 ",
-            ".swift": "🍎 ",
-            ".rb": "💎 ",
-            ".php": "🐘 ",
-            ".scala": "🔴 ",
-            ".hs": "🟣 ",
-            ".ex": "💜 ", ".exs": "💜 ",
-            ".dart": "🎯 ",
-            ".zig": "⚡ ",
-            ".sh": "🖥️ ", ".bash": "🖥️ ", ".zsh": "🖥️ ", ".fish": "🖥️ ",
-            ".ps1": "💙 ",
-            ".sql": "🗄️ ",
-            ".csv": "📊 ",
-            ".png": "🖼️ ", ".jpg": "🖼️ ", ".jpeg": "🖼️ ", ".gif": "🖼️ ",
-            ".svg": "🖼️ ", ".ico": "🖼️ ", ".webp": "🖼️ ",
-            ".mp4": "🎬 ", ".mov": "🎬 ", ".avi": "🎬 ", ".mkv": "🎬 ",
-            ".mp3": "🎵 ", ".wav": "🎵 ", ".flac": "🎵 ",
-            ".ttf": "🔤 ", ".otf": "🔤 ", ".woff": "🔤 ", ".woff2": "🔤 ",
-            ".zip": "📦 ", ".tar": "📦 ", ".gz": "📦 ",
-            ".gitignore": "🙈 ", ".gitattributes": "🙈 ",
-            ".lock": "🔒 ",
-            ".xml": "📰 ",
-            ".lua": "🌙 ",
-            ".vim": "📗 ",
-            ".r": "📈 ",
-            ".proto": "📋 ",
-            ".graphql": "📊 ", ".gql": "📊 ",
-            ".tf": "🏗️ ", ".tfvars": "🏗️ ",
+            # ── Python ──
+            ".py":  "\ue63a ", ".pyw": "\ue63a ", ".pyi": "\ue63a ",
+            ".pyx": "\ue63a ", ".pxd": "\ue63a ", ".whl": "\ue63a ",
+            # ── JavaScript ──
+            ".js":  "\ue628 ", ".mjs": "\ue628 ", ".cjs": "\ue628 ",
+            # ── React ──
+            ".jsx": "\ue63c ", ".tsx": "\ue64a ",
+            # ── TypeScript ──
+            ".ts":  "\ue64a ", ".cts": "\ue64a ", ".mts": "\ue64a ",
+            # ── HTML ──
+            ".html": "\ue754 ", ".htm": "\ue754 ", ".xhtml": "\ue754 ",
+            # ── CSS / Styles ──
+            ".css":  "\ue72b ", ".scss": "\ue78d ", ".sass": "\ue78d ",
+            ".less": "\ue764 ", ".styl": "\ue797 ",
+            # ── JS Frameworks ──
+            ".vue":   "\ue7a2 ",
+            ".svelte":"\uf484 ",
+            ".astro": "\uf484 ",
+            # ── JSON ──
+            ".json":  "\ue62a ", ".jsonc": "\ue62a ", ".json5": "\ue62a ",
+            # ── Markdown / Docs ──
+            ".md":  "\ue62f ", ".mdx": "\ue62f ", ".rst": "\ue62f ",
+            ".txt": "\ue648 ",
+            # ── YAML ──
+            ".yaml": "\ue64f ", ".yml": "\ue64f ",
+            # ── Config / TOML ──
+            ".toml": "\ue641 ", ".ini": "\ue641 ",
+            ".cfg":  "\ue641 ", ".conf": "\ue641 ",
+            # ── Env ──
+            ".env": "\ue73b ",
+            # ── Shell ──
+            ".sh":   "\ue642 ", ".bash": "\ue642 ", ".zsh": "\ue642 ",
+            ".fish": "\ue642 ",
+            # ── PowerShell ──
+            ".ps1": "\ue637 ",
+            # ── C / C++ ──
+            ".c":   "\ue71f ", ".h":   "\ue71f ",
+            ".cpp": "\ue729 ", ".cc":  "\ue729 ", ".cxx": "\ue729 ",
+            ".hpp": "\ue729 ", ".hxx": "\ue729 ",
+            # ── Rust ──
+            ".rs": "\ue63f ",
+            # ── Go ──
+            ".go": "\ue619 ",
+            # ── Java / JVM ──
+            ".java": "\ue75a ", ".class": "\ue75a ", ".jar": "\ue75a ",
+            # ── Kotlin ──
+            ".kt": "\ue75a ", ".kts": "\ue75a ",
+            # ── C# ──
+            ".cs": "\ue72a ",
+            # ── Swift ──
+            ".swift": "\ue799 ",
+            # ── Ruby ──
+            ".rb": "\ue78a ",
+            # ── PHP ──
+            ".php": "\ue77d ",
+            # ── Scala ──
+            ".scala": "\ue78e ",
+            # ── Haskell ──
+            ".hs":  "\ue752 ", ".lhs": "\ue752 ",
+            # ── Elixir / Erlang ──
+            ".ex":  "\ue738 ", ".exs": "\ue738 ",
+            ".erl": "\ue73c ", ".hrl": "\ue73c ",
+            # ── Dart ──
+            ".dart": "\ue72e ",
+            # ── Lua ──
+            ".lua": "\ue76b ",
+            # ── SQL / DB ──
+            ".sql":    "\ue795 ",
+            ".db":     "\ue76e ",
+            ".sqlite": "\ue76e ",
+            # ── GraphQL ──
+            ".graphql": "\ue61a ", ".gql": "\ue61a ",
+            # ── Perl ──
+            ".pl": "\ue77a ", ".pm": "\ue77a ",
+            # ── Elm ──
+            ".elm": "\ue739 ",
+            # ── Clojure ──
+            ".clj":  "\ue76a ", ".cljs": "\ue76a ",
+            ".cljc": "\ue76a ", ".edn":  "\ue76a ",
+            # ── CoffeeScript ──
+            ".coffee": "\ue728 ", ".litcoffee": "\ue728 ",
+            # ── PureScript ──
+            ".purs": "\ue782 ",
+            # ── R ──
+            ".r":    "\uf48f ",
+            # ── VimL ──
+            ".vim": "\ue7a0 ",
+            # ── Images ──
+            ".png":  "\ue625 ", ".jpg": "\ue625 ", ".jpeg": "\ue625 ",
+            ".gif":  "\ue625 ", ".bmp": "\ue625 ", ".tiff": "\ue625 ",
+            ".webp": "\ue625 ", ".ico": "\ue625 ",
+            # ── SVG ──
+            ".svg": "\ue645 ",
+            # ── Video ──
+            ".mp4": "\ue64c ", ".mov": "\ue64c ", ".avi": "\ue64c ",
+            ".mkv": "\ue64c ", ".webm": "\ue64c ",
+            # ── Audio ──
+            ".mp3": "\ue651 ", ".wav": "\ue651 ", ".flac": "\ue651 ",
+            ".ogg": "\ue651 ", ".m4a": "\ue651 ",
+            # ── Archives ──
+            ".zip": "\ue650 ", ".tar": "\ue650 ", ".gz":  "\ue650 ",
+            ".bz2": "\ue650 ", ".xz":  "\ue650 ", ".7z":  "\ue650 ",
+            ".rar": "\ue650 ",
+            # ── Fonts ──
+            ".ttf":  "\ue757 ", ".otf":  "\ue757 ",
+            ".woff": "\ue757 ", ".woff2":"\ue757 ",
+            # ── Documents / Data ──
+            ".pdf": "\ue652 ",
+            ".csv": "\ue648 ",
+            # ── XML ──
+            ".xml": "\ue622 ",
+            # ── Lock ──
+            ".lock": "\ue609 ",
+            # ── Git files ──
+            ".gitignore":     "\ue604 ",
+            ".gitattributes": "\ue603 ",
+            ".gitmodules":    "\ue603 ",
+            # ── Terraform ──
+            ".tf":     "\uf488 ", ".tfvars": "\uf488 ",
+            # ── Docker ──
+            ".dockerignore": "\ue60e ",
+            # ── Node ──
+            ".npmignore": "\ue60a ",
+            # ── Protocol Buffers ──
+            ".proto": "\uf490 ",
         }
 
         _NAME_ICONS: dict[str, str] = {
-            "dockerfile":          "🐳 ",
-            "docker-compose.yml":  "🐳 ",
-            "docker-compose.yaml": "🐳 ",
-            "makefile":            "🔧 ",
-            "cmakelists.txt":      "🔧 ",
-            ".gitignore":          "🙈 ",
-            ".gitattributes":      "🙈 ",
-            ".env":                "🔒 ",
-            ".env.local":          "🔒 ",
-            ".env.production":     "🔒 ",
-            ".env.development":    "🔒 ",
-            ".env.example":        "🔒 ",
-            "license":             "⚖️ ",
-            "license.md":          "⚖️ ",
-            "license.txt":         "⚖️ ",
-            "readme.md":           "📖 ",
-            "readme.txt":          "📖 ",
-            "readme":              "📖 ",
-            "changelog.md":        "📋 ",
-            "changelog":           "📋 ",
-            "contributing.md":     "🤝 ",
-            "pyproject.toml":      "🐍 ",
-            "setup.py":            "🐍 ",
-            "requirements.txt":    "📦 ",
-            "package.json":        "📦 ",
-            "package-lock.json":   "🔒 ",
-            "yarn.lock":           "🔒 ",
-            "cargo.toml":          "🦀 ",
-            "cargo.lock":          "🦀 ",
-            "go.mod":              "🐹 ",
-            "go.sum":              "🐹 ",
-            "tsconfig.json":       "🔷 ",
-            "vite.config.js":      "⚡ ",
-            "vite.config.ts":      "⚡ ",
-            ".github":             "🐙 ",
-            ".vscode":             "💙 ",
+            # ── Docker ──
+            "dockerfile":          "\ue60e ",
+            "docker-compose.yml":  "\ue60e ",
+            "docker-compose.yaml": "\ue60e ",
+            # ── Build Systems ──
+            "makefile":         "\uf46d ",
+            "cmakelists.txt":   "\uf46d ",
+            "gnumakefile":      "\uf46d ",
+            # ── Git ──
+            ".git":          "\ue614 ",
+            ".gitignore":    "\ue604 ",
+            ".gitattributes":"\ue603 ",
+            # ── CI/CD ──
+            ".github": "\uf47f ",
+            # ── Env ──
+            ".env":             "\ue73b ",
+            ".env.local":       "\ue73b ",
+            ".env.production":  "\ue73b ",
+            ".env.development": "\ue73b ",
+            ".env.example":     "\ue73b ",
+            "env.example":      "\ue73b ",
+            # ── License ──
+            "license":    "\ue62d ",
+            "license.md": "\ue62d ",
+            "license.txt":"\ue62d ",
+            "licence":    "\ue62d ",
+            "copying":    "\ue62d ",
+            # ── README ──
+            "readme.md":  "\uf4a4 ",
+            "readme.txt": "\uf4a4 ",
+            "readme":     "\uf4a4 ",
+            "readme.rst": "\uf4a4 ",
+            # ── Changelog ──
+            "changelog.md": "\uf490 ",
+            "changelog":    "\uf490 ",
+            "changes":      "\uf490 ",
+            "history":      "\uf490 ",
+            # ── Contributing ──
+            "contributing.md": "\uf472 ",
+            # ── Code of Conduct ──
+            "code_of_conduct.md": "\uf4a4 ",
+            "code-of-conduct.md": "\uf4a4 ",
+            # ── Python project ──
+            "pyproject.toml": "\ue63a ",
+            "setup.py":       "\ue63a ",
+            "setup.cfg":      "\ue63a ",
+            "requirements.txt": "\uf46d ",
+            "pipfile":          "\ue63a ",
+            # ── Node / JS project ──
+            "package.json":       "\ue632 ",
+            "package-lock.json":  "\ue609 ",
+            "yarn.lock":          "\ue7ab ",
+            "tsconfig.json":      "\ue64a ",
+            "vite.config.js":     "\uf484 ",
+            "vite.config.ts":     "\uf484 ",
+            "webpack.config.js":  "\ue7a4 ",
+            "webpack.config.ts":  "\ue7a4 ",
+            # ── Rust project ──
+            "cargo.toml": "\ue63f ",
+            "cargo.lock": "\ue609 ",
+            # ── Go project ──
+            "go.mod": "\ue619 ",
+            "go.sum": "\ue609 ",
+            # ── Editors / IDE ──
+            ".vscode":       "\ue7a1 ",
+            ".editorconfig": "\ue600 ",
         }
+
+        # Category fallbacks for unmapped extensions
+        _CODE_FALLBACK = "\ue42f "
+        _TEXT_FALLBACK = "\ue648 "
+        _BINARY_FALLBACK = "\ue42e "
+
+        _CODE_EXTS: frozenset[str] = frozenset({
+            ".m", ".mm", ".s", ".asm", ".inc",
+            ".f", ".f90", ".f95", ".f03", ".f08", ".for",
+            ".adb", ".ads", ".ada",
+            ".ml", ".mli",
+            ".cbl", ".cob",
+            ".cmake", ".mk",
+            ".groovy", ".gvy", ".gradle",
+            ".jl",
+            ".cr",
+            ".zig",
+            ".nim", ".nims",
+            ".odin",
+            ".v", ".vh", ".sv",
+            ".vhd", ".vhdl",
+            ".tcl",
+            ".rkt", ".ss", ".scm",
+            ".agda", ".lagda",
+            ".lean",
+            ".tex", ".sty",
+        })
+        _TEXT_EXTS: frozenset[str] = frozenset({
+            ".log", ".out",
+            ".nfo",
+            ".msg",
+            ".diff", ".patch",
+        })
+        _BINARY_EXTS: frozenset[str] = frozenset({
+            ".o", ".obj", ".lib", ".a",
+            ".so", ".dylib", ".dll",
+            ".exe", ".bin",
+            ".dat", ".raw",
+            ".pyc", ".pyo", ".pyd",
+            ".class",
+            ".wasm",
+            ".ttc", ".eot",
+        })
 
         name_lower = path.name.lower()
         ext = path.suffix.lower()
@@ -488,7 +641,10 @@ class ClickableDirectoryTree(DirectoryTree):
         icon = (
             _NAME_ICONS.get(name_lower)
             or _EXT_ICONS.get(ext)
-            or "📄 "
+            or (_CODE_FALLBACK if ext in _CODE_EXTS
+                else _TEXT_FALLBACK if ext in _TEXT_EXTS
+                else _BINARY_FALLBACK if ext in _BINARY_EXTS
+                else _TEXT_FALLBACK)
         )
 
         git_badge = ""

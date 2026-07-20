@@ -112,7 +112,8 @@ pip install -e .
 
 - Python 3.10+
 - Windows (PowerShell support via winpty)
-- Terminal with Unicode support recommended
+- Terminal with Unicode support
+- **Nerd Font** (e.g. [JetBrainsMono Nerd Font](https://www.nerdfonts.com/font-downloads), [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases)) — required for file tree icons. Install and set as your terminal font.
 
 ---
 

@@ -21,7 +21,6 @@ from textual import work
 
 import json
 from themes import THEMES, build_theme_css, build_text_area_theme
-from divider_widget import Divider
 from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
 from git_menu_screen import GitMenuScreen
@@ -780,7 +779,6 @@ class MainScreen(Screen):
                 yield PanelHeader("Explorer", id="header-files")
                 yield GlobalSearch(id="global-search")
                 yield ClickableDirectoryTree(".", id="file-tree")
-            yield Divider("files-panel", "editor-panel", id="divider-1")
             with Vertical(id="editor-panel"):
                 yield PanelHeader("Editor", id="header-editor")
                 yield TabStrip(id="tab-strip")
@@ -940,14 +938,6 @@ class TrixApp(App):
     #sb-lang    { width: auto; color: #686868; margin-right: 2; }
     #sb-cursor  { width: auto; color: #686868; margin-right: 2; }
     #sb-branch  { width: auto; color: #aad84c; margin-right: 1; }
-
-    /* ── Divider ── */
-    Divider {
-        background: #2e3038;
-    }
-    Divider:hover {
-        background: #5ac1fe;
-    }
 
     /* ── Toast Notifications ── */
     Toast {
@@ -1493,7 +1483,6 @@ class TrixApp(App):
         self._zen_mode = not self._zen_mode
         show = not self._zen_mode
         self.screen.query_one("#files-panel").display = show and self._filetree_visible
-        self.screen.query_one("#divider-1").display = show and self._filetree_visible
         self.screen.query_one("#bottom-bar").display = show
         self.screen.query_one("#header").display = show
         self.screen.query_one("#editor-panel").styles.width = "1fr" if show else "100%"
@@ -1504,7 +1493,6 @@ class TrixApp(App):
         self._filetree_visible = not self._filetree_visible
         if not self._zen_mode:
             self.screen.query_one("#files-panel").display = self._filetree_visible
-            self.screen.query_one("#divider-1").display = self._filetree_visible
 
     def action_save(self) -> None:
         if self._current_file is None:

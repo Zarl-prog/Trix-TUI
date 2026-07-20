@@ -497,10 +497,6 @@ def build_theme_css(theme: dict) -> str:
     #sb-cursor {{ color: {txt_m}; }}
     #sb-branch {{ color: {succ}; }}
 
-    /* ── Divider ── */
-    Divider {{ background: {brd}; }}
-    Divider:hover {{ background: {acc}; }}
-
     /* ── Tab Strip ── */
     TabStrip {{ background: {bg}; }}
     .tab-item {{ color: {txt_m}; background: {bg}; }}

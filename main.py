@@ -998,6 +998,11 @@ class TrixApp(App):
     #editor-welcome-panel.-hidden {
         display: none;
     }
+
+    /* ── Command Palette ── */
+    CommandPalette {
+        align: center middle;
+    }
     """
 
     BINDINGS = [

@@ -403,35 +403,25 @@ class SplashScreen(Screen):
         return "v0.2.0"
 
     def _color_logo(self, progress: float) -> str:
-        nrows = len(self._LOGO_ROWS)
-        filled_rows = int(progress * nrows)
-        row_remainder = (progress * nrows) - filled_rows
+        rows = self._LOGO_ROWS
+        ncols = max(len(r) for r in rows)
 
-        result = []
-        for i, row in enumerate(self._LOGO_ROWS):
-            if i < filled_rows:
-                result.append(f"[#5ac1fe]{row}[/]")
-            elif i == filled_rows and filled_rows < nrows:
-                non_space_idx = [
-                    j for j, c in enumerate(row) if c not in (" ", "\r")
-                ]
-                k = int(row_remainder * len(non_space_idx))
-                count = 0
-                parts = []
-                for j, c in enumerate(row):
-                    if c in (" ", "\r"):
-                        parts.append(c)
-                    elif count < k:
-                        parts.append(f"[#5ac1fe]{c}[/]")
-                        count += 1
-                    else:
-                        parts.append(f"[#3f4043]{c}[/]")
-                        count += 1
-                result.append("".join(parts))
-            else:
-                result.append(f"[#3f4043]{row}[/]")
+        all_chars: list[tuple[int, int, str]] = []
+        for col in range(ncols):
+            for r_idx, row in enumerate(rows):
+                if col < len(row) and row[col] not in (" ", "\r"):
+                    all_chars.append((r_idx, col, row[col]))
 
-        return "\n".join(result)
+        total = len(all_chars)
+        filled = int(progress * total)
+
+        result_rows = [list(row) for row in rows]
+        for i, (r_idx, col, ch) in enumerate(all_chars):
+            result_rows[r_idx][col] = (
+                f"[#5ac1fe]{ch}[/]" if i < filled else f"[#3f4043]{ch}[/]"
+            )
+
+        return "\n".join("".join(r) for r in result_rows)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="splash-frame"):

@@ -141,11 +141,10 @@ ConfirmScreen {
 }
 #cf-title { color: #ef7177; text-style: bold; }
 #cf-msg { width: 100%; color: #bfbdb6; margin: 1 2; }
-#cf-buttons { height: auto; layout: horizontal; margin: 1 2; }
-#cf-buttons Button { margin: 0 1; }
-#cf-buttons Button:focus { text-style: bold; }
+#cf-buttons { height: auto; layout: horizontal; margin: 1 2; align-horizontal: center; }
+#cf-buttons Button { margin: 0 1; min-height: 3; min-width: 10; }
 #cf-yes { background: #ef7177; color: #0d1016; text-style: bold; border: none; }
-#cf-no { background: transparent; color: #bfbdb6; border: solid #2e3038; }
+#cf-no { background: #2e3038; color: #bfbdb6; text-style: bold; border: none; }
 """
 register_css_template("confirm_screen", CONFIRM_SCREEN_CSS)
 

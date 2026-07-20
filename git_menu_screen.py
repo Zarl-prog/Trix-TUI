@@ -534,12 +534,12 @@ GitMenuScreen {
 
         detail = self.query_one(f"#gm-detail-{idx}", Static)
         if not files:
-            new_text = detail.renderable.split("\n")[:-1]
+            new_text = detail.content.split("\n")[:-1]
             new_text.append(f"  [{succ}]Files[/{succ}]   [{txt_m}]no files changed[/{txt_m}]")
             detail.update("\n".join(new_text))
             return
 
-        lines = detail.renderable.split("\n")[:-1]
+        lines = detail.content.split("\n")[:-1]
         file_lines = []
         for fname, adds, dels in files[:30]:
             parts = []

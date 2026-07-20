@@ -38,7 +38,7 @@ _HELP = """\
     [#5ac1fe]Ctrl+P[/#5ac1fe]          Command Palette
 
   [bold #5ac1fe]── Git & Theme ──────────────────[/bold #5ac1fe]
-    [#5ac1fe]Ctrl+G[/#5ac1fe]          Git History & Commit
+    [#5ac1fe]Ctrl+G[/#5ac1fe]          Git Menu
     [#5ac1fe]Ctrl+T[/#5ac1fe]          Cycle Theme
     [#5ac1fe]Ctrl+Shift+T[/#5ac1fe]    Theme Picker
     [#5ac1fe]Ctrl+R[/#5ac1fe]          Reload File Tree
@@ -59,18 +59,18 @@ HelpScreen {
     background: rgba(0,0,0,0.82);
 }
 #help-dialog {
-    width: 54;
+    width: 58;
     height: auto;
     max-height: 90%;
-    padding: 0 0 1 0;
-    background: #141820;
+    padding: 0;
+    background: #131721;
     border: tall #5ac1fe;
 }
 #help-titlebar {
     width: 100%;
     height: 3;
     background: #0d1016;
-    border-bottom: solid #1f2a3a;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
@@ -81,7 +81,7 @@ HelpScreen {
 }
 #help-title-hint {
     width: auto;
-    color: #3f4043;
+    color: #686868;
 }
 #help-body {
     width: 100%;
@@ -91,7 +91,7 @@ HelpScreen {
 #help-close {
     width: 100%;
     text-align: center;
-    color: #3f4043;
+    color: #686868;
     margin-top: 1;
     padding: 0 2;
 }
@@ -122,27 +122,30 @@ class HelpScreen(Screen):
 CONFIRM_SCREEN_CSS = """
 ConfirmScreen {
     align: center middle;
-    background: rgba(0,0,0,0.80);
+    background: rgba(0,0,0,0.82);
 }
 #cf-dialog {
     width: 50;
     height: auto;
-    padding: 0 0 1 0;
-    background: #141820;
+    padding: 0;
+    background: #131721;
     border: tall #ef7177;
 }
 #cf-titlebar {
     width: 100%;
     height: 3;
-    background: #1a0f10;
-    border-bottom: solid #2a1518;
+    background: #0d1016;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
 #cf-title { color: #ef7177; text-style: bold; }
 #cf-msg { width: 100%; color: #bfbdb6; margin: 1 2; }
-#cf-buttons { height: auto; layout: horizontal; margin: 0 2; }
-ConfirmScreen Button { margin: 0 1; }
+#cf-buttons { height: auto; layout: horizontal; margin: 1 2; }
+#cf-buttons Button { margin: 0 1; }
+#cf-buttons Button:focus { text-style: bold; }
+#cf-yes { background: #ef7177; color: #0d1016; text-style: bold; border: none; }
+#cf-no { background: transparent; color: #bfbdb6; border: solid #2e3038; }
 """
 register_css_template("confirm_screen", CONFIRM_SCREEN_CSS)
 
@@ -175,26 +178,27 @@ class ConfirmScreen(Screen):
 NEW_FILE_SCREEN_CSS = """
 NewFileScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.80);
+    background: rgba(0, 0, 0, 0.82);
 }
 #nf-dialog {
     width: 54;
     height: auto;
-    padding: 0 0 2 0;
-    background: #141820;
+    padding: 0;
+    background: #131721;
     border: tall #5ac1fe;
 }
 #nf-titlebar {
     width: 100%;
     height: 3;
     background: #0d1016;
-    border-bottom: solid #1f2a3a;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
 #nf-title { color: #5ac1fe; text-style: bold; }
-#nf-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
-#nf-input { width: 100%; margin: 0 2; }
+#nf-hint  { width: 100%; color: #686868; padding: 1 2 0 2; }
+#nf-input { width: 100%; margin: 1 2; border: solid #2e3038; background: #0d1016; color: #bfbdb6; padding: 0 1; }
+#nf-input:focus { border: solid #5ac1fe; }
 """
 register_css_template("new_file_screen", NEW_FILE_SCREEN_CSS)
 
@@ -223,26 +227,27 @@ class NewFileScreen(Screen):
 RENAME_SCREEN_CSS = """
 RenameScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.80);
+    background: rgba(0, 0, 0, 0.82);
 }
 #rn-dialog {
     width: 54;
     height: auto;
-    padding: 0 0 2 0;
-    background: #141820;
+    padding: 0;
+    background: #131721;
     border: tall #5ac1fe;
 }
 #rn-titlebar {
     width: 100%;
     height: 3;
     background: #0d1016;
-    border-bottom: solid #1f2a3a;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
 #rn-title { color: #5ac1fe; text-style: bold; }
-#rn-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
-#rn-input { width: 100%; margin: 0 2; }
+#rn-hint  { width: 100%; color: #686868; padding: 1 2 0 2; }
+#rn-input { width: 100%; margin: 1 2; border: solid #2e3038; background: #0d1016; color: #bfbdb6; padding: 0 1; }
+#rn-input:focus { border: solid #5ac1fe; }
 """
 register_css_template("rename_screen", RENAME_SCREEN_CSS)
 
@@ -277,26 +282,27 @@ class RenameScreen(Screen):
 FOLDER_PICKER_CSS = """
 FolderPicker {
     align: center middle;
-    background: rgba(0, 0, 0, 0.80);
+    background: rgba(0, 0, 0, 0.82);
 }
 #dialog {
     width: 60;
     height: auto;
-    padding: 0 0 2 0;
-    background: #141820;
+    padding: 0;
+    background: #131721;
     border: tall #5ac1fe;
 }
 #fp-titlebar {
     width: 100%;
     height: 3;
     background: #0d1016;
-    border-bottom: solid #1f2a3a;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
 #fp-title { color: #5ac1fe; text-style: bold; }
-#fp-hint  { width: 100%; color: #4b4c4e; padding: 1 2 0 2; }
-#folder-path { width: 100%; margin: 0 2; }
+#fp-hint  { width: 100%; color: #686868; padding: 1 2 0 2; }
+#folder-path { width: 100%; margin: 1 2; border: solid #2e3038; background: #0d1016; color: #bfbdb6; padding: 0 1; }
+#folder-path:focus { border: solid #5ac1fe; }
 """
 register_css_template("folder_picker", FOLDER_PICKER_CSS)
 
@@ -340,13 +346,13 @@ SplashScreen {
 }
 #splash-tagline {
     text-align: center;
-    color: #4b4c4e;
-    text-style: bold;
+    color: #686868;
+    text-style: italic;
     margin-bottom: 0;
 }
 #splash-version {
     text-align: center;
-    color: #3f4043;
+    color: #2e3038;
     margin-bottom: 2;
 }
 #splash-bar-container {
@@ -361,7 +367,7 @@ SplashScreen {
 }
 #splash-status {
     text-align: center;
-    color: #4b4c4e;
+    color: #686868;
     margin-top: 1;
 }
 """
@@ -459,17 +465,17 @@ ThemePickerScreen {
     background: rgba(0, 0, 0, 0.82);
 }
 #tp-dialog {
-    width: 46;
-    height: 22;
+    width: 48;
+    height: 24;
     padding: 0;
-    background: #141820;
+    background: #131721;
     border: tall #5ac1fe;
 }
 #tp-titlebar {
     width: 100%;
     height: 3;
     background: #0d1016;
-    border-bottom: solid #1f2a3a;
+    border-bottom: solid #2e3038;
     padding: 0 2;
     align: left middle;
 }
@@ -480,7 +486,7 @@ ThemePickerScreen {
 }
 #tp-count {
     width: auto;
-    color: #3f4043;
+    color: #686868;
 }
 #tp-list {
     background: #0d1016;
@@ -491,10 +497,10 @@ ThemePickerScreen {
 #tp-hint {
     width: 100%;
     text-align: center;
-    color: #3f4043;
+    color: #686868;
     height: 1;
     padding: 0 2;
-    border-top: solid #1f2a3a;
+    border-top: solid #2e3038;
 }
 """
 register_css_template("theme_picker_screen", THEME_PICKER_SCREEN_CSS)

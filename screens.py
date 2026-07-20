@@ -353,6 +353,11 @@ SplashScreen {
 #splash-version {
     text-align: center;
     color: #3f4043;
+    margin-bottom: 0;
+}
+#splash-tech {
+    text-align: center;
+    color: #3f4043;
     margin-bottom: 1;
 }
 #splash-status {
@@ -438,6 +443,7 @@ class SplashScreen(Screen):
             yield Static(self._color_logo(0.0), id="splash-logo")
             yield Static("Your Terminal. Reimagined.", id="splash-tagline")
             yield Static(self.version, id="splash-version")
+            yield Static("\ue63a  Powered by Python", id="splash-tech")
             yield Static("Initializing…", id="splash-status")
 
     def on_mount(self) -> None:

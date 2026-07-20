@@ -327,21 +327,23 @@ class FolderPicker(Screen):
         self.dismiss(None)
 
 
-SPLASH_SCREEN_CSS = """
+PERFECT_SPLASH_CSS = """
 SplashScreen {
     align: center middle;
     background: #0d1016;
 }
-#splash-container {
-    align: center middle;
-    width: auto;
+#splash-frame {
+    width: 50;
     height: auto;
+    border: solid #2e3038;
+    background: #131721;
+    padding: 1 2;
 }
 #splash-logo {
     text-align: center;
     color: #5ac1fe;
     text-style: bold;
-    margin-bottom: 1;
+    margin-bottom: 0;
 }
 #splash-tagline {
     text-align: center;
@@ -351,32 +353,26 @@ SplashScreen {
 }
 #splash-version {
     text-align: center;
-    color: #2e3038;
-    margin-bottom: 2;
+    color: #3f4043;
+    margin-bottom: 1;
 }
-#splash-bar-container {
-    text-align: center;
-    width: 100%;
-    margin-bottom: 0;
-}
-#splash-bar {
+#splash-bar-text {
     text-align: center;
     color: #5ac1fe;
-    width: 100%;
+    margin-bottom: 0;
 }
 #splash-status {
     text-align: center;
     color: #686868;
-    margin-top: 1;
 }
 """
-register_css_template("splash_screen", SPLASH_SCREEN_CSS)
+register_css_template("splash_screen", PERFECT_SPLASH_CSS)
 
 
 class SplashScreen(Screen):
-    """Animated splash screen shown on startup."""
+    """Perfect splash screen shown on startup with animated progress."""
 
-    CSS = SPLASH_SCREEN_CSS
+    CSS = PERFECT_SPLASH_CSS
 
     _LOGO = (
         "  ████████╗██████╗ ██╗██╗  ██╗\n"
@@ -412,11 +408,11 @@ class SplashScreen(Screen):
         return "v0.2.0"
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="splash-container"):
+        with Vertical(id="splash-frame"):
             yield Static(self._LOGO, id="splash-logo", markup=False)
             yield Static("Your Terminal. Reimagined.", id="splash-tagline")
             yield Static(self.version, id="splash-version")
-            yield Static("", id="splash-bar")
+            yield Static("", id="splash-bar-text")
             yield Static("Initializing…", id="splash-status")
 
     def on_mount(self) -> None:
@@ -432,28 +428,31 @@ class SplashScreen(Screen):
             self.app.push_screen(MainScreen())
             return
 
-        bar_width = 32
+        bar_width = 34
         filled = int(self.progress * bar_width)
         empty = bar_width - filled
 
-        # Animated bar using block chars
-        bar_str = "█" * filled + "▒" * empty
+        bar_str = "█" * filled + "░" * empty
 
         statuses = [
-            "Initializing…",
-            "Loading themes…",
-            "Parsing file icons…",
-            "Setting up editor…",
+            "Boot sequence initiated…",
+            "Loading configuration…",
+            "Registering themes…",
+            "Mapping file icons…",
+            "Preparing editor…",
+            "Warming up cache…",
             "Ready.",
         ]
         pct_int = int(self.progress * 100)
         status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)
 
         try:
-            self.query_one("#splash-bar", Static).update(
-                f"[#5ac1fe]{bar_str}[/#5ac1fe] [#3f4043]{pct_int}%[/#3f4043]"
+            self.query_one("#splash-bar-text", Static).update(
+                f"[#5ac1fe]{bar_str}[/#5ac1fe]  [#3f4043]{pct_int}%[/#3f4043]"
             )
-            self.query_one("#splash-status", Static).update(statuses[status_idx])
+            self.query_one("#splash-status", Static).update(
+                f"[#686868]{statuses[status_idx]}[/#686868]"
+            )
         except Exception:
             pass
 

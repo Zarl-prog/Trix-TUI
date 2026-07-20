@@ -126,7 +126,7 @@ GitMenuScreen {
                 yield ScrollableContainer(id="gm-list")
             with Horizontal(id="gm-footer"):
                 yield Label("↑↓", classes="gm-key")
-                yield Label("Nav",      classes="gm-key-desc")
+                yield Label("Nav ",     classes="gm-key-desc")
                 yield Label("Enter",    classes="gm-key")
                 yield Label("Toggle",   classes="gm-key-desc")
                 yield Label("G",        classes="gm-key")
@@ -377,6 +377,8 @@ GitMenuScreen {
             event.prevent_default()
 
     def on_click(self, event: Click) -> None:
+        if isinstance(event.widget, Button):
+            return
         widget = event.widget
         while widget:
             if widget.id and widget.id.startswith("gm-commit-"):

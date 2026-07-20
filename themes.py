@@ -4,66 +4,69 @@ FAMOUS_THEMES = [
     {
         "name": "Ayu Dark",
         "background": "#0d1016",
-        "surface": "#1f2127",
-        "panel": "#1f2127",
-        "border": "#3f4043",
+        "surface": "#1a1d23",
+        "panel": "#131721",
+        "border": "#2e3038",
         "border_focused": "#5ac1fe",
         "text": "#bfbdb6",
-        "text_muted": "#8a8986",
+        "text_muted": "#686868",
         "accent": "#5ac1fe",
         "accent_alt": "#39bae5",
         "success": "#aad84c",
         "warning": "#feb454",
         "error": "#ef7177",
-        "line_number": "#4b4c4e",
-        "cursor_line": "#1f2127",
-        "scrollbar": "#3f4043",
+        "line_number": "#3a3c42",
+        "cursor_line": "#15181f",
+        "scrollbar": "#2e3038",
         "scrollbar_thumb": "#5ac1fe",
+        "dark": True,
     },
     {
         "name": "Ayu Mirage",
-        "background": "#242835",
-        "surface": "#1f232a",
-        "panel": "#1f232a",
-        "border": "#53565d",
+        "background": "#1e2330",
+        "surface": "#1a1e2a",
+        "panel": "#171b24",
+        "border": "#3e4251",
         "border_focused": "#72cffe",
         "text": "#cccac2",
-        "text_muted": "#9a9a98",
+        "text_muted": "#737982",
         "accent": "#72cffe",
         "accent_alt": "#2b6c7b",
         "success": "#d5fe80",
         "warning": "#fecf72",
         "error": "#f18779",
-        "line_number": "#575c6b",
-        "cursor_line": "#1f232a",
-        "scrollbar": "#53565d",
+        "line_number": "#4a4f5e",
+        "cursor_line": "#1a1e2a",
+        "scrollbar": "#3e4251",
         "scrollbar_thumb": "#72cffe",
+        "dark": True,
     },
     {
         "name": "Dracula",
-        "background": "#282a36",
-        "surface": "#1e1f29",
-        "panel": "#1e1f29",
-        "border": "#44475a",
+        "background": "#1e1f29",
+        "surface": "#242536",
+        "panel": "#2a2b3e",
+        "border": "#3d3f5a",
         "border_focused": "#bd93f9",
         "text": "#f8f8f2",
-        "text_muted": "#6272a4",
+        "text_muted": "#6b7094",
         "accent": "#bd93f9",
         "accent_alt": "#ff79c6",
         "success": "#50fa7b",
         "warning": "#ffb86c",
         "error": "#ff5555",
-        "line_number": "#6272a4",
-        "cursor_line": "#44475a",
-        "scrollbar": "#44475a",
+        "line_number": "#4a4d6e",
+        "cursor_line": "#282936",
+        "scrollbar": "#3d3f5a",
         "scrollbar_thumb": "#bd93f9",
+        "dark": True,
     },
     {
         "name": "One Dark",
-        "background": "#282c34",
-        "surface": "#21252b",
-        "panel": "#21252b",
-        "border": "#3e4451",
+        "background": "#21252b",
+        "surface": "#282c34",
+        "panel": "#1e2229",
+        "border": "#3a3f4b",
         "border_focused": "#61afef",
         "text": "#abb2bf",
         "text_muted": "#5c6370",
@@ -72,55 +75,38 @@ FAMOUS_THEMES = [
         "success": "#98c379",
         "warning": "#d19a66",
         "error": "#e06c75",
-        "line_number": "#5c6370",
+        "line_number": "#3a3f4b",
         "cursor_line": "#2c313c",
-        "scrollbar": "#3e4451",
+        "scrollbar": "#3a3f4b",
         "scrollbar_thumb": "#61afef",
+        "dark": True,
     },
     {
         "name": "Tokyo Night",
-        "background": "#1a1b26",
-        "surface": "#16161e",
-        "panel": "#16161e",
-        "border": "#383e5a",
+        "background": "#14151f",
+        "surface": "#1a1b2e",
+        "panel": "#20223a",
+        "border": "#363b54",
         "border_focused": "#7aa2f7",
         "text": "#a9b1d6",
-        "text_muted": "#565f89",
+        "text_muted": "#545c7e",
         "accent": "#7aa2f7",
         "accent_alt": "#bb9af3",
         "success": "#9ece6a",
         "warning": "#e0af68",
         "error": "#f7768e",
-        "line_number": "#565f89",
-        "cursor_line": "#292e42",
-        "scrollbar": "#383e5a",
+        "line_number": "#363b54",
+        "cursor_line": "#1e2038",
+        "scrollbar": "#363b54",
         "scrollbar_thumb": "#7aa2f7",
-    },
-    {
-        "name": "Solarized Dark",
-        "background": "#002b36",
-        "surface": "#073642",
-        "panel": "#073642",
-        "border": "#586e75",
-        "border_focused": "#268bd2",
-        "text": "#839496",
-        "text_muted": "#586e75",
-        "accent": "#268bd2",
-        "accent_alt": "#2aa198",
-        "success": "#859900",
-        "warning": "#b58900",
-        "error": "#dc322f",
-        "line_number": "#586e75",
-        "cursor_line": "#073642",
-        "scrollbar": "#586e75",
-        "scrollbar_thumb": "#268bd2",
+        "dark": True,
     },
     {
         "name": "Midnight Blue",
-        "background": "#0d1117",
-        "surface": "#090d14",
-        "panel": "#090d14",
-        "border": "#1e2a3a",
+        "background": "#0a0e17",
+        "surface": "#0f1623",
+        "panel": "#161d2f",
+        "border": "#1e2d4a",
         "border_focused": "#58a6ff",
         "text": "#c9d1d9",
         "text_muted": "#484f58",
@@ -129,234 +115,234 @@ FAMOUS_THEMES = [
         "success": "#3fb950",
         "warning": "#d29922",
         "error": "#f85149",
-        "line_number": "#484f58",
-        "cursor_line": "#161b22",
-        "scrollbar": "#1e2a3a",
+        "line_number": "#1e2d4a",
+        "cursor_line": "#0f1623",
+        "scrollbar": "#1e2d4a",
         "scrollbar_thumb": "#58a6ff",
+        "dark": True,
     },
     {
-        "name": "Ayu Light",
-        "dark": False,
-        "background": "#fafafa",
-        "surface": "#ffffff",
-        "panel": "#ffffff",
-        "border": "#e0e0e0",
-        "border_focused": "#399ef4",
-        "text": "#575c61",
-        "text_muted": "#a0a0a0",
-        "accent": "#399ef4",
-        "accent_alt": "#f07171",
-        "success": "#86b300",
-        "warning": "#f2ae49",
-        "error": "#f07171",
-        "line_number": "#b8b8b8",
-        "cursor_line": "#f0f0f0",
-        "scrollbar": "#e0e0e0",
-        "scrollbar_thumb": "#399ef4",
+        "name": "Catppuccin Mocha",
+        "background": "#11111b",
+        "surface": "#181825",
+        "panel": "#1e1e2e",
+        "border": "#313244",
+        "border_focused": "#89b4fa",
+        "text": "#cdd6f4",
+        "text_muted": "#6c7086",
+        "accent": "#89b4fa",
+        "accent_alt": "#cba6f7",
+        "success": "#a6e3a1",
+        "warning": "#fab387",
+        "error": "#f38ba8",
+        "line_number": "#45475a",
+        "cursor_line": "#1e1e2e",
+        "scrollbar": "#313244",
+        "scrollbar_thumb": "#89b4fa",
+        "dark": True,
+    },
+    {
+        "name": "Catppuccin Macchiato",
+        "background": "#151524",
+        "surface": "#1d1d32",
+        "panel": "#1f1f38",
+        "border": "#363b54",
+        "border_focused": "#7aa2f7",
+        "text": "#cad3f5",
+        "text_muted": "#6e7391",
+        "accent": "#7aa2f7",
+        "accent_alt": "#c6a0f6",
+        "success": "#a6da95",
+        "warning": "#eed49f",
+        "error": "#ed8796",
+        "line_number": "#363b54",
+        "cursor_line": "#1f1f38",
+        "scrollbar": "#363b54",
+        "scrollbar_thumb": "#7aa2f7",
+        "dark": True,
+    },
+    {
+        "name": "Everforest Dark",
+        "background": "#1e2326",
+        "surface": "#252c31",
+        "panel": "#2d353b",
+        "border": "#3d484d",
+        "border_focused": "#a7c080",
+        "text": "#d3c6aa",
+        "text_muted": "#6f7b7d",
+        "accent": "#a7c080",
+        "accent_alt": "#e69875",
+        "success": "#a7c080",
+        "warning": "#dbbc7f",
+        "error": "#f85552",
+        "line_number": "#3d484d",
+        "cursor_line": "#252c31",
+        "scrollbar": "#3d484d",
+        "scrollbar_thumb": "#a7c080",
+        "dark": True,
+    },
+    {
+        "name": "Nord",
+        "background": "#1e2129",
+        "surface": "#242831",
+        "panel": "#2b2f3a",
+        "border": "#3b4252",
+        "border_focused": "#81a1c1",
+        "text": "#d8dee9",
+        "text_muted": "#616c82",
+        "accent": "#81a1c1",
+        "accent_alt": "#b48ead",
+        "success": "#a3be8c",
+        "warning": "#d08770",
+        "error": "#bf616a",
+        "line_number": "#3b4252",
+        "cursor_line": "#242831",
+        "scrollbar": "#3b4252",
+        "scrollbar_thumb": "#81a1c1",
+        "dark": True,
     },
     ]
 
-
-def get_all_themes() -> list[dict]:
-    return FAMOUS_THEMES
-
-
-THEMES: list[dict] = get_all_themes()
-
+THEMES: list[dict] = FAMOUS_THEMES
 
 CSS_TEMPLATES: dict[str, str] = {}
-
 
 def register_css_template(name: str, css: str) -> None:
     CSS_TEMPLATES[name] = css
 
 
-def build_git_history_css(theme: dict) -> str:
+def build_git_menu_css(theme: dict) -> str:
     bg     = theme.get("background",     "#0d1016")
-    surf   = theme.get("surface",        "#1f2127")
-    panel  = theme.get("panel",          "#1f2127")
-    brd    = theme.get("border",         "#3f4043")
+    surf   = theme.get("surface",        "#1a1d23")
+    panel  = theme.get("panel",          "#131721")
+    brd    = theme.get("border",         "#2e3038")
     brd_f  = theme.get("border_focused", "#5ac1fe")
     txt    = theme.get("text",           "#bfbdb6")
-    txt_m  = theme.get("text_muted",     "#8a8986")
+    txt_m  = theme.get("text_muted",     "#686868")
     acc    = theme.get("accent",         "#5ac1fe")
     acc_a  = theme.get("accent_alt",     "#39bae5") or acc
     succ   = theme.get("success",        "#aad84c")
-    warn   = theme.get("warning",        "#e6b450")
+    warn   = theme.get("warning",        "#feb454")
     err    = theme.get("error",          "#ef7177")
-    sb     = theme.get("scrollbar",      "#3f4043")
-    sbt    = theme.get("scrollbar_thumb","#5ac1fe")
     return f"""
-GitHistoryScreen {{
+GitMenuScreen {{
     align: center middle;
     background: rgba(0,0,0,0.82);
 }}
-#git-popup {{
-    width: 88%;
-    height: 85%;
+#gm-popup {{
+    width: 80%;
+    height: 78%;
+    min-width: 60;
     background: {panel};
     border: tall {acc};
     layout: vertical;
 }}
-#gh-header {{
+#gm-header {{
     height: 3; dock: top;
     background: {bg};
     border-bottom: solid {brd};
     padding: 0 2; align: left middle;
 }}
-#gh-title  {{ width: auto; color: {acc}; text-style: bold; }}
-#gh-meta   {{ width: 1fr; content-align: right middle; color: {txt_m}; }}
-#gh-body   {{ height: 1fr; layout: horizontal; }}
-#gh-left   {{ width: 42%; height: 100%; border-right: solid {brd}; layout: vertical; }}
+#gm-title  {{ width: auto; color: {acc}; text-style: bold; }}
+#gm-meta   {{ width: 1fr; content-align: right middle; color: {txt_m}; }}
 
-/* ── Changes panel ── */
-#gh-changes {{
-    height: auto; max-height: 50%;
+/* ── Body: single vertical column ── */
+#gm-body {{
+    height: 1fr;
+    layout: vertical;
+}}
+
+/* ── Commit area ── */
+#gm-commit-area {{
+    height: auto;
+    padding: 1 3 1 3;
     background: {bg};
-    padding: 0 0 1 0;
+    border-bottom: solid {brd};
+    align: center middle;
+    layout: vertical;
 }}
-#gh-changes-header {{
-    height: 3; padding: 0 2;
-    color: {txt_m}; text-style: bold;
-    background: {bg}; align: left middle;
-    border-bottom: none;
-}}
-#gh-changes-list {{
-    height: auto; max-height: 12;
-    margin: 0 2; background: {surf};
-    border: solid {brd};
-    scrollbar-color: {sbt}; scrollbar-background: {sb};
-    scrollbar-size: 1 1;
-}}
-#gh-changes-list > ListItem {{
-    height: 3; padding: 0; background: {surf};
-}}
-#gh-changes-list > ListItem:hover {{ background: {bg}; }}
-#gh-changes-list > ListItem:focus {{ background: {bg}; }}
-.ghc-row {{
-    height: 3; padding: 0 1;
-    layout: horizontal;
-    align: left middle;
-    background: {surf};
-}}
-.ghc-row:hover {{ background: {bg}; }}
-.ghc-check {{
-    width: 4; color: {txt}; text-style: bold;
-    background: {surf};
-}}
-.ghc-dot {{
-    width: 4;
-    background: {surf};
-}}
-.ghc-label {{
-    width: auto; color: {txt_m}; min-width: 14;
-    background: {surf};
-}}
-.ghc-path {{
-    width: 1fr; color: {txt};
-    background: {surf};
-}}
-
-#gh-commit-msg {{
-    margin: 1 2 0 2;
-}}
-#gh-commit-msg Input {{
+#gm-message {{
     width: 100%; height: 3;
-    border: solid {brd}; background: {surf}; color: {txt};
+    border: solid {brd}; background: {panel}; color: {txt};
     padding: 0 1;
 }}
-#gh-commit-msg Input:focus {{ border: solid {brd_f}; }}
-#gh-commit-msg Input::placeholder {{ color: {txt_m}; text-style: italic; }}
-
-#gh-commit-buttons {{
-    height: auto; margin: 1 2; layout: horizontal;
-    align: left middle;
-    border: solid {brd}; background: {surf};
+#gm-message:focus {{ border: solid {brd_f}; }}
+#gm-message::placeholder {{ color: {txt_m}; text-style: italic; }}
+#gm-buttons {{
+    height: auto; margin-top: 1;
+    layout: horizontal;
+    align: center middle;
 }}
-#gh-commit-buttons Button {{
-    margin: 0 1; padding: 0 2;
+#gm-buttons Button {{
+    margin: 0 1; padding: 0 3; min-width: 12;
 }}
-#gh-commit-btn {{
+#gm-commit-btn {{
     background: {acc}; color: {bg}; text-style: bold;
-    border: none; min-width: 12;
+    border: none;
 }}
-#gh-commit-push-btn {{
-    background: {surf}; color: {acc_a}; text-style: bold;
-    border: solid {acc_a}; min-width: 18;
+#gm-commit-btn:disabled {{ background: {brd}; color: {txt_m}; }}
+#gm-push-btn {{
+    background: transparent; color: {acc_a}; text-style: bold;
+    border: solid {acc_a};
 }}
-#gh-commit-error {{
-    height: 1; color: {err}; padding: 0 2; text-align: center;
-}}
-#gh-changes-empty {{
-    width: 100%; height: 100%;
-    content-align: center middle; text-align: center; color: {txt_m};
+#gm-push-btn:disabled {{ border-color: {brd}; color: {txt_m}; }}
+#gm-error {{
+    height: 1; color: {err}; text-align: center; margin-top: 1;
 }}
 
-/* ── History list ── */
-#gh-history-header {{
+/* ── History header + scrollable list ── */
+#gm-history-header {{
     height: 3; padding: 0 2;
     color: {txt_m}; text-style: bold;
-    background: {bg}; align: left middle;
-    border-top: solid {brd};
-    margin-top: 1;
-    margin-bottom: 1;
+    background: {panel}; align: left middle;
 }}
-#gh-commits {{
-    height: 1fr; background: {panel};
-    scrollbar-color: {sbt}; scrollbar-background: {sb};
+#gm-list {{
+    height: 1fr;
+    background: {panel};
+    scrollbar-color: {acc}; scrollbar-background: {brd};
     scrollbar-size: 1 1;
+    overflow-y: auto;
 }}
-#gh-commits > ListItem {{
-    height: auto; padding: 0;
+
+/* ── Commit items (accordion) ── */
+.gm-commit {{
+    height: auto;
     background: {panel};
     border-bottom: solid {brd};
 }}
-#gh-commits > ListItem:hover {{ background: {bg}; }}
-#gh-commits > ListItem.--highlight {{
-    background: {bg};
+.gm-commit.gm-focused {{
     border-left: tall {acc};
+    background: {bg};
 }}
-.gh-row        {{ height: auto; padding: 1 2; }}
-.gh-row-top    {{ height: auto; layout: horizontal; }}
-.gh-dot        {{ width: 2; color: {acc}; }}
-.gh-hash       {{ width: 8; color: {warn}; text-style: bold; }}
-.gh-msg        {{ width: 1fr; color: {txt}; padding: 0 1; }}
-.gh-row-bottom {{ height: auto; padding: 0 2; layout: horizontal; }}
-.gh-author     {{ width: auto; color: {succ}; }}
-.gh-sep        {{ width: auto; color: {brd}; padding: 0 1; }}
-.gh-time       {{ width: auto; color: {txt_m}; text-style: italic; }}
-#gh-right   {{ width: 1fr; height: 100%; layout: vertical; padding: 2; }}
-#gh-detail-placeholder {{
-    width: 100%; height: 100%;
-    content-align: center middle; text-align: center;
-    color: {txt_m}; text-style: italic; padding: 2;
+.gm-commit:hover {{
+    background: {bg};
 }}
-#gh-detail-titlebar {{
-    height: 3; background: {bg};
-    border-bottom: solid {brd};
-    padding: 0 2; color: {acc};
-    text-style: bold; content-align: left middle;
+.gm-row {{
+    height: auto;
+    padding: 1 2;
 }}
-#gh-detail-body {{ height: auto; padding: 1 2; }}
-.gh-field-row   {{ height: 1; layout: horizontal; margin-bottom: 1; }}
-.gh-field-label {{ width: 10; color: {txt_m}; text-style: bold; }}
-.gh-field-value {{ width: 1fr; color: {txt}; }}
-#gh-detail-divider {{ height: 1; border-top: solid {brd}; margin: 0 2 1 2; }}
-#gh-files-title {{
-    height: 1; padding: 0 2;
-    color: {txt_m}; text-style: bold; margin-bottom: 1;
+.gm-expanded {{
+    height: auto;
+    padding: 0 2 1 2;
+    background: {surf};
 }}
-#gh-files {{
-    height: 1fr; padding: 0 2;
-    scrollbar-color: {sbt}; scrollbar-background: {sb};
-    scrollbar-size: 1 1;
+.gm-divider {{
+    height: 1;
+    border-top: solid {brd};
+    margin: 0 0 1 0;
 }}
-.gh-file-row  {{ height: 1; layout: horizontal; margin-bottom: 1; }}
-.gh-file-dot  {{ width: 2; color: {brd}; }}
-.gh-file-name {{ width: 1fr; color: {txt}; }}
-.gh-file-add  {{ width: 7; color: {succ}; text-align: right; }}
-.gh-file-del  {{ width: 7; color: {err}; text-align: right; }}
-#gh-footer {{
+.gm-actions-row {{
+    height: auto;
+    layout: horizontal;
+    align: center middle;
+    margin-top: 1;
+}}
+.gm-actions-row Button {{
+    margin: 0 1; padding: 0 2; min-width: 8;
+}}
+
+/* ── Footer ── */
+#gm-footer {{
     height: auto; min-height: 3; dock: bottom;
     background: {bg};
     border-top: solid {brd};
@@ -364,18 +350,15 @@ GitHistoryScreen {{
     layout: horizontal;
     align: left middle;
 }}
-#gh-footer > .gh-key {{
+#gm-footer > .gm-key {{
     width: auto; color: {acc}; text-style: bold;
     margin-right: 1;
 }}
-#gh-footer > .gh-key-desc {{
+#gm-footer > .gm-key-desc {{
     width: auto; color: {txt_m};
     margin-right: 2;
 }}
-#gh-footer > .gh-key-desc:last-of-type {{
-    margin-right: 0;
-}}
-#gh-empty {{
+#gm-empty {{
     width: 100%; height: 100%;
     content-align: center middle; text-align: center;
     color: {txt_m};
@@ -384,22 +367,21 @@ GitHistoryScreen {{
 
 
 def build_text_area_theme(theme: dict) -> "TextAreaTheme":
-    """Build a TextAreaTheme from an app theme dict, mapping syntax tokens
-    to the theme's palette colors."""
     from rich.style import Style
     from textual.widgets.text_area import TextAreaTheme
 
     acc    = theme.get("accent", "#5ac1fe")
     acc_a  = theme.get("accent_alt", "#39bae5") or acc
     succ   = theme.get("success", "#aad84c")
-    warn   = theme.get("warning", "#e6b450")
+    warn   = theme.get("warning", "#feb454")
     err    = theme.get("error", "#ef7177")
     txt    = theme.get("text", "#bfbdb6")
-    txt_m  = theme.get("text_muted", "#8a8986")
+    txt_m  = theme.get("text_muted", "#686868")
     bg     = theme.get("background", "#0d1016")
-    surf   = theme.get("surface", "#1f2127")
-    cl     = theme.get("cursor_line", "#1f2127")
-    brd    = theme.get("border", "#3f4043")
+    surf   = theme.get("surface", "#1a1d23")
+    cl     = theme.get("cursor_line", "#15181f")
+    brd    = theme.get("border", "#2e3038")
+    ln     = theme.get("line_number", "#3a3c42")
 
     def s(c: str) -> Style:
         return Style(color=c)
@@ -413,11 +395,11 @@ def build_text_area_theme(theme: dict) -> "TextAreaTheme":
     return TextAreaTheme(
         name=name,
         base_style=s(txt),
-        gutter_style=s(txt_m),
+        gutter_style=s(ln),
         cursor_style=s(acc),
         cursor_line_style=Style(bgcolor=cl),
         cursor_line_gutter_style=Style(bgcolor=cl),
-        selection_style=Style(bgcolor=surf),
+        selection_style=Style(bgcolor="#1f4a6e"),
         bracket_matching_style=Style(bgcolor=brd),
         syntax_styles={
             "keyword":               s(acc_a),
@@ -458,69 +440,126 @@ def build_text_area_theme(theme: dict) -> "TextAreaTheme":
 
 
 def build_theme_css(theme: dict) -> str:
-    """Generate dynamic CSS overrides for a given theme dict."""
     bg     = theme.get("background",     "#0d1016")
-    surf   = theme.get("surface",        "#1f2127")
-    panel  = theme.get("panel",          "#1f2127")
-    brd    = theme.get("border",         "#3f4043")
+    surf   = theme.get("surface",        "#1a1d23")
+    panel  = theme.get("panel",          "#131721")
+    brd    = theme.get("border",         "#2e3038")
     brd_f  = theme.get("border_focused", "#5ac1fe")
     txt    = theme.get("text",           "#bfbdb6")
-    txt_m  = theme.get("text_muted",     "#8a8986")
+    txt_m  = theme.get("text_muted",     "#686868")
     acc    = theme.get("accent",         "#5ac1fe")
     acc_a  = theme.get("accent_alt",     "#39bae5")
     succ   = theme.get("success",        "#aad84c")
-    warn   = theme.get("warning",        "#e6b450")
+    warn   = theme.get("warning",        "#feb454")
     err    = theme.get("error",          "#ef7177")
-    ln     = theme.get("line_number",    "#4b4c4e")
-    cl     = theme.get("cursor_line",    "#1f2127")
-    sb     = theme.get("scrollbar",      "#3f4043")
+    ln     = theme.get("line_number",    "#3a3c42")
+    cl     = theme.get("cursor_line",    "#15181f")
+    sb     = theme.get("scrollbar",      "#2e3038")
     sbt    = theme.get("scrollbar_thumb", "#5ac1fe")
 
     return f"""
     Screen {{ background: {bg}; }}
-    #header {{ background: {bg}; }}
+
+    /* ── Header ── */
+    #header {{ background: {bg}; border-bottom: solid {brd}; }}
     #hdr-brand {{ color: {acc}; }}
     #hdr-folder {{ color: {txt_m}; }}
     #hdr-theme {{ color: {txt_m}; }}
+
+    /* ── Main area ── */
     #main-area {{ background: {bg}; }}
     LayoutContainer, Container, #files-panel, #editor-panel {{ background: {bg}; }}
+    #files-panel {{ border-right: solid {brd}; }}
     #files-panel.--panel-active {{ border-left: tall {acc}; }}
     #editor-panel.--panel-active {{ border-left: tall {acc}; }}
+
+    /* ── File Tree ── */
     DirectoryTree {{ background: {bg}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
-    DirectoryTree > .tree--cursor {{ background: {acc}; color: {bg}; }}
+    DirectoryTree > .tree--cursor {{ background: {acc}; color: {bg}; text-style: bold; }}
     DirectoryTree > .tree--highlight {{ background: {acc}; color: {bg}; }}
     DirectoryTree > .tree--guides {{ color: {brd}; }}
+
+    /* ── Editor ── */
     TextArea {{ background: {bg}; color: {txt}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
     TextArea .text-area--gutter {{ background: {bg}; color: {ln}; }}
-    TextArea .text-area--gutter-active {{ background: {bg}; color: {acc}; }}
+    TextArea .text-area--gutter-active {{ background: {bg}; color: {acc}; text-style: bold; }}
     TextArea .text-area--cursor {{ background: {acc}; }}
     TextArea .text-area--cursor-line {{ background: {cl}; }}
-    #bottom-bar {{ background: {surf}; }}
-    .kb-key {{ color: {acc}; }}
+    TextArea .text-area--selection {{ background: #1f4a6e; }}
+
+    /* ── Bottom Bar ── */
+    #bottom-bar {{ background: {surf}; border-top: solid {brd}; }}
+    .kb-key {{ color: {acc}; text-style: bold; }}
     .kb-desc {{ color: {txt_m}; }}
+    .bb-item:hover {{ background: {panel}; }}
+
     #sb-unsaved {{ color: {warn}; }}
     #sb-lang {{ color: {txt_m}; }}
     #sb-cursor {{ color: {txt_m}; }}
     #sb-branch {{ color: {succ}; }}
+
+    /* ── Divider ── */
     Divider {{ background: {brd}; }}
     Divider:hover {{ background: {acc}; }}
+
+    /* ── Tab Strip ── */
     TabStrip {{ background: {bg}; }}
     .tab-item {{ color: {txt_m}; background: {bg}; }}
-    .tab-item.--tab-active {{ color: {txt}; background: {surf}; }}
+    .tab-item.--tab-active {{ color: {txt}; background: {panel}; text-style: bold; }}
     .tab-item.--tab-unsaved {{ color: {warn}; }}
+
+    /* ── Welcome Panel ── */
     WelcomePanel {{ background: {bg}; }}
     #welcome-header {{ color: {acc}; }}
     #welcome-tagline {{ color: {txt_m}; }}
     #welcome-recent-label {{ color: {txt_m}; }}
     #welcome-recent-list {{ background: {bg}; }}
     #welcome-recent-list > ListItem {{ background: {bg}; color: {txt}; }}
-    #welcome-recent-list > ListItem:hover {{ background: {surf}; color: {acc}; }}
+    #welcome-recent-list > ListItem:hover {{ background: {panel}; color: {acc}; }}
     #welcome-hint {{ color: {brd}; }}
-    Toast {{ background: {surf}; border-left: tall {acc}; color: {txt}; }}
+
+    /* ── Toast Notifications ── */
+    Toast {{ background: {panel}; border-left: tall {acc}; color: {txt}; }}
     Toast.-information {{ border-left: tall {acc}; }}
-    Toast.-warning {{ border-left: tall {warn}; background: {surf}; }}
-    Toast.-error {{ border-left: tall {err}; background: {surf}; }}
-    Toast .toast--title {{ color: {acc}; }}
+    Toast.-warning {{ border-left: tall {warn}; background: {panel}; }}
+    Toast.-error {{ border-left: tall {err}; background: {panel}; }}
+    Toast .toast--title {{ color: {acc}; text-style: bold; }}
     Toast.-warning .toast--title {{ color: {warn}; }}
     Toast.-error .toast--title {{ color: {err}; }}
+    """
+
+
+def build_modal_css(theme: dict) -> str:
+    bg     = theme.get("background",     "#0d1016")
+    surf   = theme.get("surface",        "#1a1d23")
+    panel  = theme.get("panel",          "#131721")
+    brd    = theme.get("border",         "#2e3038")
+    brd_f  = theme.get("border_focused", "#5ac1fe")
+    txt    = theme.get("text",           "#bfbdb6")
+    txt_m  = theme.get("text_muted",     "#686868")
+    acc    = theme.get("accent",         "#5ac1fe")
+    err    = theme.get("error",          "#ef7177")
+    return f"""
+    *Screen {{ background: rgba(0,0,0,0.82); align: center middle; }}
+    .modal-dialog {{
+        width: 54; height: auto;
+        background: {panel};
+        border: tall {acc};
+        padding: 0;
+    }}
+    .modal-titlebar {{
+        width: 100%; height: 3;
+        background: {bg};
+        border-bottom: solid {brd};
+        padding: 0 2;
+        align: left middle;
+    }}
+    .modal-title {{ color: {acc}; text-style: bold; width: 1fr; }}
+    .modal-hint  {{ width: auto; color: {txt_m}; }}
+    .modal-body  {{ width: 100%; color: {txt}; padding: 1 2; }}
+    .modal-footer {{
+        width: 100%; height: 1;
+        text-align: center; color: {txt_m};
+        border-top: solid {brd};
+    }}
     """

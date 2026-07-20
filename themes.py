@@ -470,6 +470,7 @@ def build_theme_css(theme: dict) -> str:
     #main-area {{ background: {bg}; }}
     LayoutContainer, Container, #files-panel, #editor-panel {{ background: {bg}; }}
     #files-panel.--panel-active {{ border-left: tall {acc}; }}
+    #editor-panel {{ border-left: solid {brd}; }}
     #editor-panel.--panel-active {{ border-left: tall {acc}; }}
 
     /* ── File Tree ── */

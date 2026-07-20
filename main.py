@@ -1003,6 +1003,10 @@ class TrixApp(App):
     CommandPalette {
         align: center middle;
     }
+    CommandPalette > Vertical {
+        width: 60;
+        max-width: 80;
+    }
     """
 
     BINDINGS = [

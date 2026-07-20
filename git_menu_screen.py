@@ -49,7 +49,48 @@ class CommitDetail:
 
 
 class GitMenuScreen(ModalScreen):
-    CSS = ""
+    CSS = """
+GitMenuScreen {
+    align: center middle;
+    background: rgba(0,0,0,0.82);
+}
+#gm-popup {
+    width: 80%;
+    height: 78%;
+    min-width: 60;
+    background: #131721;
+    border: tall #5ac1fe;
+    layout: vertical;
+}
+#gm-header { height: 3; dock: top; background: #0d1016; border-bottom: solid #2e3038; padding: 0 2; align: left middle; }
+#gm-title  { width: auto; color: #5ac1fe; text-style: bold; }
+#gm-meta   { width: 1fr; content-align: right middle; color: #686868; }
+#gm-body   { height: 1fr; layout: vertical; }
+#gm-commit-area { height: auto; padding: 1 3 1 3; background: #0d1016; border-bottom: solid #2e3038; align: center middle; layout: vertical; }
+#gm-message { width: 100%; height: 3; border: solid #2e3038; background: #131721; color: #bfbdb6; padding: 0 1; }
+#gm-message:focus { border: solid #5ac1fe; }
+#gm-buttons { height: auto; margin-top: 1; layout: horizontal; align: center middle; }
+#gm-buttons Button { margin: 0 1; padding: 0 3; min-width: 12; }
+#gm-commit-btn { background: #5ac1fe; color: #0d1016; text-style: bold; border: none; }
+#gm-commit-btn:disabled { background: #2e3038; color: #686868; }
+#gm-push-btn { background: transparent; color: #39bae5; text-style: bold; border: solid #39bae5; }
+#gm-push-btn:disabled { border: solid #2e3038; color: #686868; }
+#gm-error { height: 1; color: #ef7177; text-align: center; margin-top: 1; }
+#gm-history-header { height: 3; padding: 0 2; color: #686868; text-style: bold; background: #131721; align: left middle; }
+#gm-list { height: 1fr; background: #131721; scrollbar-color: #5ac1fe; scrollbar-background: #2e3038; scrollbar-size: 1 1; overflow-y: auto; }
+.gm-commit { height: auto; background: #131721; border-bottom: solid #2e3038; }
+.gm-commit.gm-focused { border-left: tall #5ac1fe; background: #0d1016; }
+.gm-commit:hover { background: #0d1016; }
+.gm-row { height: auto; padding: 1 2; }
+.gm-expanded { height: auto; padding: 0 2 1 2; background: #1a1d23; }
+.gm-divider { height: 1; border-top: solid #2e3038; margin: 0 0 1 0; }
+.gm-actions-row { height: auto; layout: horizontal; align: center middle; margin-top: 1; }
+.gm-actions-row Button { margin: 0 1; padding: 0 2; min-width: 8; }
+#gm-footer { height: auto; min-height: 3; dock: bottom; background: #0d1016; border-top: solid #2e3038; padding: 1 2; layout: horizontal; align: left middle; }
+#gm-footer > .gm-key { width: auto; color: #5ac1fe; text-style: bold; margin-right: 1; }
+#gm-footer > .gm-key-desc { width: auto; color: #686868; margin-right: 2; }
+#gm-empty { width: 100%; height: 100%; content-align: center middle; text-align: center; color: #686868; }
+    """
     BINDINGS = [
         ("escape", "close",     "Close"),
         ("enter",  "toggle",    "Toggle"),

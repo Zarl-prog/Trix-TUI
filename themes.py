@@ -488,7 +488,7 @@ def build_theme_css(theme: dict) -> str:
     TextArea .text-area--selection {{ background: #1f4a6e; }}
 
     /* ── Bottom Bar ── */
-    #bottom-bar {{ background: {surf}; border-top: solid {brd}; }}
+    #bottom-bar {{ background: {surf}; }}
     .kb-key {{ color: {acc}; text-style: bold; }}
     .kb-desc {{ color: {txt_m}; }}
     .bb-item:hover {{ background: {panel}; }}

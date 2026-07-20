@@ -1013,6 +1013,7 @@ class TrixApp(App):
     #main-area {
         height: 1fr;
         layout: horizontal;
+        border-bottom: solid #2e3038;
     }
 
     LayoutContainer, Container, #files-panel, #editor-panel {
@@ -1078,7 +1079,6 @@ class TrixApp(App):
         background: #1a1d23;
         layout: horizontal;
         padding: 0 1;
-        border-top: solid #2e3038;
     }
     .bb-item {
         width: auto;

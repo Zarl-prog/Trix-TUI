@@ -232,8 +232,8 @@ class GitMenuScreen(ModalScreen):
             Vertical(id=f"gm-actions-{idx}"),
             classes="gm-expanded",
             id=f"gm-expanded-{idx}",
-            display=False,
         )
+        expanded.display = False
 
         return Vertical(
             collapsed, expanded,

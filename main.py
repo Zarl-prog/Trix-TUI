@@ -308,13 +308,19 @@ class LayoutContainer(Container):
 
 
 class ClickableTextArea(TextArea):
-    """TextArea subclass that explicitly focuses itself when clicked."""
+    """TextArea subclass with enhanced cursor behavior."""
 
     def on_click(self, event: Click) -> None:
         self.focus()
 
     def on_mouse_down(self, event: MouseDown) -> None:
         self.focus()
+
+    def on_mount(self) -> None:
+        self.cursor_blink = True
+
+    def on_focus(self) -> None:
+        self.cursor_blink = True
 
 
 class ClickableDirectoryTree(DirectoryTree):
@@ -997,8 +1003,9 @@ class TrixApp(App):
     }
     TextArea .text-area--gutter        { background: #0d1016; color: #3a3c42; }
     TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
-    TextArea .text-area--cursor        { background: #5ac1fe; }
+    TextArea .text-area--cursor        { background: #5ac1fe; color: #0d1016; text-style: bold; }
     TextArea .text-area--cursor-line   { background: #15181f; }
+    TextArea .text-area--cursor-line-gutter { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
     /* ── Bottom Bar ── */

@@ -392,13 +392,16 @@ def build_text_area_theme(theme: dict) -> "TextAreaTheme":
     slug = theme["name"].lower().replace(" ", "-")
     name = f"trix-{slug}"
 
+    def bold_on(col: str, bg: str) -> Style:
+        return Style(color=col, bgcolor=bg, bold=True)
+
     return TextAreaTheme(
         name=name,
         base_style=s(txt),
         gutter_style=s(ln),
-        cursor_style=s(acc),
+        cursor_style=bold_on(bg, acc),
         cursor_line_style=Style(bgcolor=cl),
-        cursor_line_gutter_style=Style(bgcolor=cl),
+        cursor_line_gutter_style=Style(bgcolor=cl, bold=True),
         selection_style=Style(bgcolor="#1f4a6e"),
         bracket_matching_style=Style(bgcolor=brd),
         syntax_styles={
@@ -483,8 +486,9 @@ def build_theme_css(theme: dict) -> str:
     TextArea {{ background: {bg}; color: {txt}; scrollbar-color: {sbt}; scrollbar-background: {bg}; }}
     TextArea .text-area--gutter {{ background: {bg}; color: {ln}; }}
     TextArea .text-area--gutter-active {{ background: {bg}; color: {acc}; text-style: bold; }}
-    TextArea .text-area--cursor {{ background: {acc}; }}
+    TextArea .text-area--cursor {{ background: {acc}; color: {bg}; text-style: bold; }}
     TextArea .text-area--cursor-line {{ background: {cl}; }}
+    TextArea .text-area--cursor-line-gutter {{ background: {bg}; color: {acc}; text-style: bold; }}
     TextArea .text-area--selection {{ background: #1f4a6e; }}
 
     /* ── Bottom Bar ── */

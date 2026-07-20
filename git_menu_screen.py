@@ -364,7 +364,7 @@ GitMenuScreen {
     # ── Key / mouse event handling ────────────────────────────────────────
 
     def on_key(self, event: Key) -> None:
-        if self.query_one("#gm-message", Input).focused:
+        if self.query_one("#gm-message", Input).has_focus:
             return
         if event.key == "up":
             self._focus_commit(self._focused_index - 1)

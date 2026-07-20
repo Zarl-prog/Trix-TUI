@@ -341,7 +341,6 @@ SplashScreen {
 }
 #splash-logo {
     text-align: center;
-    color: #5ac1fe;
     text-style: bold;
     margin-bottom: 0;
 }
@@ -356,11 +355,6 @@ SplashScreen {
     color: #3f4043;
     margin-bottom: 1;
 }
-#splash-bar-text {
-    text-align: center;
-    color: #5ac1fe;
-    margin-bottom: 0;
-}
 #splash-status {
     text-align: center;
     color: #686868;
@@ -370,7 +364,7 @@ register_css_template("splash_screen", PERFECT_SPLASH_CSS)
 
 
 class SplashScreen(Screen):
-    """Perfect splash screen shown on startup with animated progress."""
+    """Splash screen with logo that fills as loading progresses."""
 
     CSS = PERFECT_SPLASH_CSS
 
@@ -407,12 +401,26 @@ class SplashScreen(Screen):
             pass
         return "v0.2.0"
 
+    def _color_logo(self, progress: float) -> str:
+        total = sum(1 for c in self._LOGO if c not in (" ", "\n"))
+        filled = int(progress * total)
+        count = 0
+        result = []
+        for c in self._LOGO:
+            if c in (" ", "\n"):
+                result.append(c)
+            else:
+                result.append(
+                    f"[#5ac1fe]{c}[/]" if count < filled else f"[#3f4043]{c}[/]"
+                )
+                count += 1
+        return "".join(result)
+
     def compose(self) -> ComposeResult:
         with Vertical(id="splash-frame"):
-            yield Static(self._LOGO, id="splash-logo", markup=False)
+            yield Static(self._color_logo(0.0), id="splash-logo")
             yield Static("Your Terminal. Reimagined.", id="splash-tagline")
             yield Static(self.version, id="splash-version")
-            yield Static("", id="splash-bar-text")
             yield Static("Initializing…", id="splash-status")
 
     def on_mount(self) -> None:
@@ -424,15 +432,12 @@ class SplashScreen(Screen):
             self.progress = 1.0
             if self.timer:
                 self.timer.stop()
+            self.query_one("#splash-logo", Static).update(
+                self._color_logo(1.0)
+            )
             from main import MainScreen
             self.app.push_screen(MainScreen())
             return
-
-        bar_width = 34
-        filled = int(self.progress * bar_width)
-        empty = bar_width - filled
-
-        bar_str = "█" * filled + "░" * empty
 
         statuses = [
             "Boot sequence initiated…",
@@ -443,12 +448,11 @@ class SplashScreen(Screen):
             "Warming up cache…",
             "Ready.",
         ]
-        pct_int = int(self.progress * 100)
         status_idx = min(int(self.progress * len(statuses)), len(statuses) - 1)
 
         try:
-            self.query_one("#splash-bar-text", Static).update(
-                f"[#5ac1fe]{bar_str}[/#5ac1fe]  [#3f4043]{pct_int}%[/#3f4043]"
+            self.query_one("#splash-logo", Static).update(
+                self._color_logo(self.progress)
             )
             self.query_one("#splash-status", Static).update(
                 f"[#686868]{statuses[status_idx]}[/#686868]"

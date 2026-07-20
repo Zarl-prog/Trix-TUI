@@ -430,7 +430,7 @@ class ClickableDirectoryTree(DirectoryTree):
             ".sh":   "\ue642 ", ".bash": "\ue642 ", ".zsh": "\ue642 ",
             ".fish": "\ue642 ",
             # ── PowerShell ──
-            ".ps1": "\ue637 ",
+            ".ps1": "\ue642 ",
             # ── C / C++ ──
             ".c":   "\ue71f ", ".h":   "\ue71f ",
             ".cpp": "\ue729 ", ".cc":  "\ue729 ", ".cxx": "\ue729 ",
@@ -461,11 +461,11 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Dart ──
             ".dart": "\ue72e ",
             # ── Lua ──
-            ".lua": "\ue42f ",
+            ".lua": "\uf42f ",
             # ── SQL / DB ──
             ".sql":    "\ue795 ",
-            ".db":     "\ue76e ",
-            ".sqlite": "\ue76e ",
+            ".db":     "\uf425 ",
+            ".sqlite": "\uf425 ",
             # ── GraphQL ──
             ".graphql": "\ue61a ", ".gql": "\ue61a ",
             # ── Perl ──
@@ -473,8 +473,8 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Elm ──
             ".elm": "\ue739 ",
             # ── Clojure ──
-            ".clj":  "\ue42f ", ".cljs": "\ue42f ",
-            ".cljc": "\ue42f ", ".edn":  "\ue42f ",
+            ".clj":  "\uf42f ", ".cljs": "\uf42f ",
+            ".cljc": "\uf42f ", ".edn":  "\uf42f ",
             # ── CoffeeScript ──
             ".coffee": "\ue728 ", ".litcoffee": "\ue728 ",
             # ── PureScript ──
@@ -520,7 +520,7 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Node ──
             ".npmignore": "\ue60a ",
             # ── Protocol Buffers ──
-            ".proto": "\ue42f ",
+            ".proto": "\uf42f ",
         }
 
         _NAME_ICONS: dict[str, str] = {
@@ -593,9 +593,9 @@ class ClickableDirectoryTree(DirectoryTree):
         }
 
         # Category fallbacks for unmapped extensions
-        _CODE_FALLBACK = "\ue42f "
+        _CODE_FALLBACK = "\uf42f "
         _TEXT_FALLBACK = "\ue648 "
-        _BINARY_FALLBACK = "\ue42e "
+        _BINARY_FALLBACK = "\uf42e "
 
         _CODE_EXTS: frozenset[str] = frozenset({
             ".m", ".mm", ".s", ".asm", ".inc",

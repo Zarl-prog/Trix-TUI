@@ -66,16 +66,16 @@ GitMenuScreen {
 #gm-title  { width: auto; color: #5ac1fe; text-style: bold; }
 #gm-meta   { width: 1fr; content-align: right middle; color: #686868; }
 #gm-body   { height: 1fr; layout: vertical; }
-#gm-commit-area { height: auto; padding: 1 3 1 3; background: #0d1016; border-bottom: solid #2e3038; align: center middle; layout: vertical; }
-#gm-message { width: 100%; height: 3; border: solid #2e3038; background: #131721; color: #bfbdb6; padding: 0 1; }
+#gm-commit-area { height: auto; padding: 0 3 0 3; background: #0d1016; border-bottom: solid #2e3038; align: center middle; layout: vertical; }
+#gm-message { width: 100%; height: 3; border: solid #2e3038; background: #131721; color: #bfbdb6; padding: 0 1; margin-top: 1; }
 #gm-message:focus { border: solid #5ac1fe; }
-#gm-buttons { height: auto; margin-top: 1; layout: horizontal; align: center middle; }
-#gm-buttons Button { margin: 0 1; padding: 0 3; min-width: 12; }
+#gm-buttons { height: auto; layout: horizontal; align: center middle; }
+#gm-buttons Button { margin: 1 1 0 1; padding: 0 3; min-width: 16; }
 #gm-commit-btn { background: #5ac1fe; color: #0d1016; text-style: bold; border: none; }
 #gm-commit-btn:disabled { background: #2e3038; color: #686868; }
-#gm-push-btn { background: transparent; color: #39bae5; text-style: bold; border: solid #39bae5; }
-#gm-push-btn:disabled { border: solid #2e3038; color: #686868; }
-#gm-error { height: 1; color: #ef7177; text-align: center; margin-top: 1; }
+#gm-push-btn { background: #39bae5; color: #0d1016; text-style: bold; border: none; }
+#gm-push-btn:disabled { background: #2e3038; color: #686868; }
+#gm-error { height: 1; color: #ef7177; text-align: center; }
 #gm-history-header { height: 3; padding: 0 2; color: #686868; text-style: bold; background: #131721; align: left middle; }
 #gm-list { height: 1fr; background: #131721; scrollbar-color: #5ac1fe; scrollbar-background: #2e3038; scrollbar-size: 1 1; overflow-y: auto; }
 .gm-commit { height: auto; background: #131721; border-bottom: solid #2e3038; }

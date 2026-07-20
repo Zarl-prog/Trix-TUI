@@ -412,8 +412,8 @@ class ClickableDirectoryTree(DirectoryTree):
             ".less": "\ue764 ", ".styl": "\ue797 ",
             # ── JS Frameworks ──
             ".vue":   "\ue7a2 ",
-            ".svelte":"\uf484 ",
-            ".astro": "\uf484 ",
+            ".svelte":"\ue622 ",
+            ".astro": "\ue622 ",
             # ── JSON ──
             ".json":  "\ue62a ", ".jsonc": "\ue62a ", ".json5": "\ue62a ",
             # ── Markdown / Docs ──
@@ -461,7 +461,7 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Dart ──
             ".dart": "\ue72e ",
             # ── Lua ──
-            ".lua": "\ue76b ",
+            ".lua": "\ue42f ",
             # ── SQL / DB ──
             ".sql":    "\ue795 ",
             ".db":     "\ue76e ",
@@ -473,14 +473,14 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Elm ──
             ".elm": "\ue739 ",
             # ── Clojure ──
-            ".clj":  "\ue76a ", ".cljs": "\ue76a ",
-            ".cljc": "\ue76a ", ".edn":  "\ue76a ",
+            ".clj":  "\ue42f ", ".cljs": "\ue42f ",
+            ".cljc": "\ue42f ", ".edn":  "\ue42f ",
             # ── CoffeeScript ──
             ".coffee": "\ue728 ", ".litcoffee": "\ue728 ",
             # ── PureScript ──
             ".purs": "\ue782 ",
             # ── R ──
-            ".r":    "\uf48f ",
+            ".r":    "\ue648 ",
             # ── VimL ──
             ".vim": "\ue7a0 ",
             # ── Images ──
@@ -520,7 +520,7 @@ class ClickableDirectoryTree(DirectoryTree):
             # ── Node ──
             ".npmignore": "\ue60a ",
             # ── Protocol Buffers ──
-            ".proto": "\uf490 ",
+            ".proto": "\ue42f ",
         }
 
         _NAME_ICONS: dict[str, str] = {

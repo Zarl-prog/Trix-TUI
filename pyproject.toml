@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "trix-ide"
-version = "0.2.0"
+version = "0.3.0"
 description = "A terminal-native IDE built with Textual"
 requires-python = ">=3.10"
 authors = [
@@ -22,7 +22,7 @@ windows = ["pywinpty"]
 trix = "app:run"
 
 [tool.setuptools]
-py-modules = ["main", "app", "screens", "themes", "terminal_widget", "divider_widget", "search_widget", "git_menu_screen"]
+py-modules = ["main", "app", "screens", "themes", "search_widget", "git_menu_screen", "syntax_setup"]
 
 [tool.setuptools.package-data]
 "*" = ["ayu.json"]

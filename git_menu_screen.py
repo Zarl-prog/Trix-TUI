@@ -339,11 +339,13 @@ class GitMenuScreen(ModalScreen):
         widget = event.widget
         while widget:
             if widget.id and widget.id.startswith("gm-commit-"):
-                idx = int(widget.id.split("-")[-1])
-                self._focus_commit(idx)
-                self._toggle_expand(idx)
-                event.stop()
-                return
+                suffix = widget.id.removeprefix("gm-commit-")
+                if suffix.isdigit():
+                    idx = int(suffix)
+                    self._focus_commit(idx)
+                    self._toggle_expand(idx)
+                    event.stop()
+                    return
             widget = getattr(widget, "parent", None)
 
     # ── Commit button handlers ────────────────────────────────────────────

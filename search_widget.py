@@ -15,8 +15,8 @@ EDITOR_SEARCH_CSS = """
 EditorSearch {
     height: auto;
     dock: top;
-    background: #141820;
-    border-bottom: solid #1f2a3a;
+    background: #131721;
+    border-bottom: solid #2e3038;
     padding: 0 1;
     layout: horizontal;
 }
@@ -30,9 +30,10 @@ EditorSearch {
 EditorSearch Input {
     width: 1fr;
     height: 3;
-    border: solid #3f4043;
+    border: solid #2e3038;
     background: #0d1016;
     color: #bfbdb6;
+    padding: 0 1;
 }
 EditorSearch Input:focus {
     border: solid #5ac1fe;
@@ -41,14 +42,14 @@ EditorSearch Input:focus {
     width: auto;
     height: 3;
     content-align: center middle;
-    color: #4b4c4e;
+    color: #686868;
     padding: 0 1;
 }
 #es-nav-hint {
     width: auto;
     height: 3;
     content-align: center middle;
-    color: #3f4043;
+    color: #686868;
     padding: 0 1;
 }
 """
@@ -200,8 +201,8 @@ GLOBAL_SEARCH_CSS = """
 GlobalSearch {
     height: auto;
     dock: top;
-    background: #141820;
-    border-bottom: solid #1f2a3a;
+    background: #131721;
+    border-bottom: solid #2e3038;
     padding: 0 1;
     layout: vertical;
 }
@@ -220,9 +221,10 @@ GlobalSearch {
 GlobalSearch Input {
     width: 1fr;
     height: 3;
-    border: solid #3f4043;
+    border: solid #2e3038;
     background: #0d1016;
     color: #bfbdb6;
+    padding: 0 1;
 }
 GlobalSearch Input:focus {
     border: solid #5ac1fe;
@@ -231,13 +233,13 @@ GlobalSearch Input:focus {
     width: auto;
     height: 3;
     content-align: center middle;
-    color: #4b4c4e;
+    color: #686868;
     padding: 0 1;
 }
 #global-results {
     height: 10;
     background: #0d1016;
-    border: solid #1f2a3a;
+    border: solid #2e3038;
 }
 GlobalSearch ListItem {
     padding: 0 1;
@@ -246,7 +248,7 @@ GlobalSearch ListItem {
     height: auto;
 }
 GlobalSearch ListItem:hover {
-    background: #1f2430;
+    background: #131721;
 }
 GlobalSearch ListView:focus > ListItem.--highlight {
     background: #1f4a6e;

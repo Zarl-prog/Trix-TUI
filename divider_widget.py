@@ -6,7 +6,7 @@ DIVIDER_CSS = """
 Divider {
     width: 1;
     height: 100%;
-    background: #1a1d23;
+    background: #2e3038;
 }
 Divider:hover {
     background: #5ac1fe;

@@ -52,7 +52,7 @@ class GitMenuScreen(ModalScreen):
     CSS = """
 GitMenuScreen {
     align: center middle;
-    background: rgba(0,0,0,0.82);
+    background: #030508;
 }
 #gm-popup {
     width: 80%;

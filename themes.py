@@ -227,7 +227,7 @@ def build_git_menu_css(theme: dict) -> str:
     return f"""
 GitMenuScreen {{
     align: center middle;
-    background: rgba(0,0,0,0.82);
+    background: #030508;
 }}
 #gm-popup {{
     width: 80%;
@@ -540,7 +540,7 @@ def build_modal_css(theme: dict) -> str:
     acc    = theme.get("accent",         "#5ac1fe")
     err    = theme.get("error",          "#ef7177")
     return f"""
-    *Screen {{ background: rgba(0,0,0,0.82); align: center middle; }}
+    *Screen {{ background: #030508; align: center middle; }}
     .modal-dialog {{
         width: 54; height: auto;
         background: {panel};

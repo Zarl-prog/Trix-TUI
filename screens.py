@@ -56,7 +56,7 @@ def _get_main_screen_class():
 HELP_SCREEN_CSS = """
 HelpScreen {
     align: center middle;
-    background: rgba(0,0,0,0.82);
+    background: #030508;
 }
 #help-dialog {
     width: 58;
@@ -122,7 +122,7 @@ class HelpScreen(Screen):
 CONFIRM_SCREEN_CSS = """
 ConfirmScreen {
     align: center middle;
-    background: rgba(0,0,0,0.82);
+    background: #030508;
 }
 #cf-dialog {
     width: 50;
@@ -178,7 +178,7 @@ class ConfirmScreen(Screen):
 NEW_FILE_SCREEN_CSS = """
 NewFileScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.82);
+    background: #030508;
 }
 #nf-dialog {
     width: 54;
@@ -227,7 +227,7 @@ class NewFileScreen(Screen):
 RENAME_SCREEN_CSS = """
 RenameScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.82);
+    background: #030508;
 }
 #rn-dialog {
     width: 54;
@@ -282,7 +282,7 @@ class RenameScreen(Screen):
 FOLDER_PICKER_CSS = """
 FolderPicker {
     align: center middle;
-    background: rgba(0, 0, 0, 0.82);
+    background: #030508;
 }
 #dialog {
     width: 60;
@@ -462,7 +462,7 @@ class SplashScreen(Screen):
 THEME_PICKER_SCREEN_CSS = """
 ThemePickerScreen {
     align: center middle;
-    background: rgba(0, 0, 0, 0.82);
+    background: #030508;
 }
 #tp-dialog {
     width: 48;

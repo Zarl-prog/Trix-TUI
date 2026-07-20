@@ -867,7 +867,7 @@ class TrixApp(App):
         padding: 0;
     }
 
-    #files-panel { width: 20%; min-width: 10%; border-right: solid #2e3038; }
+    #files-panel { width: 20%; min-width: 10%; }
     #files-panel.--panel-active { border-left: tall #5ac1fe; }
     #editor-panel { width: 2fr; min-width: 20%; }
     #editor-panel.--panel-active { border-left: tall #5ac1fe; }

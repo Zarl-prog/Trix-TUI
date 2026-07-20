@@ -469,7 +469,6 @@ def build_theme_css(theme: dict) -> str:
     /* ── Main area ── */
     #main-area {{ background: {bg}; }}
     LayoutContainer, Container, #files-panel, #editor-panel {{ background: {bg}; }}
-    #files-panel {{ border-right: solid {brd}; }}
     #files-panel.--panel-active {{ border-left: tall {acc}; }}
     #editor-panel.--panel-active {{ border-left: tall {acc}; }}
 

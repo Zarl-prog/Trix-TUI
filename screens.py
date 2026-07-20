@@ -376,6 +376,7 @@ class SplashScreen(Screen):
         "     ██║   ██║  ██║██║██╔╝ ██╗\n"
         "     ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
     )
+    _LOGO_ROWS = _LOGO.split("\n")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -402,19 +403,35 @@ class SplashScreen(Screen):
         return "v0.2.0"
 
     def _color_logo(self, progress: float) -> str:
-        total = sum(1 for c in self._LOGO if c not in (" ", "\n"))
-        filled = int(progress * total)
-        count = 0
+        nrows = len(self._LOGO_ROWS)
+        filled_rows = int(progress * nrows)
+        row_remainder = (progress * nrows) - filled_rows
+
         result = []
-        for c in self._LOGO:
-            if c in (" ", "\n"):
-                result.append(c)
+        for i, row in enumerate(self._LOGO_ROWS):
+            if i < filled_rows:
+                result.append(f"[#5ac1fe]{row}[/]")
+            elif i == filled_rows and filled_rows < nrows:
+                non_space_idx = [
+                    j for j, c in enumerate(row) if c not in (" ", "\r")
+                ]
+                k = int(row_remainder * len(non_space_idx))
+                count = 0
+                parts = []
+                for j, c in enumerate(row):
+                    if c in (" ", "\r"):
+                        parts.append(c)
+                    elif count < k:
+                        parts.append(f"[#5ac1fe]{c}[/]")
+                        count += 1
+                    else:
+                        parts.append(f"[#3f4043]{c}[/]")
+                        count += 1
+                result.append("".join(parts))
             else:
-                result.append(
-                    f"[#5ac1fe]{c}[/]" if count < filled else f"[#3f4043]{c}[/]"
-                )
-                count += 1
-        return "".join(result)
+                result.append(f"[#3f4043]{row}[/]")
+
+        return "\n".join(result)
 
     def compose(self) -> ComposeResult:
         with Vertical(id="splash-frame"):

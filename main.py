@@ -24,7 +24,7 @@ from themes import THEMES, build_theme_css, build_text_area_theme
 from divider_widget import Divider
 from search_widget import EditorSearch, GlobalSearch
 from screens import ConfirmScreen, FolderPicker, HelpScreen, NewFileScreen, RenameScreen, SplashScreen, ThemePickerScreen
-from git_history_screen import GitHistoryScreen
+from git_menu_screen import GitMenuScreen
 
 
 import time as _time
@@ -64,7 +64,7 @@ def _get_current_branch(cwd: str) -> str:
         return ""
 
 
-# ── Status code → display mappings (shared by tree badges and GitHistoryScreen) ──
+# ── Status code → display mappings (shared by tree badges and GitMenuScreen) ──
 
 _STATUS_COLORS: dict[str, str] = {
     "M":   "#e6b450",
@@ -249,7 +249,7 @@ class TrixCommandProvider(Provider):
         ("Zen Mode",            "Ctrl+\\",      "zen_mode"),
         ("Search in File",      "Ctrl+F",       "search"),
         ("Search Across Files", "Ctrl+Shift+F", "global_search"),
-        ("Git History",         "Ctrl+G",       "show_git_history"),
+        ("Git Menu",            "Ctrl+G",       "show_git_menu"),
         ("Cycle Theme",         "Ctrl+T",       "cycle_theme"),
         ("Theme Picker",        "Ctrl+Shift+T", "pick_theme"),
         ("Reload File Tree",    "Ctrl+R",       "reload_tree"),
@@ -848,12 +848,14 @@ class TrixApp(App):
         background: #0d1016;
         layout: horizontal;
         padding: 0 1;
+        border-bottom: solid #2e3038;
     }
     #hdr-brand  { width: auto; color: #5ac1fe; text-style: bold; margin-right: 1; }
-    #hdr-folder { width: 1fr; color: #4b4c4e; text-align: center; }
-    #hdr-sep1   { width: auto; color: #3f4043; margin-right: 1; }
-    #hdr-theme  { width: auto; color: #4b4c4e; }
+    #hdr-folder { width: 1fr; color: #686868; text-align: center; }
+    #hdr-sep1   { width: auto; color: #2e3038; margin-right: 1; }
+    #hdr-theme  { width: auto; color: #686868; }
 
+    /* ── Main area ── */
     #main-area {
         height: 1fr;
         layout: horizontal;
@@ -865,11 +867,10 @@ class TrixApp(App):
         padding: 0;
     }
 
-    #files-panel.--panel-active    { border-left: tall #5ac1fe; }
-    #editor-panel.--panel-active   { border-left: tall #5ac1fe; }
-
-    #files-panel    { width: 20%; min-width: 10%; }
-    #editor-panel   { width: 2fr; min-width: 20%; }
+    #files-panel { width: 20%; min-width: 10%; border-right: solid #2e3038; }
+    #files-panel.--panel-active { border-left: tall #5ac1fe; }
+    #editor-panel { width: 2fr; min-width: 20%; }
+    #editor-panel.--panel-active { border-left: tall #5ac1fe; }
 
     PanelHeader {
         height: 1;
@@ -884,35 +885,23 @@ class TrixApp(App):
         scrollbar-size: 1 1;
         scrollbar-color: #5ac1fe;
         scrollbar-background: #0d1016;
+        padding: 0 0 0 0;
     }
     DirectoryTree > .tree--cursor    { background: #5ac1fe; color: #0d1016; text-style: bold; }
     DirectoryTree > .tree--highlight { background: #5ac1fe; color: #0d1016; }
-    DirectoryTree > .tree--guides    { color: #3f4043; }
+    DirectoryTree > .tree--guides    { color: #2e3038; }
 
-/* ── Editor Panel ── */
+    /* ── Editor Panel ── */
     #editor-panel {
         layout: vertical;
         height: 1fr;
     }
-    #editor-panel > PanelHeader {
-        height: 1;
-    }
-    #editor-panel > TabStrip {
-        height: 1;
-    }
-    #editor-panel > EditorSearch {
-        height: auto;
-    }
-    #editor-panel > ClickableTextArea {
-        height: 1fr;
-    }
-    #editor-panel > WelcomePanel {
-        display: none;
-    }
-    #editor-panel > WelcomePanel.-visible {
-        display: block;
-        height: 1fr;
-    }
+    #editor-panel > PanelHeader { height: 1; }
+    #editor-panel > TabStrip { height: 1; }
+    #editor-panel > EditorSearch { height: auto; }
+    #editor-panel > ClickableTextArea { height: 1fr; }
+    #editor-panel > WelcomePanel { display: none; }
+    #editor-panel > WelcomePanel.-visible { display: block; height: 1fr; }
 
     /* ── Editor ── */
     TextArea {
@@ -923,47 +912,55 @@ class TrixApp(App):
         scrollbar-color: #5ac1fe;
         scrollbar-background: #0d1016;
     }
-    TextArea .text-area--gutter        { background: #0d1016; color: #3f4043; }
+    TextArea .text-area--gutter        { background: #0d1016; color: #3a3c42; }
     TextArea .text-area--gutter-active { background: #0d1016; color: #5ac1fe; text-style: bold; }
     TextArea .text-area--cursor        { background: #5ac1fe; }
-    TextArea .text-area--cursor-line   { background: #131721; }
+    TextArea .text-area--cursor-line   { background: #15181f; }
     TextArea .text-area--selection     { background: #1f4a6e; }
 
     /* ── Bottom Bar ── */
     #bottom-bar {
         height: 1;
-        background: #131721;
+        background: #1a1d23;
         layout: horizontal;
         padding: 0 1;
+        border-top: solid #2e3038;
     }
-    .bb-item { width: auto; }
-    .bb-item:hover { background: #1f4a6e; }
+    .bb-item {
+        width: auto;
+    }
+    .bb-item:hover {
+        background: #131721;
+    }
     .kb-key  { width: auto; color: #5ac1fe; text-style: bold; }
-    .kb-desc { width: auto; color: #4b4c4e; margin-right: 1; }
+    .kb-desc { width: auto; color: #686868; margin-right: 1; }
 
     #sb-spacer  { width: 1fr; }
-    #sb-unsaved { width: auto; color: #e6b450; margin-right: 1; }
-    #sb-lang    { width: auto; color: #4b4c4e; margin-right: 2; }
-    #sb-cursor  { width: auto; color: #4b4c4e; margin-right: 2; }
+    #sb-unsaved { width: auto; color: #feb454; margin-right: 1; }
+    #sb-lang    { width: auto; color: #686868; margin-right: 2; }
+    #sb-cursor  { width: auto; color: #686868; margin-right: 2; }
     #sb-branch  { width: auto; color: #aad84c; margin-right: 1; }
 
     /* ── Divider ── */
     Divider {
-        background: #1a1d23;
+        background: #2e3038;
+    }
+    Divider:hover {
+        background: #5ac1fe;
     }
 
     /* ── Toast Notifications ── */
     Toast {
-        background: #1f2430;
+        background: #131721;
         border-left: tall #5ac1fe;
         color: #bfbdb6;
         padding: 0 1;
     }
     Toast.-information { border-left: tall #5ac1fe; }
-    Toast.-warning     { border-left: tall #e6b450; background: #1f1e2a; }
-    Toast.-error       { border-left: tall #ef7177; background: #2a1f20; }
+    Toast.-warning     { border-left: tall #feb454; background: #131721; }
+    Toast.-error       { border-left: tall #ef7177; background: #131721; }
     Toast .toast--title        { color: #5ac1fe; text-style: bold; }
-    Toast.-warning .toast--title { color: #e6b450; }
+    Toast.-warning .toast--title { color: #feb454; }
     Toast.-error   .toast--title { color: #ef7177; }
     ToastRack { align: right bottom; padding: 1 2; }
 
@@ -979,7 +976,7 @@ class TrixApp(App):
         width: auto;
         height: 1;
         padding: 0 1;
-        color: #4b4c4e;
+        color: #686868;
         background: #0d1016;
     }
     .tab-item.--tab-active {
@@ -987,14 +984,14 @@ class TrixApp(App):
         background: #131721;
         text-style: bold;
     }
-    .tab-item.--tab-unsaved  { color: #e6b450; }
+    .tab-item.--tab-unsaved  { color: #feb454; }
     .tab-item.--tab-active.--tab-unsaved {
-        color: #e6b450;
+        color: #feb454;
         background: #131721;
         text-style: bold;
     }
 
-    /* ── Welcome Panel (hidden when editor has content) ── */
+    /* ── Welcome Panel ── */
     #editor-welcome-panel {
         height: 1fr;
     }
@@ -1017,7 +1014,7 @@ class TrixApp(App):
         ("ctrl+shift+c",    "copy_selection",   "Copy"),
         ("ctrl+b",          "toggle_filetree",  "Toggle File Tree"),
         ("ctrl+backslash",  "zen_mode",         "Zen Mode"),
-        ("ctrl+g",          "show_git_history", "Git History"),
+        ("ctrl+g",          "show_git_menu", "Git Menu"),
         ("f2",              "rename_file",      "Rename"),
         ("f1",              "show_help",        "Help"),
     ]
@@ -1111,14 +1108,14 @@ class TrixApp(App):
         except Exception:
             pass
 
-        # Refresh GitHistoryScreen CSS if it is the active screen
+        # Refresh GitMenuScreen CSS if it is the active screen
         try:
-            from git_history_screen import GitHistoryScreen
-            if isinstance(self.screen, GitHistoryScreen):
-                from themes import build_git_history_css
-                css = build_git_history_css(theme)
+            from git_menu_screen import GitMenuScreen
+            if isinstance(self.screen, GitMenuScreen):
+                from themes import build_git_menu_css
+                css = build_git_menu_css(theme)
                 self.stylesheet.add_source(
-                    css, read_from=("trix_git_history", ""),
+                    css, read_from=("trix_git_menu", ""),
                 )
                 self.refresh_css(animate=False)
         except Exception:
@@ -1269,7 +1266,7 @@ class TrixApp(App):
         bb_actions = {
             "bb-quit":   "quit_app",
             "bb-help":   "show_help",
-            "bb-git":    "show_git_history",
+            "bb-git":    "show_git_menu",
             "bb-theme":  "cycle_theme",
             "bb-files":  "toggle_filetree",
             "bb-open":   "open_folder",
@@ -1476,12 +1473,12 @@ class TrixApp(App):
             return
         self.screen.query_one("#global-search", GlobalSearch).open()
 
-    async def action_show_git_history(self) -> None:
+    async def action_show_git_menu(self) -> None:
         if self.screen.__class__.__name__ != "MainScreen":
             return
         tree = self.screen.query_one(DirectoryTree)
         repo_path = str(tree.path)
-        await self.push_screen(GitHistoryScreen(repo_path))
+        await self.push_screen(GitMenuScreen(repo_path))
 
     def action_zen_mode(self) -> None:
         self._zen_mode = not self._zen_mode

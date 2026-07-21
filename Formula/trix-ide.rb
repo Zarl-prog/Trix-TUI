@@ -1,4 +1,6 @@
 class TrixIde < Formula
+  include Language::Python::Virtualenv
+
   desc "A terminal-native IDE built with Textual"
   homepage "https://github.com/Zarl-prog/Trix-TUI"
   url "https://github.com/Zarl-prog/Trix-TUI/archive/refs/tags/v0.3.1.tar.gz"
@@ -8,7 +10,7 @@ class TrixIde < Formula
   depends_on "python@3.14"
 
   def install
-    venv = virtualenv_create(libexec, "python3")
+    venv = virtualenv_create(libexec)
     venv.pip_install "trix-ide"
     bin.install_symlink libexec/"bin/trix"
   end

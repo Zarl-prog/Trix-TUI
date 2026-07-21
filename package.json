@@ -1,0 +1,21 @@
+{
+  "name": "trix-ide",
+  "version": "0.3.1",
+  "description": "A terminal-native IDE built with Textual",
+  "homepage": "https://github.com/Zarl-prog/Trix-TUI",
+  "license": "MIT",
+  "author": "Asim Junaidi",
+  "bin": {
+    "trix": "bin/trix.js"
+  },
+  "scripts": {
+    "install-trix": "pip install -U trix-ide"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zarl-prog/Trix-TUI.git"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

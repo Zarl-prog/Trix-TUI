@@ -54,47 +54,47 @@
 <tr>
 <td width="33%">
 
-📝 **Syntax Highlighting** — 20+ languages detected by file extension with tree-sitter-based highlighting
+📝 **Syntax Highlighting** — 20+ languages via tree-sitter, theme-aware colors
 
-⌨️ **Undo / Redo** — Full undo history with `Ctrl+Z` / `Ctrl+Y`
+⌨️ **Undo / Redo** — `Ctrl+Z` / `Ctrl+Y` with full undo history
 
-🔍 **Search in File** — Real-time highlighting with match navigation (`Ctrl+F`)
+🔍 **Search in File** — Real-time highlighting, match navigation (`Ctrl+F`)
 
-💾 **Save** — Quick save with `Ctrl+S`, dirty tab indicator (●)
+💾 **Save** — `Ctrl+S`, dirty tab indicator (●)
 
-📏 **Line Numbers** — Gutter with active line highlighting
+📏 **Line Numbers** — Gutter with active line highlight
 
-📋 **Select All** — `Ctrl+A` selects entire document
-
-</td>
-<td width="33%">
-
-📁 **File Tree** — Nerd Font icons for 130+ file types with folder expand/collapse
-
-🔄 **Open Folder** — Navigate to any directory (`Ctrl+O`), tree updates instantly
-
-➕ **Create File** — New file dialog with automatic parent directory creation
-
-✏️ **Rename / Delete** — `F2` to rename, `Del` to delete with confirmation
-
-📑 **Multi-Tab** — Open multiple files with `Ctrl+Tab` navigation and close button
-
-🔖 **Git Status** — Color-coded badges (M, A, D, ??) on every file in tree
+📋 **Select All** — `Ctrl+A`
 
 </td>
 <td width="33%">
 
-🎨 **10 Themes** — Ayu, Dracula, One Dark, Tokyo Night, Catppuccin, Nord, Everforest and more
+📁 **File Tree** — 130+ Nerd Font icons, expand/collapse, git badges
 
-🧘 **Zen Mode** — `Ctrl+\` hides all chrome, full-screen editing
+🔄 **Open Folder** — `Ctrl+O`, tree updates instantly
 
-🖱 **Click to Focus** — Click any panel to auto-focus keyboard input
+➕ **Create File** — Dialog with auto parent directory creation
 
-⌨️ **Help Screen** — `F1` shows all keyboard shortcuts in a clean modal
+✏️ **Rename / Delete** — `F2` to rename, `Del` with confirm
 
-🎯 **Bottom Bar** — Clickable shortcut bar with keyboard hints
+📑 **Multi-Tab** — `Ctrl+Tab` nav, close button, dirty tracking
 
-🟢 **Splash Screen** — Animated logo fill-on-startup with loading status
+🔖 **Git Status** — Color badges (M, A, D, ??) on every file
+
+</td>
+<td width="33%">
+
+🎨 **10 Themes** — Ayu, Dracula, One Dark, Tokyo Night, Catppuccin and more
+
+🧘 **Zen Mode** — `Ctrl+\` hides all chrome for distraction-free editing
+
+🖱 **Click to Focus** — Click any panel to auto-focus
+
+⌨️ **Help Screen** — `F1` shows every shortcut in a clean modal
+
+🎯 **Bottom Bar** — Clickable shortcut bar with key hints
+
+🟢 **Splash Screen** — Animated logo fill, status messages
 
 </td>
 </tr>
@@ -104,43 +104,52 @@
 
 ## Installation
 
-**pip**
-```
-pip install trix-ide
-```
+Get Trix on your machine one of these ways — then just type `trix`.
 
-**pipx**
-```
-pipx install trix-ide
-```
+<table>
+<tr>
+<th>Method</th>
+<th>Command</th>
+<th></th>
+</tr>
+<tr>
+<td><b>pip</b></td>
+<td><code>pip install trix-ide</code></td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
+</tr>
+<tr>
+<td><b>pipx</b></td>
+<td><code>pipx install trix-ide</code></td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
+</tr>
+<tr>
+<td><b>uv</b></td>
+<td><code>uv tool install trix-ide</code></td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
+</tr>
+<tr>
+<td><b>npm</b></td>
+<td><code>npm install -g trix-ide</code></td>
+<td><a href="https://www.npmjs.com/package/trix-ide"><img src="https://img.shields.io/npm/v/trix-ide?color=39bae5&style=flat-square&label="></a></td>
+</tr>
+<tr>
+<td><b>Homebrew</b></td>
+<td><code>brew install Zarl-prog/trix/trix-ide</code></td>
+<td><a href="Formula/trix-ide.rb"><img src="https://img.shields.io/badge/-formula-aad84c?style=flat-square"></a></td>
+</tr>
+<tr>
+<td><b>Scoop</b></td>
+<td><code>scoop bucket add trix https://github.com/Zarl-prog/scoop-trix<br>scoop install trix-ide</code></td>
+<td><a href="bucket/trix-ide.json"><img src="https://img.shields.io/badge/-manifest-feb454?style=flat-square"></a></td>
+</tr>
+<tr>
+<td><b>Winget</b></td>
+<td><code>winget install Zarl-prog.Trix-IDE</code></td>
+<td><a href="winget/Zarl-prog/Trix-IDE/0.3.1/"><img src="https://img.shields.io/badge/-manifest-ef7177?style=flat-square"></a></td>
+</tr>
+</table>
 
-**uv**
-```
-uv tool install trix-ide
-```
-
-**npm**
-```
-npm install -g trix-ide
-```
-
-**Homebrew**
-```
-brew install Zarl-prog/trix/trix-ide
-```
-
-**Scoop**
-```
-scoop bucket add trix https://github.com/Zarl-prog/scoop-trix
-scoop install trix-ide
-```
-
-**Winget**
-```
-winget install Zarl-prog.Trix-IDE
-```
-
-Run with:
+After installing, run:
 ```
 trix
 ```
@@ -222,13 +231,13 @@ pyproject.toml      # Package metadata, dependencies, entry point
 [![Theme](https://img.shields.io/badge/Themes-Ayu%20%7C%20Dracula%20%7C%20Nord-39bae5?style=flat-square)](themes.py)
 [![License](https://img.shields.io/badge/License-MIT-686868?style=flat-square)](LICENSE)
 
-**Textual** — The TUI framework that makes terminal apps feel native. Powers the widget layout, event system, and CSS engine.
+**Textual** — Terminal app framework. Powers layout, event system, CSS engine, and the command palette.
 
-**Python** — Cross-platform runtime with zero-compile installs. The app launches in under a second on any OS.
+**Python** — Cross-platform runtime, zero-compile install, launches in under a second.
 
-**Tree-Sitter** — Incremental parsing for accurate syntax highlighting across 20+ languages with fallback support.
+**Tree-Sitter** — Incremental parsing for accurate syntax highlighting across 20+ languages.
 
-**Rich** — Terminal styling for colored labels, dim badges, and markdown rendering in dialogs.
+**Rich** — Terminal styling for labels, badges, and markdown rendering in dialogs.
 
 ---
 

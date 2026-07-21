@@ -104,55 +104,75 @@
 
 ## Installation
 
-Get Trix on your machine one of these ways — then just type `trix`.
-
 <table>
-<tr>
-<th>Method</th>
-<th>Command</th>
-<th></th>
-</tr>
-<tr>
-<td><b>pip</b></td>
-<td><code>pip install trix-ide</code></td>
-<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
-</tr>
-<tr>
-<td><b>pipx</b></td>
-<td><code>pipx install trix-ide</code></td>
-<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
-</tr>
-<tr>
-<td><b>uv</b></td>
-<td><code>uv tool install trix-ide</code></td>
-<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td>
-</tr>
-<tr>
-<td><b>npm</b></td>
-<td><code>npm install -g trix-ide</code></td>
-<td><a href="https://www.npmjs.com/package/trix-ide"><img src="https://img.shields.io/npm/v/trix-ide?color=39bae5&style=flat-square&label="></a></td>
-</tr>
-<tr>
-<td><b>Homebrew</b></td>
-<td><code>brew install Zarl-prog/trix/trix-ide</code></td>
-<td><a href="Formula/trix-ide.rb"><img src="https://img.shields.io/badge/-formula-aad84c?style=flat-square"></a></td>
-</tr>
-<tr>
-<td><b>Scoop</b></td>
-<td><code>scoop bucket add trix https://github.com/Zarl-prog/scoop-trix<br>scoop install trix-ide</code></td>
-<td><a href="bucket/trix-ide.json"><img src="https://img.shields.io/badge/-manifest-feb454?style=flat-square"></a></td>
-</tr>
-<tr>
-<td><b>Winget</b></td>
-<td><code>winget install Zarl-prog.Trix-IDE</code></td>
-<td><a href="winget/Zarl-prog/Trix-IDE/0.3.1/"><img src="https://img.shields.io/badge/-manifest-ef7177?style=flat-square"></a></td>
-</tr>
+<tr><th>Method</th><th>Run this</th><th></th></tr>
+<tr><td><b>pip</b><br><sub>recommended</sub></td>
+<td>
+
+```
+pip install trix-ide
+```
+
+</td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td></tr>
+<tr><td><b>pipx</b></td>
+<td>
+
+```
+pipx install trix-ide
+```
+
+</td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td></tr>
+<tr><td><b>uv</b></td>
+<td>
+
+```
+uv tool install trix-ide
+```
+
+</td>
+<td><a href="https://pypi.org/project/trix-ide/"><img src="https://img.shields.io/pypi/v/trix-ide?color=5ac1fe&style=flat-square&label="></a></td></tr>
+<tr><td><b>npm</b></td>
+<td>
+
+```
+npm install -g trix-ide
+```
+
+</td>
+<td><a href="https://www.npmjs.com/package/trix-ide"><img src="https://img.shields.io/npm/v/trix-ide?color=39bae5&style=flat-square&label="></a></td></tr>
+<tr><td><b>Homebrew</b></td>
+<td>
+
+```
+brew install Zarl-prog/trix/trix-ide
+```
+
+</td>
+<td><a href="Formula/trix-ide.rb"><img src="https://img.shields.io/badge/-formula-aad84c?style=flat-square"></a></td></tr>
+<tr><td><b>Scoop</b></td>
+<td>
+
+```
+scoop bucket add trix https://github.com/Zarl-prog/scoop-trix
+scoop install trix-ide
+```
+
+</td>
+<td><a href="bucket/trix-ide.json"><img src="https://img.shields.io/badge/-manifest-feb454?style=flat-square"></a></td></tr>
+<tr><td><b>Winget</b></td>
+<td>
+
+```
+winget install Zarl-prog.Trix-IDE
+```
+
+</td>
+<td><a href="winget/Zarl-prog/Trix-IDE/0.3.1/"><img src="https://img.shields.io/badge/-manifest-ef7177?style=flat-square"></a></td></tr>
 </table>
 
-After installing, run:
-```
-trix
-```
+Run `trix` to start.
 
 ---
 

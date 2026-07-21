@@ -1,0 +1,29 @@
+PackageIdentifier: Zarl-prog.Trix-IDE
+PackageVersion: 0.3.1
+InstallModes:
+  - silent
+  - silentWithProgress
+Installers:
+  - Architecture: x64
+    InstallerType: portable
+    InstallerUrl: https://raw.githubusercontent.com/Zarl-prog/Trix-TUI/refs/tags/v0.3.1/bin/trix.cmd
+    InstallerSha256: bc85e5da3ae4d197d2d8d00e38aad0fe66f4c90b2d449e59e5cae413a9edf0e5
+    UpgradeBehavior: install
+    Commands:
+      - trix
+  - Architecture: x86
+    InstallerType: portable
+    InstallerUrl: https://raw.githubusercontent.com/Zarl-prog/Trix-TUI/refs/tags/v0.3.1/bin/trix.cmd
+    InstallerSha256: bc85e5da3ae4d197d2d8d00e38aad0fe66f4c90b2d449e59e5cae413a9edf0e5
+    UpgradeBehavior: install
+    Commands:
+      - trix
+  - Architecture: arm64
+    InstallerType: portable
+    InstallerUrl: https://raw.githubusercontent.com/Zarl-prog/Trix-TUI/refs/tags/v0.3.1/bin/trix.cmd
+    InstallerSha256: bc85e5da3ae4d197d2d8d00e38aad0fe66f4c90b2d449e59e5cae413a9edf0e5
+    UpgradeBehavior: install
+    Commands:
+      - trix
+ManifestType: installer
+ManifestVersion: 1.9.0

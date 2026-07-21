@@ -149,31 +149,12 @@ npm install -g trix-ide
 <td>
 
 ```
-brew tap Zarl-prog/Trix-TUI
-brew install trix-ide
+brew tap Zarl-prog/trix https://github.com/Zarl-prog/Trix-TUI
+brew install Zarl-prog/trix/trix-ide
 ```
 
 </td>
 <td><a href="Formula/trix-ide.rb"><img src="https://img.shields.io/badge/-formula-aad84c?style=flat-square"></a></td></tr>
-<tr><td><b>Scoop</b></td>
-<td>
-
-```
-scoop bucket add trix https://github.com/Zarl-prog/Trix-TUI
-scoop install trix-ide
-```
-
-</td>
-<td><a href="bucket/trix-ide.json"><img src="https://img.shields.io/badge/-manifest-feb454?style=flat-square"></a></td></tr>
-<tr><td><b>Winget</b></td>
-<td>
-
-```
-winget install Zarl-prog.Trix-IDE
-```
-
-</td>
-<td><a href="winget/Zarl-prog/Trix-IDE/0.3.1/"><img src="https://img.shields.io/badge/-manifest-ef7177?style=flat-square"></a></td></tr>
 </table>
 
 Run `trix` to start.

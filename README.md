@@ -149,7 +149,8 @@ npm install -g trix-ide
 <td>
 
 ```
-brew install Zarl-prog/trix/trix-ide
+brew tap Zarl-prog/Trix-TUI
+brew install trix-ide
 ```
 
 </td>
@@ -158,7 +159,7 @@ brew install Zarl-prog/trix/trix-ide
 <td>
 
 ```
-scoop bucket add trix https://github.com/Zarl-prog/scoop-trix
+scoop bucket add trix https://github.com/Zarl-prog/Trix-TUI
 scoop install trix-ide
 ```
 

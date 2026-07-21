@@ -50,55 +50,58 @@
 
 ## Features
 
+<div align="center">
+
 <table>
 <tr>
-<td width="33%">
+<td align="center" width="33%"><b>📝 Editor</b></td>
+<td align="center" width="33%"><b>📁 File Management</b></td>
+<td align="center" width="33%"><b>🎨 Terminal + UX</b></td>
+</tr>
+<tr>
+<td valign="top">
 
-📝 **Syntax Highlighting** — 20+ languages via tree-sitter, theme-aware colors
-
-⌨️ **Undo / Redo** — `Ctrl+Z` / `Ctrl+Y` with full undo history
-
-🔍 **Search in File** — Real-time highlighting, match navigation (`Ctrl+F`)
-
-💾 **Save** — `Ctrl+S`, dirty tab indicator (●)
-
-📏 **Line Numbers** — Gutter with active line highlight
-
-📋 **Select All** — `Ctrl+A`
-
-</td>
-<td width="33%">
-
-📁 **File Tree** — 130+ Nerd Font icons, expand/collapse, git badges
-
-🔄 **Open Folder** — `Ctrl+O`, tree updates instantly
-
-➕ **Create File** — Dialog with auto parent directory creation
-
-✏️ **Rename / Delete** — `F2` to rename, `Del` with confirm
-
-📑 **Multi-Tab** — `Ctrl+Tab` nav, close button, dirty tracking
-
-🔖 **Git Status** — Color badges (M, A, D, ??) on every file
+▸ Syntax highlighting — 20+ languages, tree-sitter powered  
+▸ Undo / Redo — `Ctrl+Z` / `Ctrl+Y`  
+▸ Search in file — real-time matches, `↑↓` navigate  
+▸ Save — `Ctrl+S`, dirty dot (●) indicator  
+▸ Line numbers — gutter with active line highlight  
+▸ Toggle comment — `Ctrl+/` on current line  
+▸ Duplicate line — `Ctrl+D`  
+▸ Select all — `Ctrl+A`  
+▸ Copy selection — `Ctrl+Shift+C`
 
 </td>
-<td width="33%">
+<td valign="top">
 
-🎨 **10 Themes** — Ayu, Dracula, One Dark, Tokyo Night, Catppuccin and more
+▸ File tree — Nerd Font icons for 130+ file types  
+▸ Open folder — `Ctrl+O`, full directory navigation  
+▸ Create file — dialog with auto parent dir creation  
+▸ Rename — `F2`, updates open tabs automatically  
+▸ Delete — `Del` with confirmation dialog  
+▸ Multi-tab — `Ctrl+Tab` / `Ctrl+Shift+Tab` nav  
+▸ Close tab — `Ctrl+W`, dirty-file confirmation  
+▸ Git status badges — `M` `A` `D` `??` color-coded  
+▸ Reload tree — `Ctrl+R`
 
-🧘 **Zen Mode** — `Ctrl+\` hides all chrome for distraction-free editing
+</td>
+<td valign="top">
 
-🖱 **Click to Focus** — Click any panel to auto-focus
-
-⌨️ **Help Screen** — `F1` shows every shortcut in a clean modal
-
-🎯 **Bottom Bar** — Clickable shortcut bar with key hints
-
-🟢 **Splash Screen** — Animated logo fill, status messages
+▸ 10 themes — Ayu, Dracula, One Dark, Tokyo Night, Catppuccin, Nord, Everforest, Midnight Blue  
+▸ Zen mode — `Ctrl+\`, full-screen focus  
+▸ Click to focus — click any panel, it gets keyboard focus  
+▸ Help screen — `F1`, all shortcuts listed  
+▸ Bottom bar — clickable shortcuts with key hints  
+▸ Splash screen — animated logo fill, loading status  
+▸ Command palette — `Ctrl+P`, search any action  
+▸ Toast notifications — info, warning, error  
+▸ Theme picker — `Ctrl+Shift+T`, live preview
 
 </td>
 </tr>
 </table>
+
+</div>
 
 ---
 

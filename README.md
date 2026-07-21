@@ -66,7 +66,7 @@
 ▸ Search in file — real-time matches, `↑↓` navigate  
 ▸ Save — `Ctrl+S`, dirty dot (●) indicator  
 ▸ Line numbers — gutter with active line highlight  
-▸ Toggle comment — `Ctrl+/` on current line  
+▸ Toggle comment — `Ctrl+_` on current line  
 ▸ Duplicate line — `Ctrl+D`  
 ▸ Select all — `Ctrl+A`  
 ▸ Copy selection — `Ctrl+Shift+C`

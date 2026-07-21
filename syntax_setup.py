@@ -28,10 +28,11 @@ EXTRA_LANGUAGES = [
 def register_extra_languages(text_area: TextArea) -> None:
     from textual._tree_sitter import get_language, _tree_sitter
     from textual.widgets._text_area import TextAreaLanguage
-    from tree_sitter import Language
 
     if not _tree_sitter:
         return
+
+    from tree_sitter import Language
 
     def _load_grammar(name: str):
         grammar = get_language(name)
